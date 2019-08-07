@@ -79,6 +79,7 @@ QToolWindowManager::~QToolWindowManager()
 		delete w;
 	}
 	delete m_dragHandler;
+	delete m_mainWrapper;
 }
 
 QSizePreservingSplitter::QSizePreservingSplitter(QWidget* parent)

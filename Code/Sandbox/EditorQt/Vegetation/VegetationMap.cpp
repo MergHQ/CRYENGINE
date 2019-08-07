@@ -778,7 +778,7 @@ CVegetationInstance* CVegetationMap::CreateObjInstance(CVegetationObject* object
 	return pInst;
 }
 
-void CVegetationMap::DeleteObjInstance(CVegetationInstance* pInst, SectorInfo* sector)
+void CVegetationMap::DeleteObjInstanceImpl(CVegetationInstance* pInst)
 {
 	if (CUndo::IsRecording())
 		CUndo::Record(new CUndoVegInstanceCreate(pInst, true));
@@ -791,7 +791,6 @@ void CVegetationMap::DeleteObjInstance(CVegetationInstance* pInst, SectorInfo* s
 
 	SAFE_RELEASE_NODE(pInst->pRenderNode);
 	SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
-	sector->remove(pInst);
 	pInst->object->SetNumInstances(pInst->object->GetNumInstances() - 1);
 	m_numInstances--;
 	assert(m_numInstances >= 0);
@@ -802,11 +801,52 @@ void CVegetationMap::DeleteObjInstance(CVegetationInstance* pInst)
 {
 	SectorInfo* sector = GetVegSector(pInst->pos);
 	if (sector)
-		DeleteObjInstance(pInst, sector);
+	{
+		sector->remove(pInst);
+		DeleteObjInstanceImpl(pInst);
+	}
 }
 
 void CVegetationMap::RemoveDuplVegetation(int x1, int y1, int x2, int y2)
 {
+	CUndo undo("Vegetation Remove Duplicates");
+	// We keep maps of all items that were not removed sorted by both X and Y to easily search for nearby items
+	std::multimap<float, CVegetationInstance*> xPositions;
+	std::multimap<float, CVegetationInstance*> yPositions;
+	const float minimalDistance = m_minimalDistance;
+	const float minDistSq = minimalDistance * minimalDistance;
+	auto canAddItem = [&xPositions, &yPositions, minimalDistance, minDistSq](CVegetationInstance* pInst) -> bool
+	{
+		const float x = pInst->pos.x;
+		const float y = pInst->pos.y;
+
+		// By using lower/upper_bound we can quickly find all items that match the x/y ranges.
+		auto lowerXIt = xPositions.lower_bound(x - minimalDistance);
+		auto upperXIt = xPositions.upper_bound(x + minimalDistance);
+
+		auto lowerYIt = yPositions.lower_bound(y - minimalDistance);
+		auto upperYIt = yPositions.upper_bound(y + minimalDistance);
+
+		// If an item matches in X, we add its instance to an unordered set for fast lookup
+		std::unordered_set<CVegetationInstance*> seen;
+		for (auto xIt = lowerXIt; xIt != upperXIt; ++xIt)
+			seen.insert(xIt->second);
+		// If the item matches in Y, we see if it was added to the set (meaning it also matches in X)
+		for (auto yIt = lowerYIt; yIt != upperYIt; ++yIt)
+		{
+			// If found, we still need to do a proper distance calculation, returning false means item has to be removed from the sector
+			if (seen.find(yIt->second) != seen.end() &&
+				Vec2(x, y).GetSquaredDistance(Vec2(yIt->second->pos)) < minDistSq)
+			{
+				return false;
+			}
+		}
+		// Items that had no other items in the x&y range will be added to the persistent position maps and can remain in the sector
+		xPositions.insert({ x, pInst });
+		yPositions.insert({ y, pInst });
+		return true;
+	};
+
 	if (x1 == -1)
 	{
 		x1 = 0;
@@ -820,16 +860,16 @@ void CVegetationMap::RemoveDuplVegetation(int x1, int y1, int x2, int y2)
 		for (int i = x1; i <= x2; i++)
 		{
 			SectorInfo& sector = m_sectors[i + j * m_numSectors];
-
-			for (auto curr = sector.begin(); curr != sector.end(); ++curr)
+			for (auto it = sector.begin(); it != sector.end(); )
 			{
-				for (auto next = std::next(curr); next != sector.end(); ++next)
+				if (!canAddItem(*it))
 				{
-					if (fabs((*curr)->pos.x - (*next)->pos.x) < m_minimalDistance &&
-					    fabs((*curr)->pos.y - (*next)->pos.y) < m_minimalDistance)
-					{
-						DeleteObjInstance(*next, &sector);
-					}
+					DeleteObjInstanceImpl(*it);
+					it = sector.erase(it);
+				}
+				else
+				{
+					++it;
 				}
 			}
 		}
@@ -1027,6 +1067,8 @@ bool CVegetationMap::CanPlace(CVegetationObject* object, const Vec3& pos, float 
 	sy1 = max(sy1, 0);
 	int sy2 = int(py + r);
 	sy2 = min(sy2, m_numSectors - 1);
+	const float radiusSq = radius * radius;
+	const float minDistSq = m_minimalDistance * m_minimalDistance;
 	for (int y = sy1; y <= sy2; y++)
 	{
 		for (int x = sx1; x <= sx2; x++)
@@ -1038,12 +1080,12 @@ bool CVegetationMap::CanPlace(CVegetationObject* object, const Vec3& pos, float 
 				// Only check objects that we need.
 				if (pInst->object == object)
 				{
-					if (fabs(pInst->pos.x - pos.x) < radius && fabs(pInst->pos.y - pos.y) < radius)
+					if (Vec2(pInst->pos).GetSquaredDistance(Vec2(pos)) < radiusSq)
 						return false;
 				}
 				else
 				{
-					if (fabs(pInst->pos.x - pos.x) < m_minimalDistance && fabs(pInst->pos.y - pos.y) < m_minimalDistance)
+					if (Vec2(pInst->pos).GetSquaredDistance(Vec2(pos)) < minDistSq)
 						return false;
 				}
 			}
@@ -1329,27 +1371,39 @@ void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObj
 		{
 			// For each sector check if any object is within this radius.
 			SectorInfo& si = GetVegSector(x, y);
-			for (auto& pInst : si)
+
+			for (auto it = si.begin(); it != si.end(); )
 			{
+				auto pInst = *it;
 				if (pInst->object != pObject && pObject != nullptr)
+				{
+					++it;
 					continue;
+				}
 
 				if (bCircle)
 				{
 					// Skip objects outside the brush circle
 					if (((pInst->pos.x - cx) * (pInst->pos.x - cx) + (pInst->pos.y - cy) * (pInst->pos.y - cy)) > brushRadius2)
+					{
+						++it;
 						continue;
+					}
 				}
 				else
 				{
 					// Within rectangle.
 					if (pInst->pos.x < x1 || pInst->pos.x > x2 || pInst->pos.y < y1 || pInst->pos.y > y2)
+					{
+						++it;
 						continue;
+					}
 				}
 
 				// Then delete object.
 				StoreBaseUndo(eStoreUndo_Once);
-				DeleteObjInstance(pInst, &si);
+				DeleteObjInstanceImpl(pInst);
+				it = si.erase(it);
 			}
 		}
 	}
@@ -1399,9 +1453,8 @@ void CVegetationMap::ClearMask(const string& maskFile)
 				// Delete all instances in this sectors.
 				for (auto& pInst : sector)
 				{
-					DeleteObjInstance(pInst, &sector);
+					DeleteObjInstanceImpl(pInst);
 				}
-
 				sector.clear();
 			}
 		}
@@ -1506,11 +1559,16 @@ void CVegetationMap::RemoveObject(CVegetationObject* object)
 	{
 		for (auto& sector : m_sectors)
 		{
-			for (auto& pInst : sector)
+			for (auto it = sector.begin(); it != sector.end(); )
 			{
-				if (pInst->object == object)
+				if ((*it)->object == object)
 				{
-					DeleteObjInstance(pInst, &sector);
+					DeleteObjInstanceImpl(*it);
+					it = sector.erase(it);
+				}
+				else
+				{
+					++it;
 				}
 			}
 		}
@@ -1903,11 +1961,18 @@ void CVegetationMap::ClearSegment(const AABB& bb)
 {
 	for (auto& sector : m_sectors)
 	{
-		for (auto& pInst : sector)
+		for (auto it = sector.begin(); it != sector.end(); )
 		{
+			auto pInst = *it;
 			if (pInst->pos.x < bb.min.x || pInst->pos.x >= bb.max.x || pInst->pos.y < bb.min.y || pInst->pos.y >= bb.max.y)
-				continue;
-			DeleteObjInstance(pInst, &sector);
+			{
+				++it;
+			}
+			else
+			{
+				DeleteObjInstanceImpl(pInst);
+				it = sector.erase(it);
+			}
 		}
 	}
 

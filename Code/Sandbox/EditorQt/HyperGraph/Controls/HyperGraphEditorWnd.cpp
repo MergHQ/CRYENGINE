@@ -3097,7 +3097,8 @@ void CHyperGraphDialog::GetGraphPrettyName(CHyperGraph* pGraph, CString& compute
 						computedName.Format("[Entity] ");
 						if (!shortVersion && !pFlowGraph->GetGroupName().IsEmpty())
 						{
-							computedName.Format("%s%s : ", computedName, pFlowGraph->GetGroupName());
+							CString tmp = computedName;
+							computedName.Format("%s%s : ", tmp.GetString(), pFlowGraph->GetGroupName());
 						}
 					}
 				}
@@ -3105,18 +3106,19 @@ void CHyperGraphDialog::GetGraphPrettyName(CHyperGraph* pGraph, CString& compute
 				{
 					computedName.Format("[Files] ");
 				}
-				computedName.Format("%s%s", computedName, pFlowGraph->GetName());
+				CString tmp = computedName;
+				computedName.Format("%s%s", tmp.GetString(), pFlowGraph->GetName());
 			}
 			else
 			{
 				computedName = pFlowGraph->GetIFlowGraph()->GetDebugName();
-
 			}
 		}
 
 		if (!shortVersion && !pGraph->GetFilename().IsEmpty())
 		{
-			computedName.Format("%s   (%s)", computedName, pGraph->GetFilename());
+			CString tmp = computedName;
+			computedName.Format("%s   (%s)", tmp.GetString(), pGraph->GetFilename());
 		}
 	}
 }

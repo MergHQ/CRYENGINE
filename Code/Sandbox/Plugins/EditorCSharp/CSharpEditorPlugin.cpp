@@ -605,15 +605,16 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath)
 		}
 	}
 
-	string textEditor = gEditorFilePreferences.textEditorCSharp;
+	const string textEditor = gEditorFilePreferences.textEditorCSharp;
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = GetCSharpSolutionPath();
+		const string solutionFile = GetCSharpSolutionPath();
+		const string parameters = string().Format("\"%s\" \"%s\"", solutionFile.c_str(), filePath.c_str());
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-		shellInfo.lpParameters = string().Format("\"%s\" \"%s\"", solutionFile, filePath).c_str();
+		shellInfo.lpParameters = parameters.c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);

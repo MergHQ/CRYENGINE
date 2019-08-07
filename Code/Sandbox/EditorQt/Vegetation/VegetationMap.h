@@ -244,7 +244,7 @@ private:
 
 	//! Create new object instance in map.
 	CVegetationInstance* CreateObjInstance(CVegetationObject* object, const Vec3& pos, CVegetationInstance* pCopy = nullptr, SectorInfo* si = nullptr);
-	void                 DeleteObjInstance(CVegetationInstance* pInst, SectorInfo* sector);
+	void                 DeleteObjInstanceImpl(CVegetationInstance* pInst);
 	//! Only to be used by undo/redo.
 	void                 AddObjInstance(CVegetationInstance* pInst);
 

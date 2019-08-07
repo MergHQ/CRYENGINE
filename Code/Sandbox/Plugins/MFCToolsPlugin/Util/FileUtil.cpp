@@ -793,19 +793,22 @@ void CFileUtil::FormatFilterString(CString& filter)
 	const int numPipeChars = std::count(s.begin(), s.end(), '|');
 	if (numPipeChars == 1)
 	{
-		filter.Format("%s||", filter.GetString());
+		CString tmp = filter;
+		filter.Format("%s||", tmp.GetString());
 	}
 	else if (numPipeChars > 1)
 	{
 		assert(numPipeChars % 2 != 0);
 		if (s.find("||") == string::npos)
 		{
-			filter.Format("%s||", filter.GetString());
+			CString tmp = filter;
+			filter.Format("%s||", tmp.GetString());
 		}
 	}
 	else if (filter.GetLength() > 0)
 	{
-		filter.Format("%s|%s||", filter.GetString(), filter.GetString());
+		CString tmp = filter;
+		filter.Format("%s|%s||", tmp.GetString(), tmp.GetString());
 	}
 }
 

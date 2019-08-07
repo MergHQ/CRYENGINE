@@ -123,8 +123,13 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 {
 	using namespace Private_AssetBrowserDialog;
 
+	CRY_ASSERT(!assetTypeNames.empty(), "Empty asset types name list");
 	m_pBrowser->Initialize();
-	const QString propertyName = QtUtil::ToQString(std::accumulate(assetTypeNames.begin(), assetTypeNames.end(), "Layout"));
+	QString propertyName = "Layout";
+	for (auto& assetTypeName : assetTypeNames)
+	{
+		propertyName.append(QtUtil::ToQString(assetTypeName));
+	}
 
 	// Load generic asset browser layout valid for all asset types. Some things might be later overwritten by asset type specific personalization
 	const QVariantMap& personalization = GetIEditor()->GetPersonalizationManager()->GetState(GetDialogName());
