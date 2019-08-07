@@ -697,7 +697,8 @@ void CParticleEmitter::UpdateRuntimes()
 	m_runtimesDeferred.clear();
 	m_environFlags = 0;
 
-	TRuntimes newRuntimes;
+	TRuntimes oldRuntimes;
+	std::swap(m_runtimes, oldRuntimes);
 
 	for (const auto& pComponent: m_pEffect->GetComponents())
 	{
@@ -708,18 +709,17 @@ void CParticleEmitter::UpdateRuntimes()
 		}
 
 		auto parentComponent = pComponent->GetParentComponent();
-		CParticleComponentRuntime* pRuntime = stl::find_value_if(m_runtimes,
+		auto parentRuntime = parentComponent ? GetRuntimeFor(parentComponent) : nullptr;
+		CParticleComponentRuntime* pRuntime = stl::find_value_if(oldRuntimes,
 			[&](CParticleComponentRuntime* pRuntime)
 			{
-				auto thisParentComponent = pRuntime->Parent() ? pRuntime->Parent()->GetComponent() : nullptr;
 				return pRuntime->GetComponent() == pComponent
-					&& thisParentComponent == parentComponent;
+					&& pRuntime->Parent() == parentRuntime;
 			}
 		);
 
 		if (!pRuntime || !pRuntime->IsValidForComponent())
 		{
-			auto parentRuntime = parentComponent ? GetRuntimeFor(parentComponent) : nullptr;
 			pRuntime = new CParticleComponentRuntime(this, parentRuntime, pComponent);
 		}
 		else
@@ -727,7 +727,7 @@ void CParticleEmitter::UpdateRuntimes()
 			pRuntime->Initialize();
 		}
 
-		newRuntimes.push_back(pRuntime);
+		m_runtimes.push_back(pRuntime);
 		m_runtimesFor.push_back(pRuntime);
 		if (pComponent->MainPreUpdate.size())
 			m_runtimesPreUpdate.push_back(pRuntime);
@@ -735,8 +735,6 @@ void CParticleEmitter::UpdateRuntimes()
 			m_runtimesDeferred.push_back(pRuntime);
 		m_environFlags |= pComponent->ComponentParams().m_environFlags;
 	}
-
-	m_runtimes = newRuntimes;
 
 	m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	m_alive = m_active = true;

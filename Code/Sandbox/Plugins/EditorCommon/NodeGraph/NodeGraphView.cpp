@@ -2060,7 +2060,6 @@ void CNodeGraphView::mouseReleaseEvent(QMouseEvent* pEvent)
 	}
 
 	QGraphicsView::mouseReleaseEvent(pEvent);
-	AbortAction();
 }
 
 bool CNodeGraphView::OnCopyEvent()
