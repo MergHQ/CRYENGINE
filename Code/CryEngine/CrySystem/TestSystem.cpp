@@ -6,6 +6,7 @@
 #endif
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ConsoleRegistration.h>
+#include <CryThreading/IThreadManager.h>
 #include <CryGame/IGameFramework.h>
 #include <CryCore/optional.h>
 #include "UnitTestExcelReporter.h"
@@ -95,8 +96,6 @@ struct SCryTestArgumentAutoComplete : public IConsoleArgumentAutoComplete
 
 static SCryTestArgumentAutoComplete sCryTestArgAutoComplete;
 
-static constexpr float FreezeTimeOut = 120.f;
-
 class CTestSystem::CTestInstance
 {
 public:
@@ -135,43 +134,6 @@ private:
 	std::vector<SError>                   m_currentTestFailures;
 };
 
-CTestSystem::CTestSystem(ISystem* pSystem)
-	: m_log(pSystem)
-{
-	// Listen to asserts and fatal errors, turn them into test failures during the test
-	if (!gEnv->pSystem->RegisterErrorObserver(this))
-	{
-		CRY_ASSERT(false, "Test system failed to register error system callback");
-	}
-
-	// Spawn a thread to help figuring out time out or hang
-	if (!gEnv->pThreadManager->SpawnThread(this, "Test System"))
-	{
-		CRY_ASSERT(false, "Error spawning test system watch thread.");
-	}
-
-	// Register tests defined in this module
-	for (CTestFactory* pFactory = CTestFactory::GetFirstInstance();
-	     pFactory != nullptr;
-	     pFactory = pFactory->GetNextInstance())
-	{
-		pFactory->SetModuleName("CrySystem");
-		AddFactory(pFactory);
-	}
-}
-
-CTestSystem::~CTestSystem()
-{
-	SignalStopWork();
-	gEnv->pThreadManager->JoinThread(this, eJM_Join);
-
-	// Clean up listening to asserts and fatal errors
-	if (!gEnv->pSystem->UnregisterErrorObserver(this))
-	{
-		CRY_ASSERT(false, "Test system failed to unregister error system callback");
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void RunTests(IConsoleCmdArgs* pArgs)
 {
@@ -196,17 +158,48 @@ void RunTests(IConsoleCmdArgs* pArgs)
 #endif // CRY_TESTING
 }
 
-//////////////////////////////////////////////////////////////////////////
-/*static*/ void CTestSystem::InitCommands()
+static float ParseTimeOut(ICmdLine& cmdLine)
 {
-	REGISTER_COMMAND("crytest", RunTests, VF_INVISIBLE | VF_CHEAT, "Execute a set of crytests");
-	gEnv->pConsole->RegisterAutoComplete("crytest", &sCryTestArgAutoComplete);
+	const ICmdLineArg* pTimeout = cmdLine.FindArg(eCLAT_Pre, "crytest_timeout");
+	return pTimeout ? pTimeout->GetFValue() : 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTestSystem::InitLog()
+CTestSystem::CTestSystem(ISystem& system, IThreadManager& threadMgr, ICmdLine& cmdLine, IConsole& console)
+	: m_log(&system)
+	, m_freezeTimeOut(ParseTimeOut(cmdLine))
 {
 	m_log.SetFileName("%USER%/TestResults/TestLog.log");
+
+	// Listen to asserts and fatal errors, turn them into test failures during the test
+	CRY_VERIFY(system.RegisterErrorObserver(this), "Test system failed to register error system callback");
+	
+	// When desired, spawn a thread to help figuring out time out or hang
+	if (m_freezeTimeOut > 0)
+	{
+		if (!threadMgr.SpawnThread(this, "Test System"))
+			CRY_ASSERT_MESSAGE(false, "Error spawning test system watch thread.");
+	}
+	
+	// Register tests defined in this module
+	for (CTestFactory* pFactory = CTestFactory::GetFirstInstance();
+	     pFactory != nullptr;
+	     pFactory = pFactory->GetNextInstance())
+	{
+		pFactory->SetModuleName("CrySystem");
+		AddFactory(pFactory);
+	}
+
+	REGISTER_COMMAND("crytest", RunTests, VF_INVISIBLE | VF_CHEAT, "Execute a set of crytests");
+	console.RegisterAutoComplete("crytest", &sCryTestArgAutoComplete);
+}
+
+CTestSystem::~CTestSystem()
+{
+	SignalStopWork();
+	gEnv->pThreadManager->JoinThread(this, eJM_Join);
+
+	// Clean up listening to asserts and fatal errors
+	CRY_VERIFY(gEnv->pSystem->UnregisterErrorObserver(this), "Test system failed to unregister error system callback");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -262,6 +255,8 @@ void CTestSystem::Update()
 {
 	if (m_isRunningTest)
 	{
+		m_heartBeatTime = std::chrono::system_clock::now();
+
 		if (!m_remainingTestFactories.empty() && !m_currentTestInstance)
 		{
 			CTestFactory* pTestFactory = m_remainingTestFactories.front();
@@ -507,22 +502,22 @@ void CTestSystem::SetReporter(const std::shared_ptr<ITestReporter>& reporter)
 
 void CTestSystem::ThreadEntry()
 {
+	CRY_ASSERT(m_freezeTimeOut > 0);
 	while (!m_wantQuit)
 	{
-		uint64 updateCounter = gEnv->pSystem->GetUpdateCounter();
 		std::chrono::duration<float> timeSinceHeartBeat = std::chrono::system_clock::now() - m_heartBeatTime;
-		if (m_currentTestInstance && updateCounter == m_lastUpdateCounter && timeSinceHeartBeat.count() > FreezeTimeOut)
+		if (m_currentTestInstance && timeSinceHeartBeat.count() > m_freezeTimeOut)
 		{
 			//record timeout and quit
 			ReportNonCriticalError("Time out", "", 0);
 			std::chrono::duration<float, std::milli> runTime = m_currentTestInstance->GetCurrentTestElapsed();
+
 			if (auto pReporter = m_pReporter.lock())
 				pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), false, m_currentTestInstance->GetFailures());
 
 			SignalStopWork();
 			gEnv->pSystem->Quit();
 		}
-		m_lastUpdateCounter = updateCounter;
 		CrySleep(100);
 	}
 }

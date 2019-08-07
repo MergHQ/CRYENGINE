@@ -2771,15 +2771,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		//notify test system to init logs (since file system is setup).
 #ifdef CRY_TESTING
-		if (m_pTestSystem)
-		{
-			m_pTestSystem->InitLog();
-		}
-
-		if (m_env.pConsole != nullptr)
-		{
-			CryTest::CTestSystem::InitCommands();
-		}
+		m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(*this, *GetIThreadManager(), *GetICmdLine(), *GetIConsole());
 #endif // CRY_TESTING
 
 		// Initialise after pLog and CPU feature initialization

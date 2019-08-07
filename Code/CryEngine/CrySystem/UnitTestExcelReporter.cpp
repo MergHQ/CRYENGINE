@@ -84,8 +84,6 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 	AddCell("File");
 	AddCell("Line");
 
-	string name;
-
 	for (const STestResult& res : m_results)
 	{
 		if (res.isSuccessful)
@@ -94,8 +92,7 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 		}
 
 		AddRow();
-		name.Format("[%s] %s:%s", res.testInfo.module.c_str(), res.testInfo.suite.c_str(), res.testInfo.name.c_str());
-		AddCell(name);
+		AddCell(res.testInfo.GetQualifiedName().c_str());
 		AddCell("FAIL", CELL_CENTERED);
 		AddCell((int)res.runTimeInMs);
 		AddCell((uint64)res.failures.size());
@@ -162,8 +159,7 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 	for (const STestResult& res : m_results)
 	{
 		AddRow();
-		name.Format("[%s] %s:%s", res.testInfo.module.c_str(), res.testInfo.suite.c_str(), res.testInfo.name.c_str());
-		AddCell(name);
+		AddCell(res.testInfo.GetQualifiedName().c_str());
 		if (res.isSuccessful)
 		{
 			AddCell("OK", CELL_CENTERED);
@@ -216,20 +212,18 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 
 void CTestExcelReporter::OnSingleTestStart(const STestInfo& testInfo)
 {
-	string text;
-	text.Format("Test Started: [%s] %s:%s", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str());
-	m_log.Log("%s", text.c_str());
+	m_log.Log("Test Started: %s", testInfo.GetQualifiedName().c_str());
 }
 
 void CTestExcelReporter::OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures)
 {
 	if (bSuccess)
 	{
-		m_log.Log("Test result: [%s]%s:%s | OK (%3.2fms)", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), fRunTimeInMs);
+		m_log.Log("Test result: %s | OK (%3.2fms)", testInfo.GetQualifiedName().c_str(), fRunTimeInMs);
 	}
 	else
 	{
-		m_log.Log("Test result: [%s]%s:%s | %lu failures:", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), failures.size());
+		m_log.Log("Test result: %s | %" PRISIZE_T " failures:", testInfo.GetQualifiedName().c_str(), failures.size());
 		for (const SError& err : failures)
 		{
 			m_log.Log("at %s line %d:\t%s", err.fileName.c_str(), err.lineNumber, err.message.c_str());

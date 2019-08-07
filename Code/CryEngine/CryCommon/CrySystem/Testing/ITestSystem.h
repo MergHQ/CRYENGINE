@@ -18,8 +18,6 @@ struct ITestSystem
 	//! Should be called every system update.
 	virtual void  Update() = 0;
 
-	virtual void  InitLog() = 0;
-
 	virtual ILog* GetLog() = 0;
 
 	//! Sets whether to shutdown the engine after tests are finished.

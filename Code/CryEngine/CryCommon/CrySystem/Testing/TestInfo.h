@@ -23,6 +23,14 @@ struct STestInfo
 		ar(lineNumber, "lineNumber");
 		ar(module, "module");
 	}
+
+	string GetQualifiedName() const
+	{
+		if (suite.empty())
+			return string().Format("[%s] %s", module.c_str(), name.c_str());
+		else
+			return string().Format("[%s] %s:%s", module.c_str(), suite.c_str(), name.c_str());
+	}
 };
 
 }

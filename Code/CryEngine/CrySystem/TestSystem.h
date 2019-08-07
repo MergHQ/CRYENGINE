@@ -5,33 +5,26 @@
 #include <chrono>
 #include <CrySystem/Testing/ITestSystem.h>
 #include <CrySystem/Testing/CryTest.h>
-#include <CryThreading/IThreadManager.h>
 #include "Log.h"
 #include "UnitTestExcelReporter.h"
 #include <queue>
 #include <memory>
 
 struct ISystem;
-struct IConsoleCmdArgs;
+struct IThreadManager;
+class ICmdLine;
+struct IConsole;
 
 namespace CryTest
 {
 class CTestRecordFile;
 
-class CTestSystem
-	: public ITestSystem
-	  , public IThread
-	  , private IErrorObserver
+class CTestSystem : public ITestSystem, public IThread, private IErrorObserver
 {
 public:
-
 	//! constructs test system that outputs to dedicated log
-	CTestSystem(ISystem* pSystem);
-
+	CTestSystem(ISystem& system, IThreadManager& threadMgr, ICmdLine& cmdLine, IConsole& console);
 	virtual ~CTestSystem();
-
-	//! initializes supported console commands. Must be called after the console is set up.
-	static void InitCommands();
 
 	virtual void                           Run() override;
 	virtual void                           RunSingle(const char* testName) override;
@@ -45,7 +38,6 @@ public:
 private:
 	//! Implement ITestSystem
 	virtual void  Update() override;
-	virtual void  InitLog() override;
 	virtual ILog* GetLog() override;
 	virtual void  SetQuitAfterTests(bool quitAfter) override { m_wantQuitAfterTestsDone = quitAfter; }
 	virtual void  SetOpenReport(bool value) override         { m_openReport = value; }
@@ -89,11 +81,11 @@ private:   // --------------------------------------------------------------
 
 	// Used for caching and restoring Cry::Assert::ShowDialogOnAssert() flag to suppress the assert window during tests
 	// Even though assert window is suppressed in auto testing mode, this is still useful for CryTest runner
-	bool                                  m_wasShowAssertDialog = false;
+	bool                           m_wasShowAssertDialog = false;
 
-	volatile bool                         m_wantQuit = false;
+	const float                    m_freezeTimeOut;
+	volatile bool                  m_wantQuit = false;
 
-	uint64                                m_lastUpdateCounter = 0;
 	std::chrono::system_clock::time_point m_heartBeatTime = std::chrono::system_clock::now();
 };
 }

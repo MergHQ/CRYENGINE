@@ -438,10 +438,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	InitThreadSystem();
 
-#ifdef CRY_TESTING
-	m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(this);
-#endif
-
 	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CSystem Boot");
 
 	m_pMiniGUI = nullptr;
