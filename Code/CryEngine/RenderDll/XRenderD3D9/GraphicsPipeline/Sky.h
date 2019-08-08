@@ -47,4 +47,6 @@ private:
 	Vec4                    m_paramMoonDirSize;
 	CRenderPrimitive        m_starsPrimitive;
 	CPrimitiveRenderPass    m_starsPass;
+
+	bool                    m_isStarsDataLoaded = false;
 };

@@ -20,6 +20,7 @@ void CSkyStage::Init()
 {
 	// Create HDR Sky Dome textures
 	CreateSkyDomeTextures(SSkyLightRenderParams::skyDomeTextureWidth, SSkyLightRenderParams::skyDomeTextureHeight);
+	m_isStarsDataLoaded = false;
 	LoadStarsDataAsync();
 	m_skyDomeTextureLastTimeStamp = -1;
 }
@@ -121,6 +122,8 @@ void CSkyStage::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 	{
 		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Loaded stars data, but %" PRIdPTR " bytes remained.", bytesRemaining);
 	}
+
+	m_isStarsDataLoaded = true;
 }
 
 void CSkyStage::LoadStarsDataAsync()
@@ -353,7 +356,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 	{
 		const float starIntensity = gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_NIGHSKY_STAR_INTENSITY);
 
-		if (starIntensity > 1e-3f)
+		if (starIntensity > 1e-3f && m_isStarsDataLoaded)
 		{
 			D3DViewPort viewport = RenderViewportToD3D11Viewport(RenderView()->GetViewport());
 			if (pRenderView->IsRecursive())
