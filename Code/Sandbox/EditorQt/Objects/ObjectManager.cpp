@@ -1098,8 +1098,12 @@ void CObjectManager::DeleteObjects(std::vector<CBaseObject*>& objects)
 	UnlinkObjects(objects);
 
 	std::vector<CGroup*> parents;
-	CGroup::ForEachParentOf(objects, [&parents](CGroup* pGroup, std::vector<CBaseObject*>& children)
+	CGroup::ForEachParentOf(objects, [&parents, this](CGroup* pGroup, std::vector<CBaseObject*>& children)
 	{
+		//If we are deleting the same children from different prefab instances all of the children will be immediately invalidated when the first one is removed (because of prefab instance update)
+		//This means that the children we are receiving here (and after a call to this function) need to be filtered out from deletion to avoid them being deleted twice
+		FilterOutDeletedObjects(children);
+
 		// First detach, then delete. Not the other way around
 		if (pGroup)
 		{
@@ -1112,6 +1116,10 @@ void CObjectManager::DeleteObjects(std::vector<CBaseObject*>& objects)
 		  }
 		}
 	});
+
+	//If we are deleting the same children from different prefab instances all of the children will be immediately invalidated when the first one is removed (because of prefab instance update)
+	//This means that the objects list will contain some objects that might have already been deleted, they need to be filtered out from deletion to avoid them being deleted twice
+	FilterOutDeletedObjects(objects);
 
 	CObjectLayer::ForEachLayerOf(objects, [this](CObjectLayer* pLayer, const std::vector<CBaseObject*>& layerObjects)
 	{
