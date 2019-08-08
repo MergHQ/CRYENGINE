@@ -30,6 +30,7 @@ class CParticleComponentRuntime : public _i_reference_target_t, public IParticle
 {
 public:
 	CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponentRuntime* pParent, CParticleComponent* pComponent);
+	CParticleComponentRuntime(const CParticleComponentRuntime& source, uint runCount, float runTime, uint runIterations = 1);
 	~CParticleComponentRuntime();
 
 	bool                          IsCPURuntime() const   { return !m_pGpuRuntime; }
@@ -44,7 +45,6 @@ public:
 	void                          AddSpawners(TVarArray<SSpawnerDesc> descs, bool cull = true);
 	void                          RemoveSpawners(TConstArray<TParticleId> removeIds);
 	void                          RemoveAllSpawners();
-	void                          RunParticles(uint count, float deltaTime);
 
 	void                          ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 
@@ -126,6 +126,7 @@ private:
 	void CalculateBounds();
 	void DebugStabilityCheck();
 	void UpdateGPURuntime();
+	void RunParticles(uint count, float deltaTime, uint iterations = 1);
 
 	struct PRenderObject
 	{

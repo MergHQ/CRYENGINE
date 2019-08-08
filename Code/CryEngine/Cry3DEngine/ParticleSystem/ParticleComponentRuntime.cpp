@@ -45,6 +45,22 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 	}
 }
 
+CParticleComponentRuntime::CParticleComponentRuntime(const CParticleComponentRuntime& source, uint runCount, float runTime, uint runIterations)
+	: CParticleComponentRuntime(source.m_pEmitter, source.m_parent, source.m_pComponent)
+{
+	m_pGpuRuntime = nullptr;
+	if (m_parent)
+	{
+		CParticleComponentRuntime parent(*m_parent, runCount, runTime, runIterations);
+		m_parent = &parent;
+		RunParticles(runCount, runTime, runIterations);
+	}
+	else
+	{
+		RunParticles(runCount, runTime, runIterations);
+	}
+}
+
 CParticleComponentRuntime::~CParticleComponentRuntime()
 {
 	if (Container().Size())
@@ -104,26 +120,46 @@ void CParticleComponentRuntime::Clear()
 	m_deltaTime = -1.0f;
 }
 
-void CParticleComponentRuntime::RunParticles(uint count, float deltaTime)
+void CParticleComponentRuntime::RunParticles(uint count, float deltaTime, uint iterations)
 {
 	m_deltaTime = deltaTime;
 	m_isPreRunning = true;
 	
+	UpdateSpawners();
+
+	auto range = FullRange(EDD_Spawner);
+	auto parentIds = IStream(ESDT_ParentId);
+
 	Container().BeginSpawn();
-	SSpawnEntry entry = {};
-	entry.m_count = count;
-	entry.m_ageBegin = deltaTime;
-	AddParticles({&entry, 1});
+	THeapArray<SSpawnEntry> entries(MemHeap(), range.size());
+	uint countPerSpawner = (count + range.size() - 1) / range.size();
+	for (auto sid : FullRange(EDD_Spawner))
+	{
+		SSpawnEntry& entry = entries[sid];
+		entry.m_spawnerId = sid;
+		entry.m_parentId = parentIds[sid];
+		entry.m_count = countPerSpawner;
+		entry.m_ageBegin = deltaTime;
+	}
+	AddParticles(entries);
 	InitParticles();
 	Container().EndSpawn();
 
 	CalculateBounds();
+	AABB fullBounds = m_bounds;
 	m_pEmitter->UpdatePhysEnv();
-	m_deltaTime = deltaTime;
-	UpdateParticles();
-	CalculateBounds();
-	m_isPreRunning = false;
 
+	SetMax(iterations, 1u);
+	m_deltaTime = deltaTime / float(iterations);
+	for (uint i = 0; i < iterations; ++i)
+	{
+		UpdateParticles();
+		CalculateBounds();
+		fullBounds.Add(m_bounds);
+	}
+	m_bounds = fullBounds;
+
+	m_isPreRunning = false;
 	m_deltaTime = -1.0f;
 }
 

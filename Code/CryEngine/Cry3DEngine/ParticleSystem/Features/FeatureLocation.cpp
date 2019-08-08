@@ -1001,6 +1001,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBindToCamera, "Loca
 
 MakeDataType(ESVF_VelocityFinal, Vec3, EDD_Spawner);
 MakeDataType(ESVF_Travel, Vec3, EDD_Spawner);
+MakeDataType(ESDT_OmniSpawned, TParticleId, EDD_Spawner);
 
 extern TDataType<Vec3> EPVF_PositionPrev;
 
@@ -1044,6 +1045,7 @@ public:
 		pComponent->AddParticleData(EPVF_PositionPrev);
 		pComponent->AddParticleData(ESVF_VelocityFinal);
 		pComponent->AddParticleData(ESVF_Travel);
+		pComponent->AddParticleData(ESDT_OmniSpawned);
 
 		if (m_spawnOutsideView)
 		{
@@ -1083,11 +1085,12 @@ public:
 
 	virtual void InitSpawners(CParticleComponentRuntime& runtime) override
 	{
+		if (runtime.IsPreRunning())
+			return;
+
 		// Need to compute average final velocity and travel for particles.
 		// Run particles for full lifetime in a temporary runtime
-		CParticleComponentRuntime runtimeTemp(runtime.GetEmitter(), runtime.Parent(), runtime.GetComponent());
-		runtimeTemp.RunParticles(32, runtime.GetDynamicData(EPDT_LifeTime));
-
+		CParticleComponentRuntime runtimeTemp(runtime, 64, runtime.GetDynamicData(EPDT_LifeTime));
 		CParticleContainer& container = runtimeTemp.GetContainer();
 		auto positions = container.IStream(EPVF_Position);
 		auto positionsPrev = container.IStream(EPVF_PositionPrev, runtime.GetEmitter()->GetLocation().t);
@@ -1102,8 +1105,10 @@ public:
 		velocityFinal /= (float)container.GetNumParticles();
 		travel /= (float)container.GetNumParticles();
 
-		runtime.FillData(ESVF_VelocityFinal, velocityFinal, runtime.SpawnedRange(EDD_Spawner));
-		runtime.FillData(ESVF_Travel, travel, runtime.SpawnedRange(EDD_Spawner));
+		auto range = runtime.SpawnedRange(EDD_Spawner);
+		runtime.FillData(ESVF_VelocityFinal, velocityFinal, range);
+		runtime.FillData(ESVF_Travel, travel, range);
+		runtime.FillData(ESDT_OmniSpawned, 0u, range);
 	}
 
 	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
@@ -1152,7 +1157,6 @@ public:
 	virtual void SpawnParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-
 		if (runtime.IsPreRunning())
 			return;
 
@@ -1165,10 +1169,12 @@ public:
 		Matrix34v toPrev = m_camData.fromWorldPrev * Matrix34::CreateTranslationMat(-travelPrev) * m_camData.toWorld;
 		Matrix34v toWorld = m_camData.toWorld;
 
-		CParticleContainer& container = runtime.GetContainer();
 		float deltaTime = runtime.DeltaTime();
 		int particlesTotal, particlesPerFrame;
 		runtime.GetMaxParticleCounts(particlesTotal, particlesPerFrame, rcp(deltaTime), rcp(deltaTime));
+
+		// Initialize previously spawned particles
+		InitPositions(runtime, runtime.SpawnedRange());
 
 		// Randomly generate positions in current sector; only those not in previous sector spawn as particles
 		THeapArray<Vec3> newPositions(runtime.MemHeap());
@@ -1184,34 +1190,26 @@ public:
 				DoElements(mask, posv, [&newPositions](const Vec3& v) { newPositions.push_back(v); });
 			}
 		}
-		
-		if (newPositions.size())
+
+		SSpawnEntry spawn = {};
+		TParticleId omniSpawned = runtime.SpawnedRange().m_end + newPositions.size();
+		omniSpawned &= ~(CRY_PFX2_GROUP_STRIDE - 1);
+		if (omniSpawned > runtime.SpawnedRange().m_end)
 		{
+			spawn.m_count = omniSpawned - runtime.SpawnedRange().m_end;
 			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
-			float fracNewSpawned = deltaTime / particleLife;
-			SSpawnEntry spawn = {};
-			spawn.m_count = uint(newPositions.size() * (1.0f - fracNewSpawned));
 			spawn.m_ageBegin = 0.0f;
 			spawn.m_ageIncrement = particleLife / float(spawn.m_count);
-			runtime.AddParticles({&spawn, 1});
+			runtime.AddParticles({ &spawn, 1 });
 		}
 
-		// Store generated positions in PositionPrev, for use in InitParticles
-		auto positionsPrev = container.IOStream(EPVF_PositionPrev);
-		uint iNew = 0;
-		for (auto particleId : runtime.SpawnedRange())
+		// Save new positions
+		auto positionsPrev = runtime.IOStream(EPVF_PositionPrev);
+		for (auto particleId : SUpdateRange(omniSpawned - spawn.m_count, omniSpawned))
 		{
-			if (iNew < newPositions.size())
-			{
-				positionsPrev.Store(particleId, newPositions[iNew++]);
-			}
-			else
-			{
-				Vec3 posCam = RandomSector<float>(runtime.Chaos());
-				Vec3 pos = m_camData.toWorld * posCam;
-				positionsPrev.Store(particleId, pos);
-			}
+			positionsPrev.Store(particleId, newPositions[particleId - omniSpawned + spawn.m_count]);
 		}
+		runtime.IOStream(ESDT_OmniSpawned)[0] = omniSpawned;
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -1224,6 +1222,10 @@ public:
 			return;
 
 		UpdateCameraData(runtime);
+
+		// Init positions of particles spawned after this feature
+		TParticleId omniSpawned = runtime.IStream(ESDT_OmniSpawned)[0];
+		InitPositions(runtime, SUpdateRange(omniSpawned, runtime.SpawnedRange().m_end));
 
 		CParticleContainer& container = runtime.GetContainer();
 
@@ -1279,6 +1281,7 @@ private:
 
 	void UpdateCameraData(const CParticleComponentRuntime& runtime)
 	{
+		uint32 prevFrameId = m_camData.nFrameId;
 		if (m_camData.nFrameId.exchange(gEnv->nMainFrameID) == gEnv->nMainFrameID)
 			return;
 		CCamera cam = GetEffectCamera(runtime);
@@ -1309,7 +1312,7 @@ private:
 		m_camData.toWorld = cam.GetMatrix() * toCam;
 		m_camData.fromWorld = m_camData.toWorld.GetInverted();
 
-		if (m_camData.nFrameId == 0)
+		if (prevFrameId == 0)
 		{
 			m_camData.fromWorldPrev = m_camData.fromWorld;
 			m_camData.deltaTimePrev = m_camData.deltaTime;
@@ -1363,6 +1366,22 @@ private:
 		pos *= r * pos.GetInvLengthFast();
 		return pos;
 	}
+
+	void InitPositions(CParticleComponentRuntime& runtime, SUpdateRange range)
+	{
+		if (range.size() == 0)
+			return;
+
+		// Store generated positions in PositionPrev, for use in InitParticles
+		auto positionsPrev = runtime.IOStream(EPVF_PositionPrev);
+		for (auto particleIdV : SGroupRange(range))
+		{
+			Vec3v posCam = RandomSector<floatv>(runtime.ChaosV());
+			Vec3v pos = m_camData.toWorld * posCam;
+			positionsPrev.Store(particleIdV, pos);
+		}
+	}
+
 
 	// Parameters
 	CParamMod<EDD_Emitter, UFloat100> m_visibilityRange;

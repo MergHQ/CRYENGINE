@@ -216,7 +216,7 @@ void CParticleContainer::AddElements(uint count, TVarArray<TParticleId> swapIds)
 	CRY_PFX2_PROFILE_DETAIL;
 
 	// Resize for added elements
-	if (m_firstSpawnId <= m_lastId)
+	if (m_lastSpawnId <= m_lastId)
 		m_firstSpawnId = m_lastSpawnId = CRY_PFX2_GROUP_ALIGN(m_lastId);
 	m_lastSpawnId += count;
 

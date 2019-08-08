@@ -105,7 +105,7 @@ void CFeatureCollision::PastUpdateParticles(CParticleComponentRuntime& runtime)
 // Collision constants
 static float kMinSubdivideTime = 0.01f;  // Potentially subdivide frame if above this time
 static float kMaxExtrapolation = 32.0f;  // Max factor we extrapolate a path in the future
-static float kMaxPathDeviation = 0.5f;   // Subdivide path if it curves above this amount
+static float kMaxPathDeviation = 0.1f;   // Subdivide path if it curves above this amount
 static float kMinBounceTime    = 0.01f;  // Minimum time to continue checking collisions
 static float kMinBounceDist    = 0.001f; // Distance to slide particle above surface
 static float kExpandBackDist   = 0.001f, // Distance to expand backwards or forwards to prevent missed collisions
