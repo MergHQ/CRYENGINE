@@ -455,8 +455,8 @@ EDITOR_COMMON_API void BackupFile(const char* szFilePath)
 	}
 
 	const CryPathString adjusted(PathUtil::MatchAbsolutePathToCaseOnFileSystem(szFilePath));
-	const CryPathString bakFilename = PathUtil::ReplaceExtension(adjusted, "bak");
-	const CryPathString bakFilename2 = PathUtil::ReplaceExtension(adjusted, "bak2");
+	const CryPathString bakFilename = adjusted + ".bak";
+	const CryPathString bakFilename2 = adjusted + ".bak2";
 	MoveFileAllowOverwrite(bakFilename, bakFilename2);
 	MoveFileAllowOverwrite(szFilePath, bakFilename);
 }
