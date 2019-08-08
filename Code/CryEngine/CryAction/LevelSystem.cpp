@@ -1029,6 +1029,29 @@ void CLevelSystem::ScanFolder(const string& rootFolder, bool modFolder, const ui
 				continue;
 			}
 
+			// skip legacy levels (skip the check in editor, as it will show the conversion dialog later)
+			const string levelName = PathUtil::GetFile(rootFolder);
+			const bool hasLevelFile = gEnv->pCryPak->IsFileExist(PathUtil::Make(rootFolder, levelName, ".level"));
+			const bool hasCryFile = gEnv->pCryPak->IsFileExist(PathUtil::Make(rootFolder, levelName, ".cry"));
+			if (!gEnv->IsEditor() && hasCryFile && !hasLevelFile)
+			{
+				CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_WARNING
+					, "The level %s at %s appears to be in the legacy format. Run Sandbox to convert it to the new format.", levelName.c_str(), rootFolder.c_str());
+				continue;
+			}
+
+			// skip auto-backups
+			// structure is ".../<level>/_autobackup/<timestamp>/<level>" and GetDirectoryStructure() drops the last part
+			const std::vector<string> directories = PathUtil::GetDirectoryStructure(rootFolder);
+			const size_t dirCount = directories.size();
+			if (dirCount >= 3)
+			{
+				if (directories[dirCount - 3] == levelName && directories[dirCount - 2] == "_autobackup")
+				{
+					continue;
+				}
+			}
+
 			CLevelInfo levelInfo;
 
 			levelInfo.m_levelPaks = PathUtil::Make(rootFolder, fd.name);
