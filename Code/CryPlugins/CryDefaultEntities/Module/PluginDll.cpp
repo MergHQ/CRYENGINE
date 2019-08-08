@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "PluginDll.h"
 
-#include "DefaultComponents/AI/PathfindingComponent.h"
 #include "DefaultComponents/Audio/AreaComponent.h"
 #include "DefaultComponents/Audio/DefaultListenerComponent.h"
 #include "DefaultComponents/Audio/DefaultTriggerComponent.h"
@@ -93,10 +92,7 @@ bool CPlugin_CryDefaultEntities::Initialize(SSystemGlobalEnvironment& env, const
 void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& registrar)
 {
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-	{
-		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPathfindingComponent));
-			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope); }
+	{ 
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CAreaComponent));
 			Cry::Audio::DefaultComponents::CAreaComponent::Register(componentScope);
