@@ -3311,7 +3311,7 @@ void ArticulatedBody::GetContactMatrixRot(Matrix33 &K, ArticulatedBody *buddy)
 	}
 }
 
-void ArticulatedBody::ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller)
+int ArticulatedBody::ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller)
 {
 	Vec3 dPspat[2] = { dP, dL };
 	Pext += dP; Lext += dL;
@@ -3345,7 +3345,9 @@ void ArticulatedBody::ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *
 			bodies[j-1].w = (joints[i].body.w += joints[i].fs->dv_vec[0]);
 		}
 		bodies[body.bProcessed[iCaller]-1].L += dL;
+		return joints[0].nChildrenTree;
 	}
+	return 0;
 }
 
 void CArticulatedEntity::OnContactResolved(entity_contact *pcontact, int iop, int iGroupId)

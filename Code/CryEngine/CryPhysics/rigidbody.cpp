@@ -475,12 +475,13 @@ void DisablePreCG()
 	g_bUsePreCG = false;
 }
 
-inline void ApplyImpulse(body_helper *pbody, const Vec3& dP, const Vec3& dL, int iCaller)
+inline int ApplyImpulse(body_helper *pbody, const Vec3& dP, const Vec3& dL, int iCaller)
 {
 	if (pbody->M>=0.0f) {
 		pbody->v += dP*pbody->Minv; pbody->w += pbody->Iinv*dL; pbody->L += dL;
 	} else
-		(*(ArticulatedBody**)&pbody->Iinv)->ApplyImpulse(dP,dL,g_RBdata[iCaller]->Bodies,iCaller);
+		return (*(ArticulatedBody**)&pbody->Iinv)->ApplyImpulse(dP,dL,g_RBdata[iCaller]->Bodies,iCaller);
+	return 0;
 }
 
 
@@ -620,11 +621,11 @@ int InvokeContactSolverMC(contact_helper *pContactsRB,contact_helper_constraint 
 						}
 					} else {
 						if (!(g_ContactsRB[i].flags & contact_angular)) {
-							ApplyImpulse(hbody0, dP,r0^dP, iCaller);
-							ApplyImpulse(hbody1,-dP,dP^r1, iCaller);
+							nBounces += ApplyImpulse(hbody0, dP,r0^dP, iCaller);
+							nBounces += ApplyImpulse(hbody1,-dP,dP^r1, iCaller);
 						}	else {
-							ApplyImpulse(hbody0, Vec3(ZERO),dP, iCaller);
-							ApplyImpulse(hbody1, Vec3(ZERO),-dP, iCaller);
+							nBounces += ApplyImpulse(hbody0, Vec3(ZERO),dP, iCaller);
+							nBounces += ApplyImpulse(hbody1, Vec3(ZERO),-dP, iCaller);
 						}
 					}
 					g_ContactsRB[g_ContactsRB[i].iCountDst].iCount++;

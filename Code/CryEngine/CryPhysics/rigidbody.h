@@ -59,7 +59,7 @@ struct ArticulatedBody {
 
 	void GetContactMatrix(const Vec3& r, Matrix33 &K);
 	void GetContactMatrixRot(Matrix33 &K, ArticulatedBody *buddy=nullptr);
-	void ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller);
+	int ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller);
 };
 
 enum contactflags { contact_count_mask=0x3F, contact_new=0x40, contact_2b_verified=0x80, contact_2b_verified_log2=7, 
