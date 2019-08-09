@@ -118,9 +118,9 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passComposition.SetState(GS_NODEPTHTEST);
 			m_passComposition.SetTexture(0, m_graphicsPipelineResources.m_pTexSceneSpecular);
 			m_passComposition.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1]);
-			m_passComposition.SetTexture(2, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[1][1]);
-			m_passComposition.SetTexture(3, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[2][1]);
-			m_passComposition.SetTexture(4, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[3][1]);
+			m_passComposition.SetTexture(2, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[1][0]);
+			m_passComposition.SetTexture(3, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[2][0]);
+			m_passComposition.SetTexture(4, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[3][0]);
 
 			m_passComposition.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
