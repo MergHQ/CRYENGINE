@@ -1905,7 +1905,10 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 
 		if (sLogFileName.size() > 0)
 		{
-			if (m_env.pLog->SetFileName(sLogFileName.c_str()))
+			char buff[1024] = {0};
+			GetCurrentDirectory(1024, buff);
+			const string fullPath = PathUtil::Make(buff, sLogFileName.c_str());
+			if (m_env.pLog->SetFileName(fullPath.c_str()))
 			{
 #ifdef CRY_USE_CRASHRPT
 				CCrashRpt::ReInstallCrashRptHandler(0);

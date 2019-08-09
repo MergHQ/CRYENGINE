@@ -1012,7 +1012,7 @@ void CCryEditApp::OnScriptEditScript()
 
 void CCryEditApp::OnFileEditLogFile()
 {
-	CFileUtil::EditTextFile(CLogFile::GetLogFileName(), 0, CFileUtil::FILE_TYPE_SCRIPT, false);
+	CFileUtil::EditTextFile(CLogFile::GetLogFilePath(), 0, CFileUtil::FILE_TYPE_SCRIPT, false);
 }
 
 void CCryEditApp::OnUndo()

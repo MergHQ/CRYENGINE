@@ -78,8 +78,12 @@ void Log(const char* format, ...)
 
 const char* CLogFile::GetLogFileName()
 {
-	// Return the path
 	return gEnv->pLog->GetFileName();
+}
+
+const char* CLogFile::GetLogFilePath()
+{
+	return gEnv->pLog->GetFilePath();
 }
 
 void CLogFile::FormatLine(PSTR format, ...)

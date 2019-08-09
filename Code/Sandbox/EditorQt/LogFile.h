@@ -22,6 +22,7 @@ class SANDBOX_API CLogFile : public ILogCallback
 {
 public:
 	static const char* GetLogFileName();
+	static const char* GetLogFilePath();
 	static void        AttachListBox(HWND hWndListBox) { m_hWndListBox = hWndListBox; }
 	static void        AttachEditBox(HWND hWndEditBox) { m_hWndEditBox = hWndEditBox; }
 
