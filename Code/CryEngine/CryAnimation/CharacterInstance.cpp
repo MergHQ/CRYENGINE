@@ -175,13 +175,13 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 				thisCtx.pInstance->WaitForSkinningJob();
 				thisCtx.job.Begin(bImmediate);
 			}
-
-			if (bImmediate)
-			{
-				thisCtx.pInstance->m_SkeletonAnim.FinishAnimationComputations();
-			}
 		}
 	);
+
+	if (bImmediate)
+	{
+		m_SkeletonAnim.FinishAnimationComputations();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
