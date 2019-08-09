@@ -296,3 +296,8 @@ void CryClearSytemError()
 {
 	SetLastError(0);
 }
+
+bool CryIsDebuggerPresent()
+{
+	return IsDebuggerPresent() != 0;
+}

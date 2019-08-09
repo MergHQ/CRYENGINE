@@ -337,16 +337,14 @@ threadID CryGetCurrentThreadId()
 
 //////////////////////////////////////////////////////////////////////////
 // Just a simple wrapper. Without it we'd have to add the required headers to plaform.h and leak them everywhere.
+#if !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_WINAPI
 bool CryIsDebuggerPresent()
 {
-#if CRY_PLATFORM_WINDOWS
-	return IsDebuggerPresent() != 0;
-#else
 	// On platforms where we cannot check, we must assume the debugger is present.
-	// Otherwise debugging would not work properly (e.g. CryDebugBreak would never break).
+	// Otherwise debugging would not work properly (i.e. CryDebugBreak would never break).
 	return true;
-#endif
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
