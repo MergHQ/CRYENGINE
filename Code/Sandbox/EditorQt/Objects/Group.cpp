@@ -131,6 +131,11 @@ private:
 			{
 				pChild->InvalidateTM(0);
 			}
+
+			//This forces the matrix to be correctly recomputed BEFORE parent is assigned
+			//This is introduced to fix an issue where detach undo of a group inside two nested prefabs was calculating an incorrect matrix
+			pChild->GetWorldTM();
+
 			m_pParent->SetChildsParent(pChild);
 			if (m_shouldKeepPos)
 			{
@@ -210,8 +215,8 @@ protected:
 
 			for (int i = 0; i < children.size(); ++i)
 			{
-				children[i]->SetLayer(pObjectManager->GetIObjectLayerManager()->FindLayer(oldLayersGuids[i]));
-				children[i]->UpdatePrefab();
+			  children[i]->SetLayer(pObjectManager->GetIObjectLayerManager()->FindLayer(oldLayersGuids[i]));
+			  children[i]->UpdatePrefab();
 			}
 		});
 	}
@@ -279,7 +284,7 @@ protected:
 			{
 				objects.emplace_back(pObject);
 			} //make sure we actually have items to delete in the guid arrays
-			else if(oldLayersGuids.size() && parentGuids.size())
+			else if (oldLayersGuids.size() && parentGuids.size())
 			{
 				oldLayersGuids.erase(oldLayersGuids.begin() + i);
 				parentGuids.erase(parentGuids.begin() + i);
@@ -322,7 +327,7 @@ protected:
 class CUndoAttach : public CUndoAttachmentHelper
 {
 public:
-	CUndoAttach(const std::vector<CBaseObject*>& objects, const CBaseObject* pParent,  bool shouldKeepPos)
+	CUndoAttach(const std::vector<CBaseObject*>& objects, const CBaseObject* pParent, bool shouldKeepPos)
 		: m_shouldKeepPos(shouldKeepPos)
 	{
 		CRY_ASSERT_MESSAGE(pParent, "Invalid parent");
@@ -414,6 +419,14 @@ CGroup::CGroup()
 	m_bBBoxValid = false;
 	m_bUpdatingPivot = false;
 	SetColor(ColorB(0, 255, 0)); // Green
+}
+
+void CGroup::FilterObjectsToAdd(std::vector<CBaseObject*>& objects)
+{
+	objects.erase(std::remove_if(objects.begin(), objects.end(), [this](CBaseObject* pObject)
+	{
+		return !CanAddMember(pObject);
+	}), objects.end());
 }
 
 void CGroup::Done()
@@ -509,9 +522,12 @@ bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 	SetLayer(pLastSelectedObject->GetLayer());
 	GetIEditorImpl()->GetIUndoManager()->Resume();
 
-	//add ourselves to the last selected group
-	if (CBaseObject* pLastParent = pLastSelectedObject->GetGroup())
+	//Add ourselves to the last selected group if it's necessary
+	CBaseObject* pLastParent = pLastSelectedObject->GetGroup();
+	if (pLastParent && pLastParent != m_parent)
+	{
 		pLastParent->AddMember(this);
+	}
 
 	// Prefab support
 	CPrefabObject* pPrefabToCompareAgainst = nullptr;
@@ -554,12 +570,6 @@ CGroup* CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 		return nullptr;
 	}
 
-	if (CBaseObject* pLastParent = objects[objects.size() - 1]->GetGroup())
-	{
-		Matrix34 m = pLastParent->GetWorldTM();
-		m.Invert();
-		center = m.TransformPoint(center);
-	}
 	// Snap center to grid.
 	pGroup->SetPos(gSnappingPreferences.Snap3D(center));
 
@@ -603,6 +613,8 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 {
 	using namespace Private_Group;
 
+	FilterObjectsToAdd(objects);
+
 	RemoveIfAlreadyChildrenOf(this, objects);
 
 	if (objects.empty())
@@ -630,13 +642,11 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 	//3 - from another prefab : Needs remove from prefab
 	//4 - from outside group to inside group in prefab : Needs remove from old group and add to new group in prefab
 	{
-		// Don't record the detach undos since attach undo will take care of this anyways
-		CScopedSuspendUndo suspendUndo;
 		ForEachParentOf(objects, [keepPos](CGroup* pParent, std::vector<CBaseObject*>& children)
 		{
 			if (pParent)
 			{
-				pParent->RemoveMembers(children, true, true);
+			  pParent->RemoveMembers(children, true, true);
 			}
 		});
 	}
@@ -646,9 +656,9 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 	if (CBaseObject* pPrefabObject = GetPrefab())
 	{
 		CPrefabObject* pPrefab = static_cast<CPrefabObject*>(pPrefabObject);
-		for (auto pObj : objects)
+		for (auto pObject : objects)
 		{
-			pPrefab->GenerateGUIDsForObjectAndChildren(pObj);
+			pPrefab->GenerateGUIDsForObjectAndChildren(pObject);
 		}
 	}
 
@@ -670,7 +680,7 @@ void CGroup::RemoveMember(CBaseObject* pMember, bool keepPos, bool placeOnRoot)
 void CGroup::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
-	CBaseObject* pPrefab = GetPrefab();
+	CBaseObject * pPrefab = GetPrefab();
 	if (pPrefab != this)
 	{
 		DetachChildren(members, keepPos, placeOnRoot);
@@ -695,7 +705,7 @@ void CGroup::SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool 
 }
 
 void CGroup::RemoveChild(CBaseObject* pChild)
-{	
+{
 	RemoveChildren({ pChild });
 }
 
@@ -931,6 +941,12 @@ bool CGroup::CanAddMembers(std::vector<CBaseObject*>& objects)
 {
 	for (CBaseObject* pObject : objects)
 	{
+		//Make sure we are not adding ourselves to the group
+		if (pObject == this)
+		{
+			return false;
+		}
+
 		if (IsDescendantOf(pObject))
 		{
 			return false;
@@ -975,8 +991,11 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 	{
 		if (!ar.bUndo)
 		{
+			//Delete forces the object to be erased from m_children, we need a copy of m_children to make sure everything is deleted properly
+			std::vector<_smart_ptr<CBaseObject>> childrenToRemove{ m_children };
+
 			//If we are loading a group that's already full we need to clean it up and reinstance all it's members from the ground up
-			for (auto pChild : m_children)
+			for (_smart_ptr<CBaseObject> pChild : childrenToRemove)
 			{
 				GetIEditor()->GetObjectManager()->DeleteObject(pChild);
 			}
@@ -1025,22 +1044,24 @@ void CGroup::Ungroup()
 	}
 
 	if (m_children.empty())
+	{
 		return;
+	}
 
-	std::vector<CBaseObject*> newSelection;
-	newSelection.reserve(m_children.size());
+	std::vector<CBaseObject*> children;
+	children.reserve(m_children.size());
 
 	for (CBaseObject* pChild : m_children)
 	{
 		if (pChild)
 		{
-			newSelection.push_back(pChild);
+			children.push_back(pChild);
 		}
 	}
 
-	DetachChildren(newSelection);
+	RemoveMembers(children);
 
-	GetObjectManager()->AddObjectsToSelection(newSelection);
+	GetObjectManager()->AddObjectsToSelection(children);
 }
 
 void CGroup::Open()

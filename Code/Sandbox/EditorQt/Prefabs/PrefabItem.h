@@ -103,8 +103,8 @@ private:
 	//! Removes all XML child nodes in m_objectsNode, which has a Parent with the specified GUID
 	void           RemoveAllChildrenOf(CryGUID guid);
 
-	void           SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObj, bool bAllowOwnedByPrefab);
-	void           CollectLinkedObjects(CBaseObject* pObj, std::vector<CBaseObject*>& linkedObjects, CSelectionGroup& selection);
+	void           SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObject, bool bAllowOwnedByPrefab);
+	void           CollectLinkedObjects(CBaseObject* pObject, std::vector<CBaseObject*>& linkedObjects, CSelectionGroup& selection);
 private:
 	XmlNodeRef m_objectsNode;
 	string     m_PrefabClassName;

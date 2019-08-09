@@ -20,49 +20,15 @@ public:
 	//! Called when object picked.
 	virtual void OnPick(CBaseObject* pPickedObject)
 	{
-		assert(pPickedObject->GetType() == OBJTYPE_PREFAB || pPickedObject->GetType() == OBJTYPE_GROUP);
+		CRY_ASSERT(pPickedObject->GetType() == OBJTYPE_PREFAB || pPickedObject->GetType() == OBJTYPE_GROUP);
 
-		IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+		string description;
+		description.Format("Attach to %s", pPickedObject->GetTypeName());
+		CUndo undo(description);
 
-		if (pPickedObject->GetType() == OBJTYPE_GROUP)
-		{
-			CUndo undo("Attach to Group");
-			CGroup* pPickedGroup = static_cast<CGroup*>(pPickedObject);
-			const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-			pSelection->FilterParents();
-			std::vector<CBaseObject*> filteredObjects;
-			filteredObjects.reserve(pSelection->GetFilteredCount());
-
-			// Save filtered list locally because we will be doing selections, which will invalidate the filtered group
-			for (int i = 0; i < pSelection->GetFilteredCount(); i++)
-				filteredObjects.push_back(pSelection->GetFilteredObject(i));
-
-			for (CBaseObject* pSelectedObject : filteredObjects)
-			{
-				if (ChildIsValid(pPickedObject, pSelectedObject))
-				{
-					pPickedGroup->AddMember(pSelectedObject);
-
-					// If this is not an open group we are adding to, we must also update the selection
-					if (!pPickedGroup->IsOpen())
-					{
-						pObjectManager->UnselectObject(pSelectedObject);
-					}
-				}
-			}
-
-			if (!pPickedGroup->IsOpen() && !pPickedGroup->IsSelected())
-			{
-				pObjectManager->SelectObject(pPickedGroup);
-			}
-		}
-		else if (pPickedObject->GetType() == OBJTYPE_PREFAB)
-		{
-			CUndo undo("Attach to Prefab");
-
-			CPrefabObject* pPickedGroup = static_cast<CPrefabObject*>(pPickedObject);
-			GetIEditor()->GetPrefabManager()->AddSelectionToPrefab(pPickedGroup, *pObjectManager->GetSelection());
-		}
+		CBaseObjectsArray objects;
+		GetIEditorImpl()->GetSelection()->GetObjects(objects);
+		pPickedObject->AddMembers(objects);
 
 		delete this;
 	}
@@ -78,38 +44,6 @@ public:
 			return true;
 		else
 			return false;
-	}
-private:
-	bool ChildIsValid(CBaseObject* pParent, CBaseObject* pChild, int nDir = 3)
-	{
-		if (pParent == pChild)
-			return false;
-
-		CBaseObject* pObj;
-		if (nDir & 1)
-		{
-			if (pObj = pChild->GetParent())
-			{
-				if (!ChildIsValid(pParent, pObj, 1))
-				{
-					return false;
-				}
-			}
-		}
-		if (nDir & 2)
-		{
-			for (int i = 0; i < pChild->GetChildCount(); i++)
-			{
-				if (pObj = pChild->GetChild(i))
-				{
-					if (!ChildIsValid(pParent, pObj, 2))
-					{
-						return false;
-					}
-				}
-			}
-		}
-		return true;
 	}
 };
 
@@ -132,31 +66,24 @@ void CreateGroupFromSelection()
 
 void UngroupSelected()
 {
-	// Ungroup all groups in selection.
-	std::vector<CBaseObjectPtr> objects;
-
-	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-	for (int i = 0; i < pSelection->GetCount(); i++)
+	// find all groups in selection.
+	std::vector<CBaseObject*> objects = GetIEditorImpl()->GetSelection()->GetObjectsByFilter([](CBaseObject* pObject)
 	{
-		objects.push_back(pSelection->GetObject(i));
-	}
+		return static_cast<bool>(pObject->IsKindOf(RUNTIME_CLASS(CGroup)));
+	});
 
+	//For each group in selection ungroup and the remove the object (if the object is inside a prefab then it will be removed and the prefab will be updated)
 	if (objects.size())
 	{
 		CUndo undo("Ungroup");
 
 		for (int i = 0; i < objects.size(); i++)
 		{
-			CBaseObject* obj = objects[i];
-			if (obj && obj->GetRuntimeClass() == RUNTIME_CLASS(CGroup))
+			CBaseObject* pObject = objects[i];
+			if (pObject)
 			{
-				static_cast<CGroup*>(obj)->Ungroup();
-				// Signal prefab if part of any
-				if (CPrefabObject* pPrefab = (CPrefabObject*)obj->GetPrefab())
-				{
-					pPrefab->RemoveMember(obj);
-				}
-				GetIEditorImpl()->DeleteObject(obj);
+				static_cast<CGroup*>(pObject)->Ungroup();
+				GetIEditorImpl()->DeleteObject(pObject);
 			}
 		}
 	}
@@ -300,7 +227,7 @@ DECLARE_PYTHON_MODULE(group);
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::CreateGroupFromSelection, group, create_from_selection,
                                    CCommandDescription("Creates new group from selected objects"))
-REGISTER_EDITOR_UI_COMMAND_DESC(group, create_from_selection, "Create Group", "Ctrl+Shift+G", "icons:General/Group.ico", false);
+REGISTER_EDITOR_UI_COMMAND_DESC(group, create_from_selection, "Create Group...", "Ctrl+Shift+G", "icons:General/Group.ico", false);
 REGISTER_COMMAND_REMAPPING(ui_action, actionGroup, group, create_from_selection)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::UngroupSelected, group, ungroup,

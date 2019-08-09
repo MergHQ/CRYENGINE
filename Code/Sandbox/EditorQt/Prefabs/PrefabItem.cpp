@@ -140,11 +140,11 @@ CPrefabItem* CPrefabItem::CreateCopy() const
 	return pCopy;
 }
 
-void CPrefabItem::SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObj, bool bAllowOwnedByPrefab)
+void CPrefabItem::SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObject, bool bAllowOwnedByPrefab)
 {
-	for (auto i = 0; i < pObj->GetLinkedObjectCount(); ++i)
+	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
 	{
-		CBaseObject* pLinkedObject = pObj->GetLinkedObject(i);
+		CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
 		if (bAllowOwnedByPrefab || !pLinkedObject->IsPartOfPrefab())
 		{
 			ar.SaveObject(pLinkedObject, false, true);
@@ -153,11 +153,11 @@ void CPrefabItem::SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObj, bool 
 	}
 }
 
-void CPrefabItem::CollectLinkedObjects(CBaseObject* pObj, std::vector<CBaseObject*>& linkedObjects, CSelectionGroup& selection)
+void CPrefabItem::CollectLinkedObjects(CBaseObject* pObject, std::vector<CBaseObject*>& linkedObjects, CSelectionGroup& selection)
 {
-	for (auto i = 0; i < pObj->GetLinkedObjectCount(); ++i)
+	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
 	{
-		CBaseObject* pLinkedObject = pObj->GetLinkedObject(i);
+		CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
 		if (selection.IsContainObject(pLinkedObject))
 			selection.RemoveObject(pLinkedObject);
 
@@ -219,10 +219,12 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 		return;
 	}
 
-	IObjectManager* const pObjMan = GetIEditorImpl()->GetObjectManager();
-	CBaseObject* pObj = pObjMan->FindObject(context.m_modifiedObjectGlobalId);
-	if (!pObj)
+	IObjectManager* const pObjectManager = GetIEditorImpl()->GetObjectManager();
+	CBaseObject* pObject = pObjectManager->FindObject(context.m_modifiedObjectGlobalId);
+	if (!pObject)
+	{
 		return;
+	}
 
 	CheckVersionAndUpgrade();
 
@@ -267,7 +269,7 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 
 		// If modify transform case
 		if (context.m_operation == eOCOT_ModifyTransform)
-			modifiedContext.m_localTM = pObj->GetLocalTM();
+			modifiedContext.m_localTM = pObject->GetLocalTM();
 
 		// Now change all the rest instances of this prefab in the level (skipping this one, since it is already been modified)
 		pPrefabManager->SetSelectedItem(this);
@@ -277,7 +279,7 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 			CScopedSuspendUndo suspendUndo;
 
 			CBaseObjectsArray allInstancedPrefabs;
-			pObjMan->FindObjectsOfType(RUNTIME_CLASS(CPrefabObject), allInstancedPrefabs);
+			pObjectManager->FindObjectsOfType(RUNTIME_CLASS(CPrefabObject), allInstancedPrefabs);
 
 			for (size_t i = 0, prefabsCount = allInstancedPrefabs.size(); i < prefabsCount; ++i)
 			{
@@ -454,19 +456,19 @@ bool CPrefabItem::FixDuplicateObjects()
 
 void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping)
 {
-	IObjectManager* const pObjManager = GetIEditorImpl()->GetObjectManager();
+	IObjectManager* const pObjectManager = GetIEditorImpl()->GetObjectManager();
 
 	std::vector<XmlNodeRef> objects;
 	//Find all the objects in this prefab item
 	FindAllObjectsInLibrary(m_objectsNode, objects);
 	//If this object actually exists in the instance
-	if (CBaseObject* const pObj = objectsInPrefabAsFlatSelection.GetObjectByGuidInPrefab(context.m_modifiedObjectGuidInPrefab))
+	if (CBaseObject* const pObject = objectsInPrefabAsFlatSelection.GetObjectByGuidInPrefab(context.m_modifiedObjectGuidInPrefab))
 	{
 		// Add a new member to the to level of the prefab
 		if (context.m_operation == eOCOT_Add)
 		{
 			// If we are trying to add something which already exists in the prefab definition we are trying to modify it
-			if (FindObjectByGuid(pObj->GetIdInPrefab(), true))
+			if (FindObjectByGuid(pObject->GetIdInPrefab(), true))
 			{
 				SObjectChangedContext correctedContext = context;
 				correctedContext.m_operation = eOCOT_Modify;
@@ -474,12 +476,12 @@ void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSele
 				return;
 			}
 			//Create a new archive and serialize the object in it
-			CObjectArchive ar(pObjManager, m_objectsNode, false);
+			CObjectArchive ar(pObjectManager, m_objectsNode, false);
 
-			ar.SaveObject(pObj, false, true);
+			ar.SaveObject(pObject, false, true);
 
 			//Update all the linked objects
-			SaveLinkedObjects(ar, pObj, true);
+			SaveLinkedObjects(ar, pObject, true);
 
 			//Update all the ids to link to the correct prefab objects (parents/ecc)
 			XmlNodeRef savedObj = m_objectsNode->getChild(m_objectsNode->getChildCount() - 1);
@@ -490,14 +492,14 @@ void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSele
 		{
 			//This object could be everywhere in the hierarchy, we do not want to modify it all, just find it in the flattened version (aka the list of all the objects in the XML) and reserialize
 			// Find -> remove previous definition of the object and serialize the new changes
-			if (XmlNodeRef object = FindObjectByGuidInFlattenedNodes(objects, pObj->GetIdInPrefab(), true))//FindObjectByGuid(pObj->GetIdInPrefab(), true))
+			if (XmlNodeRef object = FindObjectByGuidInFlattenedNodes(objects, pObject->GetIdInPrefab(), true))
 			{
 				//Parent could be every level in the hierarchy, like an <Objects> node (we are in a group), or the top level of a prefab
 				XmlNodeRef parent = object->getParent();
 				parent->removeChild(object);
 
-				CObjectArchive ar(pObjManager, parent, false);
-				ar.SaveObject(pObj, false, true);
+				CObjectArchive ar(pObjectManager, parent, false);
+				ar.SaveObject(pObject, false, true);
 
 				XmlNodeRef savedObj = parent->getChild(parent->getChildCount() - 1);
 				RemapIDsInNodeAndChildren(savedObj, guidMapping, false);
@@ -507,7 +509,7 @@ void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSele
 		else if (context.m_operation == eOCOT_Delete)
 		{
 			//Just find an object from the flattened hierarchy and then remove it
-			if (XmlNodeRef object = FindObjectByGuidInFlattenedNodes(objects, pObj->GetIdInPrefab(), true))//FindObjectByGuid(pObj->GetIdInPrefab(), true))
+			if (XmlNodeRef object = FindObjectByGuidInFlattenedNodes(objects, pObject->GetIdInPrefab(), true))//FindObjectByGuid(pObj->GetIdInPrefab(), true))
 			{
 				XmlNodeRef parent = object->getParent();
 				parent->removeChild(object);
@@ -515,14 +517,14 @@ void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSele
 				for (int i = 0, count = parent->getChildCount(); i < count; ++i)
 				{
 					CryGUID parentGuid = CryGUID::Null();
-					if (parent->getChild(i)->getAttr("Parent", parentGuid) && parentGuid == pObj->GetIdInPrefab())
+					if (parent->getChild(i)->getAttr("Parent", parentGuid) && parentGuid == pObject->GetIdInPrefab())
 					{
 						parent->getChild(i)->delAttr("Parent");
 					}
 				}
 			}
-		} // ~Member DELETE
-	}   // ~if (CBaseObject* const pObj = objectsInPrefabAsFlatSelection.GetObjectByGuidInPrefab(context.m_modifiedObjectGuidInPrefab))
+		} 
+	} 
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -547,22 +549,22 @@ void CPrefabItem::FindAllObjectsInLibrary(XmlNodeRef nodeRef, std::vector<XmlNod
 //This updates all the instanced objects with the exception of the original prefab instance that is calling the prefab item update (as it's obviously already up to date)
 void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping)
 {
-	IObjectManager* const pObjManager = GetIEditorImpl()->GetObjectManager();
+	IObjectManager* const pObjectManager = GetIEditorImpl()->GetObjectManager();
 	std::vector<XmlNodeRef> objects;
 	//we re generate the list it again because it can be modified if the prefab item m_objectsNode is changed (which happens in ModifyPrefab)
 	FindAllObjectsInLibrary(m_objectsNode, objects);
 
 	if (context.m_operation == eOCOT_Add)
 	{
-		if (CBaseObject* const pObj = pObjManager->FindObject(context.m_modifiedObjectGlobalId))
+		if (CBaseObject* const pObject = pObjectManager->FindObject(context.m_modifiedObjectGlobalId))
 		{
 			//NB : Note that we search only in the top level hierarchy, for hierarchies the parents (aka a Group) will deal with addition/removal of children
-			if (XmlNodeRef changedObject = FindObjectByGuid(pObj->GetIdInPrefab(), false))
+			if (XmlNodeRef changedObject = FindObjectByGuid(pObject->GetIdInPrefab(), false))
 			{
 				// See if we already have this object as part of the instanced prefab
 				std::vector<CBaseObject*> descendants;
 				pPrefabObject->GetAllPrefabFlagedDescendants(descendants);
-				CBaseObject* pModified = FindObjectByPrefabGuid(descendants, pObj->GetIdInPrefab());
+				CBaseObject* pModified = FindObjectByPrefabGuid(descendants, pObject->GetIdInPrefab());
 				if (pModified)
 				{
 					SObjectChangedContext correctedContext = context;
@@ -572,7 +574,7 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 				}
 				//Clone the objects, fix the flags and add it to the current item, this works only for TOP LEVEL ITEMS,
 				//groups will call modify on themselves and regenerate all the objects inside them if something is added
-				CObjectArchive loadAr(pObjManager, changedObject, true);
+				CObjectArchive loadAr(pObjectManager, changedObject, true);
 				loadAr.EnableProgressBar(false);
 
 				// PrefabGUID -> GUID
@@ -602,61 +604,66 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 			}
 		}
 	}
-	else if (CBaseObject* const pObj = objectsInPrefabAsFlatSelection.GetObjectByGuidInPrefab(context.m_modifiedObjectGuidInPrefab))
+	else if (CBaseObject* const pObject = objectsInPrefabAsFlatSelection.GetObjectByGuidInPrefab(context.m_modifiedObjectGuidInPrefab))
 	{
+		//We update the state of all members in the top level of the prefab, members in the lower level are updated by their parent (prefabs/group) serialize method
 		if (context.m_operation == eOCOT_Modify)
 		{
-			if (XmlNodeRef changedObject = FindObjectByGuidInFlattenedNodes(objects, pObj->GetIdInPrefab(), false))
+			if (XmlNodeRef changedObject = FindObjectByGuidInFlattenedNodes(objects, pObject->GetIdInPrefab(), false))
 			{
 				//Deserialize the object and attach it to the prefab instance
 				//when this is sent to groups it will recreate the whole group as the CGroup::Serialize deletes and regenerates all it's members
 				//Note that in this case no remapping is needed, especially for groups the GenerateGUIDsForObjectAndChildren function called on AddMember in archive resolve (happens on archive destruction, aka end of this function) will properly assign guids to this object and its children
 
 				// Build load archive
-				CObjectArchive loadAr(pObjManager, changedObject, true);
+				CObjectArchive loadAr(pObjectManager, changedObject, true);
 
 				// Load ids remapping info into the load archive
 				for (int j = 0, count = guidMapping.size(); j < count; ++j)
 					loadAr.RemapID(guidMapping[j].from, guidMapping[j].to);
 
 				// Set parent attr if we dont have any (because we don't store this in the prefab XML since it is implicitly given)
-				bool noParentIdAttr = false;
+
 				if (!changedObject->haveAttr("Parent") && !changedObject->haveAttr("LinkedTo"))
 				{
-					noParentIdAttr = true;
+				
 					changedObject->setAttr("Parent", pPrefabObject->GetId());
 				}
 
 				// Back-up flags before serializing. We need some flags to be persistent after serialization. Ex: Selection flags
-				auto flags = pObj->GetFlags();
+				auto flags = pObject->GetFlags();
 
 				// Load the object
-				pObj->Serialize(loadAr);
-				pObj->PostLoad(loadAr);
+				pObject->Serialize(loadAr);
+				pObject->PostLoad(loadAr);
 
 				// Set old flags
-				pObj->SetFlags(flags);
+				pObject->SetFlags(flags);
 
-				RegisterPrefabEventFlowNodes(pObj);
+				RegisterPrefabEventFlowNodes(pObject);
 
-				pPrefabObject->SetObjectPrefabFlagAndLayer(pObj);
+				pPrefabObject->SetObjectPrefabFlagAndLayer(pObject);
 
 				// Remove parent attribute if it is directly a child of the prefab
-				if (noParentIdAttr)
+				CryGUID parentId = CryGUID::Null();
+				changedObject->getAttr("Parent", parentId);
+				if (parentId == pPrefabObject->GetId())
+				{
 					changedObject->delAttr("Parent");
+				}
 			}
 		}
 		else if (context.m_operation == eOCOT_ModifyTransform)
 		{
-			if (XmlNodeRef changedObject = FindObjectByGuidInFlattenedNodes(objects, pObj->GetIdInPrefab(), false))//FindObjectByGuid(pObj->GetIdInPrefab(), false))
+			if (XmlNodeRef changedObject = FindObjectByGuidInFlattenedNodes(objects, pObject->GetIdInPrefab(), false))//FindObjectByGuid(pObj->GetIdInPrefab(), false))
 			{
 				//just reset the TM matrix
-				pObj->SetLocalTM(context.m_localTM, eObjectUpdateFlags_Undo);
+				pObject->SetLocalTM(context.m_localTM, eObjectUpdateFlags_Undo);
 			}
 		}
 		else if (context.m_operation == eOCOT_Delete)
 		{
-			pObjManager->DeleteObject(pObj);
+			pObjectManager->DeleteObject(pObject);
 		}
 	}
 }

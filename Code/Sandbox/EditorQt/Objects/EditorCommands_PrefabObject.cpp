@@ -400,7 +400,7 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyUpdateAllPrefabs, p
                                    CCommandDescription("Update all prefabs to latest version"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCreateFromSelection, prefab, create_from_selection,
-                                   CCommandDescription("Create prefab"));
+                                   CCommandDescription("Create Prefab..."));
 REGISTER_EDITOR_COMMAND_ICON(prefab, create_from_selection, "icons:Tools/Create_Prefab.ico");
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyAddSelection, prefab, add_to_prefab,

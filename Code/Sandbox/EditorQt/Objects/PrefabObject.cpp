@@ -674,17 +674,17 @@ XmlNodeRef CPrefabObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return nullptr;
 }
 
-inline void RecursivelySendEventToPrefabChilds(CBaseObject* obj, ObjectEvent event)
+inline void RecursivelySendEventToPrefabChildren(CBaseObject*pObject, ObjectEvent event)
 {
-	for (int i = 0; i < obj->GetChildCount(); i++)
+	for (int i = 0; i < pObject->GetChildCount(); i++)
 	{
-		CBaseObject* c = obj->GetChild(i);
-		if (c->CheckFlags(OBJFLAG_PREFAB))
+		CBaseObject* pChild = pObject->GetChild(i);
+		if (pChild->CheckFlags(OBJFLAG_PREFAB))
 		{
-			c->OnEvent(event);
-			if (c->GetChildCount() > 0)
+			pChild->OnEvent(event);
+			if (pChild->GetChildCount() > 0)
 			{
-				RecursivelySendEventToPrefabChilds(c, event);
+				RecursivelySendEventToPrefabChildren(pChild, event);
 			}
 		}
 	}
@@ -704,7 +704,7 @@ void CPrefabObject::OnEvent(ObjectEvent event)
 	// Send event to all prefab childs.
 	if (event != EVENT_ALIGN_TOGRID)
 	{
-		RecursivelySendEventToPrefabChilds(this, event);
+		RecursivelySendEventToPrefabChildren(this, event);
 	}
 	CBaseObject::OnEvent(event);
 }
@@ -1179,9 +1179,10 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 			return;
 	}
 
-	if (!CanAddMembers(objects))
+	FilterObjectsToAdd(objects);
+
+	if (objects.empty())
 	{
-		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Cannot add objects to prefab %s", GetName().c_str());
 		return;
 	}
 
@@ -1317,8 +1318,8 @@ static void Prefab_RecursivelyGetBoundBox(CBaseObject* object, AABB& box, const 
 	box.Add(b.min);
 	box.Add(b.max);
 
-	int numChilds = object->GetChildCount();
-	for (int i = 0; i < numChilds; i++)
+	int numChildren = object->GetChildCount();
+	for (int i = 0; i < numChildren; i++)
 		Prefab_RecursivelyGetBoundBox(object->GetChild(i), box, worldTM);
 
 	int numLinkedObjects = object->GetLinkedObjectCount();
@@ -1335,8 +1336,8 @@ void CPrefabObject::CalcBoundBox()
 	AABB box;
 	box.Reset();
 
-	int numChilds = GetChildCount();
-	for (int i = 0; i < numChilds; i++)
+	int numChildren = GetChildCount();
+	for (int i = 0; i < numChildren; i++)
 	{
 		if (GetChild(i)->CheckFlags(OBJFLAG_PREFAB))
 		{
@@ -1344,7 +1345,7 @@ void CPrefabObject::CalcBoundBox()
 		}
 	}
 
-	if (numChilds == 0)
+	if (numChildren == 0)
 	{
 		box.min = Vec3(-1, -1, -1);
 		box.max = Vec3(1, 1, 1);
@@ -1563,18 +1564,18 @@ void CPrefabObject::UpdatePivot(const Vec3& newWorldPivotPos)
 	CGroup::UpdatePivot(newWorldPivotPos);
 	SetModifyInProgress(false);
 
-	TBaseObjects childs;
-	childs.reserve(GetChildCount());
+	TBaseObjects children;
+	children.reserve(GetChildCount());
 	// Cache childs ptr because in the update prefab we are modifying the m_childs array since we are attaching/detaching before we save in the prefab lib xml
 	for (int i = 0, iChildCount = GetChildCount(); i < iChildCount; ++i)
 	{
-		childs.push_back(GetChild(i));
+		children.push_back(GetChild(i));
 	}
 
 	// Update the prefab lib and reposition all prefab childs according to the new pivot
-	for (int i = 0, iChildCount = childs.size(); i < iChildCount; ++i)
+	for (int i = 0, iChildCount = children.size(); i < iChildCount; ++i)
 	{
-		childs[i]->UpdatePrefab(eOCOT_ModifyTransformInLibOnly);
+		children[i]->UpdatePrefab(eOCOT_ModifyTransformInLibOnly);
 	}
 
 	// Update all the rest prefab instance of the same type
