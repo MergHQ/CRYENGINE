@@ -943,17 +943,15 @@ void CPrefabObject::SerializeMembers(Serialization::IArchive& ar)
 			{
 				CUndo undo("Clear targets");
 
-				bool hasDeleted = false;
-				while (GetChildCount() > 0)
+
+				if (GetChildCount())
 				{
-				  hasDeleted = true;
-				  GetIEditor()->GetObjectManager()->DeleteObject(GetChild(0));
+					std::vector<CBaseObject*> children;
+					GetAllChildren(children);
+				    GetIEditor()->GetObjectManager()->DeleteObjects(children);
+					GetIEditor()->GetObjectManager()->InvalidateVisibleList();
 				}
 
-				if (hasDeleted)
-				{
-				  GetIEditor()->GetObjectManager()->InvalidateVisibleList();
-				}
 			}), "picker", "^Clear");
 
 			ar.closeBlock();
@@ -996,7 +994,7 @@ void CPrefabObject::SerializeMembers(Serialization::IArchive& ar)
 		if (changed)
 		{
 
-			auto childCount = GetChildCount();
+			size_t childCount = GetChildCount();
 			std::unordered_set<CryGUID> childGuids;
 			childGuids.reserve(childCount);
 			for (auto i = 0; i < childCount; ++i)
@@ -1211,8 +1209,10 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 	pObjectManager->NotifyPrefabObjectChanged(this);
 
 	// if the currently modified prefab is selected make sure to refresh the inspector
-	if (GetPrefab() && GetIEditor()->GetObjectManager()->GetSelection()->IsContainObject(this) || pObjectManager->GetSelection()->IsContainObject(GetPrefab()))
+	if (GetIEditor()->GetObjectManager()->GetSelection() && GetIEditor()->GetObjectManager()->GetSelection()->IsContainObject(this) || (GetPrefab() && pObjectManager->GetSelection()->IsContainObject(GetPrefab())))
+	{
 		pObjectManager->EmitPopulateInspectorEvent();
+	}
 }
 
 void CPrefabObject::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
