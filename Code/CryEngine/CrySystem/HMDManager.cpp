@@ -130,7 +130,7 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 						gEnv->pRenderer->GetIStereoRenderer()->OnHmdDeviceChanged(m_pHmdDevice);
 					}
 
-					gEnv->pSystem->LoadConfiguration("vr.cfg", 0, eLoadConfigGame);
+					
 				}
 				else if(m_pHmdDevice != nullptr)
 				{
