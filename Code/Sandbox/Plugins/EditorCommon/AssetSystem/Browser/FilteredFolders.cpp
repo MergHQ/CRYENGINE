@@ -48,6 +48,12 @@ void CFilteredFolders::FillNonEmptyFoldersList()
 	for (int i = 0; i < assetsCount; ++i)
 	{
 		const CAsset* pAsset = CAssetModel::ToAsset(m_pAttributeFilterModel->index(i, 0));
+		// Can be null while asset is being created. See CNewAssetModel
+		if (!pAsset)
+		{
+			continue;
+		}
+
 		m_filteredAssets.push_back(pAsset);
 	}
 
