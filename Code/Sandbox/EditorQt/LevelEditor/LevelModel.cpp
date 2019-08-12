@@ -836,7 +836,16 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 			{
 				if (object->GetLayer() != targetLayer)
 				{
-					object->SetLayer(targetLayer);
+					//Currently moving any children to other layers is not supported properly
+					CBaseObject* pPrefabObject = object->GetGroup();
+					if (!pPrefabObject)
+					{
+						object->SetLayer(targetLayer);
+					}
+					else
+					{
+						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Cannot move child %s of prefab %s into another layer, detach %s to perform this operation", object->GetName().c_str(), pPrefabObject->GetName().c_str(), object->GetName().c_str());
+					}
 				}
 			}
 			auto targetParentLayer = targetLayer->GetParent();
