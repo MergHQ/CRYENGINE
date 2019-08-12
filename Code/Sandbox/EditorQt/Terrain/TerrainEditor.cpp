@@ -219,6 +219,9 @@ void CTerrainEditor::RegisterActions()
 	RegisterAction("terrain.make_holes_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CMakeHolesTool)); });
 	RegisterAction("terrain.fill_holes_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CFillHolesTool)); });
 	RegisterAction("terrain.paint_texture_tool", [this]() { CTerrainEditor::SetTerrainTool(m_paintTabIdx, RUNTIME_CLASS(CTerrainTexturePainter)); });
+	// Terrain Editor doesn't register actions for general delete or new yet it tries to handle the command
+	// Ideally terrain editor in the future should reuse general commands for delete, new, copy, paste, etc
+	RegisterAction("general.delete", []() {});
 }
 
 void CTerrainEditor::SetTerrainTool(int tabIndex, CRuntimeClass* pToolClass)
