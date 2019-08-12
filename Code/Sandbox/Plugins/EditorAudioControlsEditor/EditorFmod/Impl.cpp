@@ -363,6 +363,7 @@ void CImpl::Initialize(
 //////////////////////////////////////////////////////////////////////////
 QWidget* CImpl::CreateDataPanel()
 {
+	DestroyDataPanel();
 	m_pDataPanel = new CDataPanel(*this);
 	return m_pDataPanel;
 }
