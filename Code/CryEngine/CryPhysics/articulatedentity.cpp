@@ -1253,6 +1253,7 @@ int CArticulatedEntity::Action(pe_action *_action, int bThreadSafe)
 		m_bFeatherstone = 1; // don't register joint links as constraints
 		m_iSimTypeCur = 0;
 		m_flags &= ~(pef_monitor_collisions | pef_log_collisions);
+		m_qNew.SetIdentity();
 		int narg = (1-m_bGrounded)*3, nconstr, ncoll=0;
 		for(i=0; i<m_nJoints; i++) {
 			int f = (int)m_joints[i].flags; 
