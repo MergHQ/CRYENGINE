@@ -264,10 +264,8 @@ void CLabel::SetText(const QString& text)
 
 void CLabel::UpdatePresentation()
 {
-	QString presentationText = m_text;
 	QFontMetrics metrics(font());
-	presentationText = metrics.elidedText(m_text, m_textElideMode, width());
-	setText(presentationText);
+	setText(metrics.elidedText(m_text, m_textElideMode, width()));
 }
 
 void CLabel::setText(const QString& text)
