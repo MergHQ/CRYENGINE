@@ -815,8 +815,18 @@ void QAdvancedTreeView::mouseReleaseEvent(QMouseEvent* pEvent)
 	if (pItemDelegate)
 	{
 		pItemDelegate->editorEvent(pEvent, model(), viewOptions(), model()->buddy(indexAt(pEvent->pos())));
+
+		// Despite the aforementioned Qt issue, the advanced item delegate can still be called via mouseReleaseEvent if the user clicks one item.
+		// In this case the double processing of the event by the extended delegate destroys the delegate state logic.
+		// To avoid this, we temporarily remove the delegate before calling the base implementation of mouseReleaseEvent.
+		setItemDelegate(nullptr);
+		QTreeView::mouseReleaseEvent(pEvent);
+		setItemDelegate(pItemDelegate);
 	}
-	QTreeView::mouseReleaseEvent(pEvent);
+	else
+	{
+		QTreeView::mouseReleaseEvent(pEvent);
+	}
 }
 
 void QAdvancedTreeView::dragLeaveEvent(QDragLeaveEvent* pEvent)
