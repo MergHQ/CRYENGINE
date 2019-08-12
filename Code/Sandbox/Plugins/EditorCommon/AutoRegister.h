@@ -105,26 +105,26 @@ private:
 
 	void Register()
 	{
-		CRY_ASSERT_MESSAGE(!m_isRegistered, "AutoRegister: Trying register a class that has already been registered");
-		if (m_RegisterFunction && !m_isRegistered)
+		CRY_ASSERT_MESSAGE(m_state != EState::Registered, "AutoRegister: Trying register a class that has already been registered");
+		if (m_RegisterFunction && m_state != EState::Registered)
 		{
 			m_RegisterFunction();
-			m_isRegistered = true;
+			m_state = EState::Registered;
 		}
 	}
 
 	void Unregister()
 	{
-		CRY_ASSERT_MESSAGE(m_isRegistered, "AutoRegister: Trying unregister a class that has not been previously registered");
+		CRY_ASSERT_MESSAGE(m_state != EState::Unregistered, "AutoRegister: Trying unregister a class that has not been previously registered");
 
 		// Only unregister if Register has been called and invalidated m_RegisterFunction.
-		if (m_UnregisterFunction && m_isRegistered)
+		if (m_UnregisterFunction && m_state == EState::Registered)
 		{
 			m_UnregisterFunction();
 		}
 
 		// Flag for being unregistered even if an unregister function wasn't provided
-		m_isRegistered = false;
+		m_state = EState::Unregistered;
 	}
 
 	std::function<void()>    m_RegisterFunction;
@@ -133,7 +133,14 @@ private:
 	CAutoRegister<T>*        m_pNext;
 	CAutoRegister<T>*        m_pPrevious;
 
-	bool                     m_isRegistered = false;
+	enum class EState : unsigned char
+	{
+		Added,  // Just added to a list, waiting for first registration
+		Registered,
+		Unregistered,
+	};
+
+	EState                   m_state = EState::Added;
 
 	static CAutoRegister<T>* s_pFirst;
 	static CAutoRegister<T>* s_pLast;
