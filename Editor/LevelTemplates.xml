@@ -24,7 +24,6 @@
 			<SunShadowsClipPlaneRangeShift type="Float" value="0.0f"/>
 			<SunShadowsFromTerrain type="BOOL" value="0"/>
 			<UseLayersActivation type="BOOL" value="0"/>
-			<SunLinkedToTOD type="BOOL" value="1"/>
 		</EnvState>
 
 		<VolFogShadows>
