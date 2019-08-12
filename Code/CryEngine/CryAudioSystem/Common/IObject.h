@@ -17,7 +17,6 @@ enum class EObjectFunctionality : EnumFlagsType
 namespace Impl
 {
 struct IEnvironmentConnection;
-struct IEvent;
 struct IParameterConnection;
 struct ISwitchStateConnection;
 struct ITriggerConnection;

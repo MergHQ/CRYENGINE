@@ -10,7 +10,6 @@ struct STriggerCallbackData;
 
 namespace Impl
 {
-struct IEvent;
 struct IObject;
 
 /**

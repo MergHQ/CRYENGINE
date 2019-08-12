@@ -14,7 +14,6 @@ using DeviceId = uint8;
 namespace Impl
 {
 struct IEnvironmentConnection;
-struct IEvent;
 struct IFile;
 struct IListener;
 struct IObject;
