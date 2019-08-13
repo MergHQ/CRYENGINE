@@ -135,24 +135,12 @@ void CParticleSystem::Update()
 
 	TrimEmitters(!m_bResetEmitters);
 	m_bResetEmitters = false;
-	m_emitters.append(m_newEmitters);
-	for (auto& pEmitter : m_newEmitters)
-	{
-		if (pEmitter->IsActive() && !pEmitter->HasRuntimes())
-			pEmitter->UpdateRuntimes();
-		if (pEmitter->GetRuntimesPreUpdate().size())
-			m_emittersPreUpdate.push_back(pEmitter);
-	}
-	m_newEmitters.clear();
-
-	// Init stats for current frame
-	auto& mainData = GetMainData();
-	mainData.statsCPU.emitters.alloc = m_emitters.size();
 
 	// Detect changed sys spec
 	const ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
-	if (m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec)
+	if (m_lastSysSpec != sysSpec)
 	{
+		m_lastSysSpec = sysSpec;
 		if (GetCVars()->e_ParticlesPrecacheAssets)
 		{
 			for (auto& elem : m_effects)
@@ -168,7 +156,30 @@ void CParticleSystem::Update()
 			pEmitter->UpdateRuntimes();
 		}
 	}
-	m_lastSysSpec = sysSpec;
+
+	float maxAngularDensity = GetMaxAngularDensity(gEnv->pSystem->GetViewCamera());
+	if (maxAngularDensity != m_lastAngularDensity)
+	{
+		m_lastAngularDensity = maxAngularDensity;
+		for (auto& pEmitter : m_emitters)
+		{
+			pEmitter->Reregister();
+		}
+	}
+
+	m_emitters.append(m_newEmitters);
+	for (auto& pEmitter : m_newEmitters)
+	{
+		if (pEmitter->IsActive() && !pEmitter->HasRuntimes())
+			pEmitter->UpdateRuntimes();
+		if (pEmitter->GetRuntimesPreUpdate().size())
+			m_emittersPreUpdate.push_back(pEmitter);
+	}
+	m_newEmitters.clear();
+
+	// Init stats for current frame
+	auto& mainData = GetMainData();
+	mainData.statsCPU.emitters.alloc = m_emitters.size();
 
 	// Check for edited effects
 	if (gEnv->IsEditing())

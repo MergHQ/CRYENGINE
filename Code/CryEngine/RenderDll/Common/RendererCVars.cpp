@@ -598,7 +598,7 @@ float CRendererCVars::CV_r_VolumetricFogMinimumLightBulbSize;
 int CRendererCVars::CV_r_VolumetricFogSunLightCorrection;
 
 int CRendererCVars::CV_r_GpuParticles;
-int CRendererCVars::CV_r_GpuParticlesConstantRadiusBoundingBoxes;
+int CRendererCVars::CV_r_GpuParticlesGpuBoundingBox;
 int CRendererCVars::CV_r_GpuPhysicsFluidDynamicsDebug;
 
 int CRendererCVars::CV_r_VolumetricClouds;
@@ -3088,10 +3088,10 @@ void CRendererCVars::InitCVars()
 	               "1 - Enabled.\n"
 	               );
 
-	REGISTER_CVAR3("r_GpuParticlesConstantRadiusBoundingBoxes", CV_r_GpuParticlesConstantRadiusBoundingBoxes, 0, VF_NULL,
-	               "Constant radius bounding boxes for GPU particles (Default: 0).\n"
-	               "0 - Dynamic Calculation.\n"
-	               ">0 - Bounding Box radius.\n"
+	REGISTER_CVAR3("r_GpuParticlesGpuBoundingBox", CV_r_GpuParticlesGpuBoundingBox, 0, VF_NULL,
+	               "Compute bounding boxes on GPU (Default: 0).\n"
+	               "0 - Bounding box estimated on CPU.\n"
+	               "1 - Bounding box taken from GPU particles.\n"
 	               );
 
 	REGISTER_CVAR3("r_GpuPhysicsFluidDynamicsDebug", CV_r_GpuPhysicsFluidDynamicsDebug, 1, VF_NULL,

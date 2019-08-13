@@ -1,13 +1,13 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
-											   
-// default particle data			
+
+// default particle data
 struct SDefaultParticleData
 {
 	float3 position;
 	float3 velocity;
 	uint color;
 	uint auxData;
-}; 
+};
 
 struct SAuxData
 {
@@ -31,6 +31,7 @@ struct SInitialData
 
 // Feature Parameter definitions
 
+
 cbuffer g_particleParameters : register(b4)
 {
 	float4x4 c_viewProjection;
@@ -40,8 +41,10 @@ cbuffer g_particleParameters : register(b4)
 	float3 c_physAccel;
 	float c_currentTime;
 	float3 c_physWind;
+
 	float c_farToNearDistance;
 	float3 c_cameraPosition;
+	float c_minDrawAngle;
 	float c_lifeTime;
 	int c_numParticles;
 	int c_numNewBorns;
@@ -129,10 +132,10 @@ RWStructuredBuffer<SDefaultParticleData> defaultParticleData : register(u0);
 // Packs float4 in [0,1] range into [0-255] uint
 uint PackFloat4(float4 val)
 {
-	return 
-		(uint(val.z*255.0f)<<0)  | 
-		(uint(val.y*255.0f)<<8)  | 
-		(uint(val.x*255.0f)<<16) | 
+	return
+		(uint(val.z*255.0f)<<0)  |
+		(uint(val.y*255.0f)<<8)  |
+		(uint(val.x*255.0f)<<16) |
 		(uint(val.w*255.0f)<<24);
 }
 
@@ -140,14 +143,14 @@ uint PackFloat4(float4 val)
 float4 UnpackFloat4(uint value)
 {
 	return float4(
-	((value>>16)&0xFF)/255.0,	
+	((value>>16)&0xFF)/255.0,
 	((value>>8)&0xFF)/255.0,
 	((value>>0)&0xFF)/255.0,
 	((value>>24)&0xFF)/255.0);
 }
 
 // Packs auxiliary data into one uint32
-// age needs to be in the interval [-1,1], size in [0,1] and isDead is boolean 
+// age needs to be in the interval [-1,1], size in [0,1] and isDead is boolean
 uint PackAuxData(float age, float size, int isDead)
 {
 	// we multiply with a value slightly under the integer range, so that it never overflows

@@ -33,7 +33,6 @@ IParticleComponentRuntime* CManager::CreateParticleContainer(const SComponentPar
 void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 {
 	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute& BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
-	const bool bReadbackBoundingBox = CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes ? false : true;
 
 	if (!CRenderer::CV_r_GpuParticles || gEnv->pSystem->IsPaused())
 		return;
@@ -84,7 +83,7 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 			const uint* pCounter = m_counter.Map(m_numRuntimesReadback);
 			const SReadbackData* pData = nullptr;
 
-			if (bReadbackBoundingBox)
+			if (CRenderer::CV_r_GpuParticlesGpuBoundingBox)
 				pData = m_readback.Map(m_numRuntimesReadback);
 
 			for (uint32 i = 0; i < numRuntimes; ++i)
@@ -115,7 +114,7 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 			PROFILE_LABEL_SCOPE("READBACK");
 
 			m_counter.Readback(numRuntimes);
-			if (bReadbackBoundingBox)
+			if (CRenderer::CV_r_GpuParticlesGpuBoundingBox)
 				m_readback.Readback(numRuntimes);
 			m_numRuntimesReadback = numRuntimes;
 		}

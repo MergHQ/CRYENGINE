@@ -702,6 +702,17 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	if (!m_pGpuRuntime)
 		return;
 
+	static ICVar* pVarGPUBounds = gEnv->pConsole->GetCVar("r_GpuParticlesGpuBoundingBox");
+	if (pVarGPUBounds && pVarGPUBounds->GetIVal())
+		m_bounds = m_pGpuRuntime->GetBounds();
+	else if (m_bounds.IsReset())
+	{
+		// Compute bounding box once, by running a small particle set on CPU
+		CParticleComponentRuntime runtimeTemp(*this, 256, GetDynamicData(EEDT_Timings).m_equilibriumTime, 4);
+		m_bounds = runtimeTemp.GetBounds();
+		m_bounds.Expand(m_bounds.GetSize() * 0.125f);
+	}
+
 	UpdateSpawners();
 	if (Container(EDD_Spawner).Size())
 	{
@@ -718,8 +729,6 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	if (stats.particles.alive)
 		SetAlive();
 
-	m_bounds = m_pGpuRuntime->GetBounds();
-
 	gpu_pfx2::SUpdateParams params;
 
 	params.deltaTime = DeltaTime();
@@ -727,6 +736,8 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	params.emitterOrientation = m_pEmitter->GetLocation().q;
 	params.physAccel = m_pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
 	params.physWind = m_pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
+	params.minDrawPixels = GetCVars()->e_ParticlesMinDrawPixels
+		/ (ComponentParams().m_visibility.m_viewDistanceMultiple * m_pEmitter->GetViewDistRatio());
 
 	GetComponent()->UpdateGPUParams(*this, params);
 

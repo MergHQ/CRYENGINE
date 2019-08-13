@@ -3,9 +3,9 @@
 float Script : STANDARDSGLOBAL<string Script = "NoPreview;"
                                                "ShaderType = Compute;"
                                                "LocalConstants;">;
-										
+
 #include "Common.cfi"
-#include "shadeLib.cfi"	   
+#include "shadeLib.cfi"
 #include "GpuRand.cfi"
 #include "GpuSNoise.cfi"
 #include "GpuParticlesCommon.cfi"
@@ -18,7 +18,8 @@ RWStructuredBuffer<SDefaultParticleData> defaultParticleDataTemp : register(u1);
 RWStructuredBuffer<SMergeSortItem> sortItems : register(u1);
 StructuredBuffer<SMergeSortItem> sortItemsRO : register(t1);
 
-[numthreads(1024, 1, 1)] 
+
+[numthreads(1024, 1, 1)]
 void PrepareSortCS(uint3 DTid : SV_DispatchThreadID)
 {
 	int i = DTid.x;
@@ -31,17 +32,17 @@ void PrepareSortCS(uint3 DTid : SV_DispatchThreadID)
 		{
 			float3 diff = defaultParticleData[i].position - c_cameraPosition;
 			key = dot(diff, diff);
-		
+
 		}
 		else // Age Sorting
 		{
 			SAuxData auxData = UnpackAuxData(defaultParticleData[i].auxData);
 			key = auxData.normalAge;
 		}
-		
+
 		if (c_sortMode == 1 || c_sortMode == 3) // Invert Order
 				key = 1.0 / key;
-				
+
 		sortItems[i].key = asuint(key) + 1;
 	}
 	else
@@ -54,7 +55,7 @@ technique PrepareSort
 	pass p0 { ComputeShader = PrepareSortCS(); }
 }
 
-[numthreads(1024, 1, 1)] 
+[numthreads(1024, 1, 1)]
 void ReorderParticlesCS(uint3 DTid : SV_DispatchThreadID)
 {
 	int i = DTid.x;
@@ -85,7 +86,7 @@ SReadbackData LoadReadbackData(float3 p)
 {
 	SReadbackData result;
 	result.min.x = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.x * FLOAT_SCALE));
-	result.min.y = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.y * FLOAT_SCALE)); 
+	result.min.y = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.y * FLOAT_SCALE));
 	result.min.z = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.z * FLOAT_SCALE));
 	result.max.x = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.x * FLOAT_SCALE));
 	result.max.y = min(BOUNDS_MAX, max(-BOUNDS_MAX, p.y * FLOAT_SCALE));
@@ -108,7 +109,7 @@ SReadbackData MinMaxCombine(SReadbackData a, SReadbackData b)
 
 groupshared SReadbackData calcBoundsShared[BLOCK_DIM_BOUNDS];
 
-[numthreads(BLOCK_DIM_BOUNDS, 1, 1)] 
+[numthreads(BLOCK_DIM_BOUNDS, 1, 1)]
 void CalculateBoundsCS(uint3 threadIdx : SV_GroupThreadID, uint3 groupIdx : SV_GroupID)
 {
     int tid = threadIdx.x;
@@ -117,20 +118,20 @@ void CalculateBoundsCS(uint3 threadIdx : SV_GroupThreadID, uint3 groupIdx : SV_G
 	SReadbackData me;
 	me.min = int3( BOUNDS_MAX,  BOUNDS_MAX,  BOUNDS_MAX);
 	me.max = int3(-BOUNDS_MAX, -BOUNDS_MAX, -BOUNDS_MAX);
-    
-	while (gid < c_numParticles) 
+
+	while (gid < c_numParticles)
 	{
 		SReadbackData next = LoadReadbackData(defaultParticleData[gid].position);
         me = MinMaxCombine(me, next);
         gid += GRID_DIM_BOUNDS * BLOCK_DIM_BOUNDS;
     }
-	
+
 	calcBoundsShared[tid] = me;
 
 	AllMemoryBarrierWithGroupSync();
 
     gid = (BLOCK_DIM_BOUNDS * groupIdx.x) + tid;
-    for (int s = BLOCK_DIM_BOUNDS / 2; s > 0; s >>= 1) 
+    for (int s = BLOCK_DIM_BOUNDS / 2; s > 0; s >>= 1)
     {
         if (tid < s && gid < c_numParticles)
             calcBoundsShared[tid] = MinMaxCombine(calcBoundsShared[tid], calcBoundsShared[tid + s]);
@@ -154,7 +155,7 @@ technique CalculateBounds
 	pass p0 { ComputeShader = CalculateBoundsCS(); }
 }
 
-[numthreads(1024, 1, 1)] 
+[numthreads(1024, 1, 1)]
 void FillKillListCS(uint3 DTid : SV_DispatchThreadID)
 {
 	int j = DTid.x;
@@ -163,13 +164,13 @@ void FillKillListCS(uint3 DTid : SV_DispatchThreadID)
 		// leave out dead particles
 		if (IsDead(j))
 		{
-			uint i; 
+			uint i;
 			InterlockedAdd(counter[c_managerSlot], 1, i);
 			// copy over the particle data
 			killList[i] = j;
 		}
 	}
-	
+
 	// hijack for clearing bbox for now
 	if (j == 0)
 	{
@@ -183,27 +184,27 @@ technique FillKillList
 	pass p0 { ComputeShader = FillKillListCS(); }
 }
 
-[numthreads(1024, 1, 1)] 
+[numthreads(1024, 1, 1)]
 void SwapToEndCS(uint3 DTid : SV_DispatchThreadID)
 {
 	int i = DTid.x;
 	if (i < c_numKilled)
 	{
 		int slot = killList[i];
-		// if slot is 
+		// if slot is
 		if (slot < c_numParticles - c_numKilled)
 		{
 			// here we are repurposing the killList counter
 			// because we just need an atomic increment
-			int swapSlot; 
+			int swapSlot;
 			InterlockedAdd(counter[c_managerSlot], 1, swapSlot);
-			
+
 			// if this one is dead too, get a new one
 			while (IsDead(c_numParticles - 1 - swapSlot))
 			{
 				InterlockedAdd(counter[c_managerSlot], 1, swapSlot);
 			}
-			
+
 			defaultParticleData[slot] = defaultParticleData[c_numParticles - 1 - swapSlot];
 		}
 	}
@@ -213,7 +214,7 @@ technique SwapToEnd
 {
 	pass p0 { ComputeShader = SwapToEndCS(); }
 }
-			
+
 // SRV slots (not all of them need to be used)
 Buffer<float> sizeTable : register(t0);
 StructuredBuffer<float3> colorTable : register(t1);
@@ -266,7 +267,7 @@ float3 Curl(float4 s)
 	float3 gradX = SNoiseGrad(s).xyz;
 	float3 gradY = SNoiseGrad(s + offy).xyz;
 	float3 gradZ = SNoiseGrad(s + offz).xyz;
-	
+
 	return float3(
 		gradY.z - gradZ.y,
 		gradZ.x - gradX.z,
@@ -321,7 +322,7 @@ float DistFromPlane(float4 plane, float3 pt)
 	return dot(plane.xyz, pt) + plane.w;
 }
 
-[numthreads(1024, 1, 1)] 
+[numthreads(1024, 1, 1)]
 void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 {
 	int i = DTid.x;
@@ -352,7 +353,7 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 		size = (1.0 - mix) * sizeTable[normAgeBaseSlot] + mix * sizeTable[normAgeNextSlot];
 #endif
 
-#if %PFX_UPDATE_MOTION_DRAGFAST 
+#if %PFX_UPDATE_MOTION_DRAGFAST
 		float3 physAccel = c_physAccel;
 		float3 physWind = c_physWind * c_windMultiplier + c_uniformWind;
 
@@ -364,9 +365,18 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 		float3 p1 = v0 * dT + p0;
 		defaultParticleData[i].position = p1;
 #endif
-		
+
 		float3 partAccel = float3(0.0, 0.0, 0.0);
 		float3 fieldVel = float3(0.0, 0.0, 0.0);
+
+        // distance fading
+        {
+            float3 position = defaultParticleData[i].position;
+            float3 offset = position - c_cameraPosition;
+            float distSqr = dot(offset, offset) + 0.001f;
+            float fade = size * size * 4 * rcp(distSqr * c_minDrawAngle * c_minDrawAngle);
+            color.a *= saturate((fade - 1) * 4);
+        }
 
 #if %PFX_UPDATE_PIXELSIZE
 		{
@@ -378,13 +388,6 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 			float pixelSize1 = clamp(pixelSize0, c_pixelsize_min, c_pixelsize_max);
 			float size1 = pixelSize1 * distance * c_pixelsize_minDrawPixels;
 			size = size1;
-			
-			if (c_pixelsize_affectOpacity)
-			{
-				float alpha0 = color.w;
-				float alpha1 = alpha0 * saturate(pixelSize0 * c_pixelsize_invMin);
-				color.w = alpha1;
-			}
 		}
 #endif
 
@@ -412,7 +415,7 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 			partAccel += accel;
 		}
 #endif
-		
+
 #if %PFX_UPDATE_MOTION_SIMPLEX
 		{
 			float minSize = 1.0 / ((float)(1 << 15)); // small enough and prevents SIMD exceptions
@@ -505,10 +508,10 @@ void FeatureUpdateCS(uint3 DTid : SV_DispatchThreadID)
 		float drag = c_drag;
 
 		float3 a = (physAccel * gravMult + partAccel) + c_uniformAcceleration;
-		float3 accel = (partVel - v0) * drag + a;        
+		float3 accel = (partVel - v0) * drag + a;
 		float halfDtSqr = (dT * dT) * 0.5f;    // 1/2 dT²
-		float3 p1 = accel * halfDtSqr + v0 * dT + p0;    
-		float3 v1 = accel * dT + v0; 
+		float3 p1 = accel * halfDtSqr + v0 * dT + p0;
+		float3 v1 = accel * dT + v0;
 
 		defaultParticleData[i].position = p1;
 		defaultParticleData[i].velocity = v1;
@@ -529,7 +532,6 @@ technique FeatureUpdate
 {
 	pass p0 { ComputeShader = FeatureUpdateCS(); }
 }
-
 
 cbuffer g_initializationParameters : register(b5)
 {
@@ -555,7 +557,7 @@ cbuffer g_initializationParameters : register(b5)
 Buffer<uint> newBornIndices : register(t0);
 StructuredBuffer<SInitialData> parentData : register(t1);
 
-[numthreads(1024, 1, 1)] 
+[numthreads(1024, 1, 1)]
 void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 {
 	int i = DTid.x;
@@ -569,7 +571,7 @@ void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 		uint auxData = PackAuxData(fraction - 1.0, c_init_size, 0);
 		float4 color = float4(c_init_color, c_init_opacity);
 		position += parentData[newBornIndices[i]].velocity * c_deltaTime * fraction;
-		
+
 		// seed the random number generator for the location features etc.
 		uint randKey;
 		randKey = GenKeyFromFloat(position.x + (i + c_currentTime) * 0.01);
@@ -595,7 +597,7 @@ void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 			sphere.x *= c_init_scale.x;
 			sphere.y *= c_init_scale.y;
 			sphere.z *= c_init_scale.z;
-		
+
 			if (c_init_radius > EPSILON)
 			{
 				position += sphere * c_init_radius;
@@ -611,7 +613,7 @@ void FeatureInitializationCS(uint3 DTid : SV_DispatchThreadID)
 			float3 disc = float3(RandCircle(randKey), 0.0);
 			disc.x *= c_init_scale.x;
 			disc.y *= c_init_scale.y;
-		
+
 			if (c_init_radius > EPSILON)
 			{
 				float3 oPosition = disc * c_init_radius;

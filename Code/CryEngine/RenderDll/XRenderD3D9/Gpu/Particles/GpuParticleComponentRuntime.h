@@ -79,8 +79,6 @@ public:
 
 	void  SetManagerSlot(int i)       { m_parameters->managerSlot = i; }
 
-	void  SetLifeTime(float lifeTime) { m_parameters->lifeTime = lifeTime; }
-
 	int   GetNumParticles() const     { return m_parameters->numParticles; }
 	float GetDeltaTime() const        { return m_parameters->deltaTime; }
 

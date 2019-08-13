@@ -652,7 +652,7 @@ public:
 	static int CV_r_VolumetricCloudsTemporalReprojection;
 	static int CV_r_VolumetricCloudsShadowResolution;
 	static int CV_r_GpuParticles;
-	static int CV_r_GpuParticlesConstantRadiusBoundingBoxes;
+	static int CV_r_GpuParticlesGpuBoundingBox;
 	static int CV_r_GpuPhysicsFluidDynamicsDebug;
 
 	ICVar*     CV_capture_frames;

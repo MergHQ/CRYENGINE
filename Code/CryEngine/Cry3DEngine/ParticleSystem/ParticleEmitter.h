@@ -96,6 +96,7 @@ public:
 	void                      Clear();
 	void                      UpdateRuntimes();
 	void                      UpdateEmitGeomFromEntity();
+	void                      Reregister()                 { m_reRegister = true; }
 	float                     ComputeMaxViewDist() const;
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
 	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }

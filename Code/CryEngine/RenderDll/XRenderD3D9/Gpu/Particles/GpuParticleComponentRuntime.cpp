@@ -35,10 +35,11 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 	if (!m_parameters->numParticles)
 		return;
 
-	m_parameters->viewProjection = context.pRenderView->GetViewInfo(CCamera::eEye_Left).cameraProjMatrix;
+	const SRenderViewInfo& viewInfo = context.pRenderView->GetViewInfo(CCamera::eEye_Left);
+	m_parameters->viewProjection = viewInfo.cameraProjMatrix;
 	m_parameters->sortMode = m_params.sortMode;
 
-	const CCamera& cam = gEnv->p3DEngine->GetRenderingCamera();
+	const CCamera& cam = *viewInfo.pCamera;
 	float zn = cam.GetNearPlane();
 	float zf = cam.GetFarPlane();
 	m_parameters->farToNearDistance = zf - zn;
@@ -54,15 +55,9 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 
 void CParticleComponentRuntime::CalculateBounds(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
-	if (!m_parameters->numParticles)
+	if (!CRenderer::CV_r_GpuParticlesGpuBoundingBox || !m_parameters->numParticles)
 	{
 		m_bounds = AABB::RESET;
-		return;
-	}
-
-	if (CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes > 0)
-	{
-		m_bounds = AABB(m_parameters->emitterPosition, (float)CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes);
 		return;
 	}
 
@@ -85,12 +80,8 @@ void CParticleComponentRuntime::SetBoundsFromManager(const SReadbackData* pData)
 {
 	if (m_parameters->numParticles && m_parameters->managerSlot >= 0)
 	{
-		m_bounds.min.x = (float)pData[m_parameters->managerSlot].min.x / kBoundsScale;
-		m_bounds.min.y = (float)pData[m_parameters->managerSlot].min.y / kBoundsScale;
-		m_bounds.min.z = (float)pData[m_parameters->managerSlot].min.z / kBoundsScale;
-		m_bounds.max.x = (float)pData[m_parameters->managerSlot].max.x / kBoundsScale;
-		m_bounds.max.y = (float)pData[m_parameters->managerSlot].max.y / kBoundsScale;
-		m_bounds.max.z = (float)pData[m_parameters->managerSlot].max.z / kBoundsScale;
+		m_bounds.min = Vec3(pData[m_parameters->managerSlot].min) / kBoundsScale;
+		m_bounds.max = Vec3(pData[m_parameters->managerSlot].max) / kBoundsScale;
 	}
 	else
 	{
@@ -150,6 +141,9 @@ void CParticleComponentRuntime::AddParticles(SUpdateContext& context)
 	m_parameters->emitterOrientation   = updateData.emitterOrientation;
 	m_parameters->physAccel            = updateData.physAccel;
 	m_parameters->physWind             = updateData.physWind;
+	const SRenderViewInfo& viewInfo = context.pRenderView->GetViewInfo(CCamera::eEye_Left);
+	const CCamera& cam = *viewInfo.pCamera;
+	m_parameters->minDrawAngle         = updateData.minDrawPixels / cam.GetAngularResolution();
 	
 	// count and cap the number of particles to spawn
 	m_parameters->numNewBorns = 0;

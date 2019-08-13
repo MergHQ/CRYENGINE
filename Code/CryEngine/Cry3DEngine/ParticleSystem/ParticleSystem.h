@@ -104,12 +104,13 @@ private:
 	TParticleEmitters              m_newEmitters;
 	std::vector<SThreadData>       m_threadData;
 	TNameAssetMap<IMaterial>       m_materials;
-	bool                           m_bResetEmitters = false;
-	QuatT                          m_lastCameraPose = IDENTITY;
-	uint                           m_numFrames      = 0;
-	uint                           m_numLevelLoads  = 0;
-	uint                           m_nextEmitterId  = 0;
-	ESystemConfigSpec              m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
+	bool                           m_bResetEmitters     = false;
+	QuatT                          m_lastCameraPose     = IDENTITY;
+	uint                           m_numFrames          = 0;
+	uint                           m_numLevelLoads      = 0;
+	uint                           m_nextEmitterId      = 0;
+	ESystemConfigSpec              m_lastSysSpec        = END_CONFIG_SPEC_ENUM;
+	float                          m_lastAngularDensity = 0;
 };
 
 ILINE CParticleSystem* GetPSystem()
