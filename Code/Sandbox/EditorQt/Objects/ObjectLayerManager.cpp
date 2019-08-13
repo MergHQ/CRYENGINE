@@ -316,7 +316,7 @@ CObjectLayer* CObjectLayerManager::CreateLayer(const char* szName, EObjectLayerT
 	return pLayer;
 }
 
-void CObjectLayerManager::AddLayer(CObjectLayer* pLayer, bool bNotify /*= true*/, bool loading /* = false */)
+bool CObjectLayerManager::AddLayer(CObjectLayer* pLayer, bool bNotify /*= true*/, bool loading /* = false */)
 {
 	assert(pLayer);
 
@@ -338,7 +338,7 @@ void CObjectLayerManager::AddLayer(CObjectLayer* pLayer, bool bNotify /*= true*/
 		if (pPrevLayer)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "%s layer already exists. Layer names must be unique", (const char*)pLayer->GetName());
-			return;
+			return false;
 		}
 
 		if (m_layersMap.find(pLayer->GetGUID()) != m_layersMap.end())
@@ -346,7 +346,7 @@ void CObjectLayerManager::AddLayer(CObjectLayer* pLayer, bool bNotify /*= true*/
 			pPrevLayer = FindLayer(pLayer->GetGUID());
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Duplicate Layer GUID,Layer <%s> collides with layer: %s",
 			           (const char*)pPrevLayer->GetName(), (const char*)pLayer->GetName());
-			return;
+			return false;
 		}
 	}
 
@@ -369,6 +369,8 @@ void CObjectLayerManager::AddLayer(CObjectLayer* pLayer, bool bNotify /*= true*/
 	{
 		CLayerChangeEvent(CLayerChangeEvent::LE_AFTER_ADD, pLayer).Send();
 	}
+
+	return true;
 }
 
 bool CObjectLayerManager::CanDeleteLayer(CObjectLayer* pLayer)
@@ -938,7 +940,8 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, const string&
 		}
 	}
 	
-	AddLayer(pLayer, true);
+	if (!AddLayer(pLayer, true))
+		return nullptr;
 
 	XmlNodeRef layerObjects = layerNode->findChild("LayerObjects");
 	if (layerObjects)

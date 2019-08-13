@@ -176,7 +176,7 @@ private:
 	friend class Private_ObjectLayerManager::CUndoLayerCreateDelete;
 
 	//! Add already created layer to manager.
-	void          AddLayer(CObjectLayer* pLayer, bool bNotify = true, bool loading = false);
+	bool          AddLayer(CObjectLayer* pLayer, bool bNotify = true, bool loading = false);
 	CObjectLayer* CreateLayerInstance() { return new CObjectLayer(); }
 
 	void          SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLayer);
