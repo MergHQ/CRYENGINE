@@ -69,6 +69,8 @@ public:
 	//! Note that editAsset may not have all of its metadata cleared before passing. TODO:improve this!
 	virtual bool OnSaveAsset(CEditableAsset& editAsset);
 
+	//! Returns a collection of asset types supported by the editor.
+	// \sa CAssetEditor::CAssetEditor
 	const std::vector<CAssetType*>& GetSupportedAssetTypes() const { return m_supportedAssetTypes; }
 
 	//! Called immediately after the editor has opened an asset.
@@ -170,4 +172,5 @@ private:
 
 	CAsset*                  m_assetBeingEdited;
 	std::vector<CAssetType*> m_supportedAssetTypes;
+	QCommandAction*          m_pActionSaveAs;
 };

@@ -142,6 +142,7 @@ CAssetEditor* CAssetEditor::OpenAssetForEdit(const char* szEditorClassName, CAss
 CAssetEditor::CAssetEditor(const char* assetType, QWidget* pParent /*= nullptr*/)
 	: CDockableEditor(pParent)
 	, m_assetBeingEdited(nullptr)
+	, m_pActionSaveAs(nullptr)
 {
 	auto type = CAssetManager::GetInstance()->FindAssetType(assetType);
 	CRY_ASSERT(type);//type must exist
@@ -152,6 +153,7 @@ CAssetEditor::CAssetEditor(const char* assetType, QWidget* pParent /*= nullptr*/
 CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= nullptr*/)
 	: CDockableEditor(pParent)
 	, m_assetBeingEdited(nullptr)
+	, m_pActionSaveAs(nullptr)
 {
 	m_supportedAssetTypes.reserve(assetTypes.size());
 	for (const QString& typeName : assetTypes)
@@ -217,7 +219,7 @@ void CAssetEditor::RegisterActions()
 	RegisterAction("general.new", &CAssetEditor::OnNew);
 	RegisterAction("general.open", &CAssetEditor::OnOpen);
 	RegisterAction("general.save", &CAssetEditor::OnSave);
-	RegisterAction("general.save_as", &CAssetEditor::OnSaveAs);
+	m_pActionSaveAs = RegisterAction("general.save_as", &CAssetEditor::OnSaveAs);
 	RegisterAction("general.close", &CAssetEditor::OnClose);
 }
 
@@ -294,6 +296,7 @@ void CAssetEditor::SetAssetBeingEdited(CAsset* pAsset)
 	else
 	{
 		CAssetManager::GetInstance()->signalBeforeAssetsRemoved.DisconnectById((uintptr_t)this);
+		m_pActionSaveAs->setEnabled(false);
 	}
 }
 
@@ -381,6 +384,7 @@ void CAssetEditor::OnAssetChanged(CAsset& asset, int changeFlags)
 	{
 		UpdateWindowTitle();
 	}
+	m_pActionSaveAs->setEnabled(m_assetBeingEdited->GetType()->CanBeCopied() && m_assetBeingEdited->GetEditingSession());
 }
 
 void CAssetEditor::InitNewMenu()
