@@ -186,6 +186,12 @@ void CFormWidget::SetupWidgets()
 				IPropertyTreeWidget* pPropertyTreeWidget = pChild->GetPropertyTreeWidget();
 				if (pPropertyTreeWidget)   //The property tree supports non property tree widgets however they will not be interacting with serialization
 				{
+					// Force disconnect of all signals since they're not being cleaned up correctly when reusing this widget
+					pPropertyTreeWidget->signalDiscarded.DisconnectAll();
+					pPropertyTreeWidget->signalPreChanged.DisconnectAll();
+					pPropertyTreeWidget->signalChanged.DisconnectAll();
+					pPropertyTreeWidget->signalContinuousChanged.DisconnectAll();
+
 					pPropertyTreeWidget->signalDiscarded.Connect(m_pParentTree, &QPropertyTree::OnRowDiscarded);
 					pPropertyTreeWidget->signalChanged.Connect(m_pParentTree, &QPropertyTree::OnRowChanged);
 					pPropertyTreeWidget->signalContinuousChanged.Connect(m_pParentTree, &QPropertyTree::OnRowContinuousChanged);
