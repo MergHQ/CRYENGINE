@@ -215,6 +215,11 @@ int main(int argc, char* argv[])
 		{
 			QMfcApp::setAttribute(Qt::AA_EnableHighDpiScaling);
 		}
+
+		// Force Qt to not create native widgets for children of native windows. If not set, every descendant of every window
+		// will receive a window handle. Not setting this flag breaks resizing functionality of windows and has performance 
+		// implications
+		qApp->setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 	}
 
 	QDir::setSearchPaths("icons", QStringList(":/icons"));
