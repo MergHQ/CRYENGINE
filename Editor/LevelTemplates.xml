@@ -12,7 +12,7 @@
 			<HeightMapAO type="BOOL" value="0"/>
 			<IntegrateObjects type="BOOL" value="0"/>
 			<AutoGenerateBaseTexture type="BOOL" value="0"/>
-      <SupportOfflineProceduralVegetation type="BOOL" value="0"/>
+			<SupportOfflineProceduralVegetation type="BOOL" value="0"/>
 		</Terrain>
 
 		<EnvState>
@@ -51,13 +51,6 @@
 			<RemapCloudDensityMax type="Float" value="1.0"/>
 			<AdditionalNoiseIntensity type="Float" value="0.2"/>
 		</VolumetricCloud>
-
-		<SkyBox>
-			<Material type="Material" value="%ENGINE%/EngineAssets/Materials/Sky/Sky"/>
-			<MaterialLowSpec type="Material" value="%ENGINE%/EngineAssets/Materials/Sky/Sky"/>
-			<Angle type="Float" value="0"/>
-			<Stretching type="Float" value="0.5"/>
-		</SkyBox>
 
 		<Ocean>
 			<Material type="Material" value="%ENGINE%/EngineAssets/Materials/Water/Ocean_default" />

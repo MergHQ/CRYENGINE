@@ -1347,17 +1347,6 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 		GetTerrain()->ResetTerrainVertBuffers(NULL);
 	m_fTerrainDetailMaterialsViewDistRatio = fTerrainDetailMaterialsViewDistRatio;
 
-	// SkyBox
-	const string defSkyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "");
-	const string lowSkyMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "");
-	m_pSkyMat[eSkySpec_Def] = defSkyMatName.empty() ? nullptr : GetMatMan()->LoadMaterial(defSkyMatName.c_str(), false);
-	m_pSkyMat[eSkySpec_Low] = lowSkyMatName.empty() ? nullptr : GetMatMan()->LoadMaterial(lowSkyMatName.c_str(), false);
-	if (!m_pSkyMat[eSkySpec_Low])
-		m_pSkyMat[eSkySpec_Low] = m_pSkyMat[eSkySpec_Def];
-
-	m_fSkyBoxAngle = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Angle", "0.0"));
-	m_fSkyBoxStretching = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Stretching", "1.0"));
-
 	// set terrain water, sun road and bottom shaders
 	char szTerrainWaterMatName[256];
 	cry_strcpy(szTerrainWaterMatName, GetXMLAttribText(pInputNode, "Ocean", "Material", "%ENGINE%/EngineAssets/Materials/Water/Ocean_default"));
@@ -1582,7 +1571,6 @@ void C3DEngine::UpdateSkyParams()
 {
 	const auto& sky = GetTimeOfDay()->GetSkyParams();
 
-	// Selective overwrite
 	if (!sky.materialDefSpec.empty())
 		m_pSkyMat[eSkySpec_Def] = GetMatMan()->LoadMaterial(sky.materialDefSpec.c_str(), false);
 	else
@@ -1590,7 +1578,8 @@ void C3DEngine::UpdateSkyParams()
 
 	if (!sky.materialLowSpec.empty())
 		m_pSkyMat[eSkySpec_Low] = GetMatMan()->LoadMaterial(sky.materialLowSpec.c_str(), false);
-	else
+
+	if (!m_pSkyMat[eSkySpec_Low])
 		m_pSkyMat[eSkySpec_Low] = m_pSkyMat[eSkySpec_Def];
 }
 

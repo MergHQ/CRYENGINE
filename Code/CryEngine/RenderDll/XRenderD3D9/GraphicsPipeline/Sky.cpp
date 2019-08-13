@@ -138,7 +138,7 @@ void CSkyStage::SetSkyParameters()
 	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	// SkyBox
+	// Skybox
 	{
 		static CCryNameR skyBoxParamName("SkyDome_SkyBoxParams");
 		const float skyBoxAngle = DEG2RAD(rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_fSkyBoxAngle);

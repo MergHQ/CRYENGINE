@@ -323,7 +323,7 @@ void STimeOfDayConstants::Serialize(Serialization::IArchive& ar)
 {
 	ar(sun, "Sun", "Sun");
 	ar(moon, "Moon", "Moon");
-	ar(sky, "Sky", "Sky");
+	ar(sky, "Sky", "Skybox");
 	ar(wind, "Wind", "Wind");
 	ar(cloudShadows, "CloudShadows", "Cloud Shadows");
 	ar(colorGrading, "ColorGrading", "Color Grading");

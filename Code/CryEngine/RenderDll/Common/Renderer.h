@@ -419,10 +419,10 @@ struct SSkyInfo
 	bool                  m_bApplySkyDome;
 	bool                  m_bApplySkyBox;
 
-	float                 m_fSkyBoxStretching;
+	float                 m_fSkyBoxStretching = 1;
 
 	// These params can be overridden by the sky material
-	float                 m_fSkyBoxAngle;
+	float                 m_fSkyBoxAngle = 0;
 	float                 m_fSkyBoxMultiplier;
 	Vec3                  m_vSkyBoxEmittance;
 	Vec3                  m_vSkyBoxFilter;
