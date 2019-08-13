@@ -58,7 +58,7 @@ namespace Cry
 
 		void CLineConstraintComponent::ProcessEvent(const SEntityEvent& event)
 		{
-			if (event.event == ENTITY_EVENT_START_GAME)
+			if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_LAYER_UNHIDE)
 			{
 				Reset();
 			}
@@ -78,7 +78,7 @@ namespace Cry
 
 		Cry::Entity::EventFlags CLineConstraintComponent::GetEventMask() const
 		{
-			Cry::Entity::EventFlags bitFlags = m_bActive ? (ENTITY_EVENT_START_GAME | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) : Cry::Entity::EventFlags();
+			Cry::Entity::EventFlags bitFlags = m_bActive ? (ENTITY_EVENT_START_GAME | ENTITY_EVENT_LAYER_UNHIDE | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) : Cry::Entity::EventFlags();
 			bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 			return bitFlags;

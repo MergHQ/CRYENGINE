@@ -230,6 +230,13 @@ void CEntityLayer::EnableEntities(bool isEnable)
 		}
 		m_wasReEnabled = isEnable;
 
+		SEntityEvent evt(isEnable ? ENTITY_EVENT_LAYER_UNHIDE : ENTITY_EVENT_LAYER_HIDE);
+		std::for_each(m_entities.begin(), m_entities.end(), [&evt](const std::pair<EntityId, EntityProp> &pair) 
+		{ 
+			if (CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(pair.first)) 
+				pEntity->SendEvent(evt); 
+		});
+
 		NotifyActivationToListeners(isEnable);
 	}
 
@@ -238,8 +245,6 @@ void CEntityLayer::EnableEntities(bool isEnable)
 
 void CEntityLayer::EnableEntity(CEntity& entity, EntityProp& property, bool isEnable)
 {
-	entity.SendEvent(SEntityEvent(isEnable ? ENTITY_EVENT_LAYER_UNHIDE : ENTITY_EVENT_LAYER_HIDE));
-
 	// when is serializing (reading, as we never call this on writing), we don't want to change those values. we just use the values that come directly from serialization.
 	if (!isEnable && !gEnv->pSystem->IsSerializingFile())
 	{
@@ -283,11 +288,6 @@ void CEntityLayer::EnableEntity(CEntity& entity, EntityProp& property, bool isEn
 		{
 			event.event = ENTITY_EVENT_RESET;
 			entity.SendEvent(event);
-			event.event = ENTITY_EVENT_LEVEL_LOADED;
-			entity.SendEvent(event);
-		}
-		if (!m_wasReEnabled && entity.GetPhysics() && entity.GetPhysics()->GetType() == PE_ROPE)
-		{
 			event.event = ENTITY_EVENT_LEVEL_LOADED;
 			entity.SendEvent(event);
 		}
