@@ -791,6 +791,9 @@ void QAdvancedTreeView::drawBranchIndicator(QPainter* painter, const QStyleOptio
 
 void QAdvancedTreeView::mousePressEvent(QMouseEvent* pEvent)
 {
+	const QPoint pos = pEvent->pos();
+	m_pressedIndex = indexAt(pos);
+
 	if (!hasAutoScroll())
 	{
 		QTreeView::mousePressEvent(pEvent);
@@ -814,19 +817,19 @@ void QAdvancedTreeView::mouseReleaseEvent(QMouseEvent* pEvent)
 	QAdvancedItemDelegate* pItemDelegate = GetAdvancedDelegate();
 	if (pItemDelegate)
 	{
-		pItemDelegate->editorEvent(pEvent, model(), viewOptions(), model()->buddy(indexAt(pEvent->pos())));
-
 		// Despite the aforementioned Qt issue, the advanced item delegate can still be called via mouseReleaseEvent if the user clicks one item.
 		// In this case the double processing of the event by the extended delegate destroys the delegate state logic.
-		// To avoid this, we temporarily remove the delegate before calling the base implementation of mouseReleaseEvent.
-		setItemDelegate(nullptr);
-		QTreeView::mouseReleaseEvent(pEvent);
-		setItemDelegate(pItemDelegate);
+		// To avoid this, we do a check for dragging.
+		const QPoint pos = pEvent->pos();
+		const QPersistentModelIndex index = indexAt(pos);
+		const bool dragging = (index.isValid() && m_pressedIndex.isValid() && index != m_pressedIndex);
+		if (dragging)
+		{
+			pItemDelegate->editorEvent(pEvent, model(), viewOptions(), model()->buddy(index));
+		}
 	}
-	else
-	{
-		QTreeView::mouseReleaseEvent(pEvent);
-	}
+	QTreeView::mouseReleaseEvent(pEvent);
+
 }
 
 void QAdvancedTreeView::dragLeaveEvent(QDragLeaveEvent* pEvent)
@@ -838,7 +841,7 @@ void QAdvancedTreeView::dragLeaveEvent(QDragLeaveEvent* pEvent)
 
 void QAdvancedTreeView::dragMoveEvent(QDragMoveEvent* pEvent)
 {
-	QModelIndex index = indexAt(pEvent->pos());
+	QPersistentModelIndex index = indexAt(pEvent->pos());
 	if (index.isValid() && m_hoveredIndex != index)
 	{
 		m_hoveredIndex = index;

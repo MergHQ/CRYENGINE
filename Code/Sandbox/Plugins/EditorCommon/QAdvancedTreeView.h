@@ -127,8 +127,9 @@ private:
 	int m_attributeMenuPathRole;
 
 	// column state merging map, to keep states for columns not present in all models
-	QVariantMap m_columnStateMap;
-	const int   m_layoutVersion;
-	QModelIndex m_hoveredIndex;
-	QTimer*     m_pExpandOnDragTimer;
+	QVariantMap           m_columnStateMap;
+	const int             m_layoutVersion;
+	QPersistentModelIndex m_hoveredIndex;
+	QPersistentModelIndex m_pressedIndex;
+	QTimer*               m_pExpandOnDragTimer;
 };
