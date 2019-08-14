@@ -89,6 +89,7 @@ void CMiddlewareDataWidget::ClearImplDataWidget()
 		g_pIImpl->SignalFilesDropped.DisconnectById(reinterpret_cast<uintptr_t>(this));
 		m_pLayout->removeWidget(m_pImplDataPanel);
 		m_pImplDataPanel = nullptr;
+		g_pIImpl->DestroyDataPanel();
 	}
 }
 
