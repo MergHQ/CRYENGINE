@@ -42,6 +42,7 @@ void CClothComponent::Physicalize()
 			return;
 		GetEntity()->SetStatObj(m_pStatObj, slot | ENTITY_SLOT_ACTUAL, false);
 	}
+	GetEntity()->SetSlotFlags(slot, (GetEntity()->GetSlotFlags(slot) & ~ENTITY_SLOT_CAST_SHADOW) | (uint32)m_castShadows * ENTITY_SLOT_CAST_SHADOW);
 
 	if (!m_pEntity->GetSlotMaterial(slot) != m_materialPath.value.IsEmpty() || 
 			!m_materialPath.value.IsEmpty() && strcmp(m_pEntity->GetSlotMaterial(slot)->GetName(), m_materialPath.value.Left(m_materialPath.value.length() - 4)))
@@ -129,6 +130,7 @@ void CClothComponent::ProcessEvent(const SEntityEvent& event)
 			Physicalize();
 			break;
 		case ENTITY_EVENT_START_GAME:
+			if (IPhysicalEntity *pent = m_pEntity->GetPhysicalEntity())
 			{
 				if (GetEntity()->GetParent() && GetEntity()->GetParent()->GetPhysics())
 					m_entAttachTo = GetEntity()->GetParent()->GetId();
@@ -136,7 +138,7 @@ void CClothComponent::ProcessEvent(const SEntityEvent& event)
 					Reattach();
 				pe_action_awake pa;
 				pa.bAwake = m_airResistance > 0;
-				m_pEntity->GetPhysicalEntity()->Action(&pa);
+				pent->Action(&pa);
 			}
 			break;
 		case ENTITY_EVENT_DETACH_THIS:

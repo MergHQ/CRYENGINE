@@ -80,6 +80,7 @@ Smaller values to be used to remove stretching even with low Max Iters. It's a c
 
 				desc.AddMember(&CClothComponent::m_filePath, 'file', "FilePath", "File", "Determines the CGF to load", "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf");
 				desc.AddMember(&CClothComponent::m_materialPath, 'mat', "Material", "Material", "Specifies the override material for the selected object", "");
+				desc.AddMember(&CClothComponent::m_castShadows, 'shad', "Shadows", "Cast Shadows", "Sets whether the cloth will cast shadows", true);
 
 				desc.AddMember(&CClothComponent::m_mass, 'mass', "Mass", "Mass", "Mass of the cloth object (only useful lighter than air closed objects)", 5.0f);
 				desc.AddMember(&CClothComponent::m_density, 'dens', "Density", "Density", "Density of cloth's vertices (only affects floating in water). Unlike rigid bodies, cloth can have independent mass and density settings", 200.0f);
@@ -116,6 +117,7 @@ Higher values improve solver and stretch enforcement quality, but it should be 0
 
 			_smart_ptr<IStatObj> m_pStatObj;
 	
+			bool  m_castShadows = true;
 			float m_mass = 5;
 			float m_density = 200;
 			float m_thickness = 0.06f;
