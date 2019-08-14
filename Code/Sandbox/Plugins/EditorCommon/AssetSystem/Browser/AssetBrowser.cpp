@@ -1272,6 +1272,7 @@ void CAssetBrowser::EndCreateAsset()
 	if (pAsset)
 	{
 		SelectAsset(*pAsset);
+		UpdateNonEmptyFolderList();
 	}
 }
 
@@ -2307,6 +2308,7 @@ void CAssetBrowser::Paste(bool pasteNextToOriginal)
 		params.pSourceAsset = pAsset;
 		pAsset->GetType()->Create(filename, &params);
 	}
+	UpdateNonEmptyFolderList();
 }
 
 void CAssetBrowser::OnRenameFolder(const QString& folder)
