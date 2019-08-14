@@ -139,6 +139,17 @@ void CFormWidget::SetupWidgets()
 			bool foundModel = std::find(childrenModels.begin(), childrenModels.end(), row->m_pModel) != childrenModels.end();
 			return row->m_pModel->IsRoot() || row->m_pModel->IsHidden() || !foundModel;
 		});
+
+	// Go through all the rows about to be removed and make sure to release their widgets and pointers to property tree
+	std::for_each(rowsIterator, m_rows.end(), [this](std::unique_ptr<SFormRow>& pRow)
+	{
+		ReleaseRowWidget(pRow);
+
+		if (pRow->m_pChildContainer)
+		{
+			pRow->m_pChildContainer->ReleasePropertyTree();
+		}
+	});
 	m_rows.erase(rowsIterator, m_rows.end());
 
 	const int count = m_pRowModel->GetChildren().size();
@@ -272,6 +283,39 @@ void CFormWidget::ReleasePropertyTree()
 	}
 }
 
+void CFormWidget::ReleaseRowWidget(std::unique_ptr<SFormRow>& pRow)
+{
+	QWidget* pWidget = pRow->m_pWidget;
+
+	if (pWidget)
+	{
+		pWidget->setParent(nullptr);
+
+		IPropertyTreeWidget* pPropertyTreeWidget = pRow->GetPropertyTreeWidget();
+		if (pPropertyTreeWidget)
+		{
+			pPropertyTreeWidget->signalDiscarded.DisconnectObject(m_pParentTree);
+			pPropertyTreeWidget->signalChanged.DisconnectObject(m_pParentTree);
+			pPropertyTreeWidget->signalContinuousChanged.DisconnectObject(m_pParentTree);
+			pPropertyTreeWidget->signalPreChanged.DisconnectObject(m_pParentTree);
+		}
+
+		CInlineWidgetBox* pInlineWidgetBox = qobject_cast<CInlineWidgetBox*>(pWidget);
+		if (pInlineWidgetBox)
+		{
+			pInlineWidgetBox->ReleaseWidgets(m_pParentTree);
+			pInlineWidgetBox->deleteLater();
+		}
+	}
+
+	if (pRow->m_pChildContainer)
+	{
+		pRow->m_pChildContainer->ReleaseWidgets();
+	}
+
+	pRow->m_pWidget = nullptr;
+}
+
 void CFormWidget::ReleaseWidgets()
 {
 	//The widgets in the property tree do not follow by the regular Qt model of hierarchy.
@@ -279,35 +323,7 @@ void CFormWidget::ReleaseWidgets()
 	//CRowModel is responsible for their lifetime
 	for (std::unique_ptr<SFormRow>& pRow : m_rows)
 	{
-		QWidget* pWidget = pRow->m_pWidget;
-
-		if (pWidget)
-		{
-			pWidget->setParent(nullptr);
-
-			IPropertyTreeWidget* pPropertyTreeWidget = pRow->GetPropertyTreeWidget();
-			if (pPropertyTreeWidget)
-			{
-				pPropertyTreeWidget->signalDiscarded.DisconnectObject(m_pParentTree);
-				pPropertyTreeWidget->signalChanged.DisconnectObject(m_pParentTree);
-				pPropertyTreeWidget->signalContinuousChanged.DisconnectObject(m_pParentTree);
-				pPropertyTreeWidget->signalPreChanged.DisconnectObject(m_pParentTree);
-			}
-
-			CInlineWidgetBox* pInlineWidgetBox = qobject_cast<CInlineWidgetBox*>(pWidget);
-			if (pInlineWidgetBox)
-			{
-				pInlineWidgetBox->ReleaseWidgets(m_pParentTree);
-				pInlineWidgetBox->deleteLater();
-			}
-		}
-
-		if (pRow->m_pChildContainer)
-		{
-			pRow->m_pChildContainer->ReleaseWidgets();
-		}
-
-		pRow->m_pWidget = nullptr;
+		ReleaseRowWidget(pRow);
 	}
 }
 

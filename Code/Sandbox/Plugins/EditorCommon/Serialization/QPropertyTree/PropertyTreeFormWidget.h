@@ -139,6 +139,7 @@ private:
 		bool                 HasChildren() const;
 	};
 
+	void      ReleaseRowWidget(std::unique_ptr<SFormRow>& pRow);
 	int       GetSplitterPosition() const;
 	SFormRow* ModelToFormRow(const CRowModel* pRow);
 	//Finds the row at position (if it exist)
