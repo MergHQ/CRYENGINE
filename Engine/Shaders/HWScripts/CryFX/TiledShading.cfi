@@ -102,25 +102,25 @@ float GetClipVolumeWeightBinary(uint nClipVolumeID, uint nLightStencilID)
 }
 
 #if FEATURE_SVO_GI
-void ApplyGI(inout float3 specularAcc, inout float3 diffuseAcc, float3 diffuseForwAcc, float2 pixelUV, float3 surfGloss, float3 surfSpecCol,
+void ApplyGI(inout float3 specularAcc, inout float3 diffuseAcc, float3 diffuseForwAcc, uint2 pixelCoord, float3 surfGloss, float3 surfSpecCol,
              Texture2D<float4> TexGiDiffuse, Texture2D<float4> TexGiSpecular, SamplerState samplerTrilinearClamp, const int nIntegrMode, float4 fParms)
 {
 	if(nIntegrMode == 0) // AO only mode
 	{
-		float4 vSkyLightIrradiance = TexGiDiffuse.SampleLevel( samplerTrilinearClamp, pixelUV, 0 );
+		float4 vSkyLightIrradiance = TexGiDiffuse[pixelCoord];
 		specularAcc *= lerp(vSkyLightIrradiance.xyz, 1.f, surfGloss * GetLuminance(surfSpecCol));
 		diffuseAcc *= vSkyLightIrradiance.xyz; // AO + sun bounces
 	}
 	else if(nIntegrMode == 1) // GI replaces diffuse of env probes and adjusts specular
 	{
-		float3 diffuseIrradiance = TexGiDiffuse.SampleLevel( samplerTrilinearClamp, pixelUV, 0 );
+		float3 diffuseIrradiance = TexGiDiffuse[pixelCoord];
 		specularAcc *= lerp(min( 2.f, GetLuminance(diffuseIrradiance) / (GetLuminance(diffuseAcc + diffuseForwAcc) + 0.001)), 1.f, saturate(surfGloss * GetLuminance(surfSpecCol) * fParms.x)) * fParms.z;
 		diffuseAcc = diffuseIrradiance;
 	}
 	else if(nIntegrMode == 2) // Full GI mode
 	{
-		diffuseAcc = TexGiDiffuse.SampleLevel( samplerTrilinearClamp, pixelUV, 0 );
-		specularAcc = TexGiSpecular.SampleLevel( samplerTrilinearClamp, pixelUV, 0 );
+		diffuseAcc = TexGiDiffuse[pixelCoord];
+		specularAcc = TexGiSpecular[pixelCoord];
 	}
 }
 #endif
@@ -237,7 +237,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 #if FEATURE_SVO_GI
 	if (bOpaque)
 	{
-		ApplyGI(specularAcc, diffuseAcc, diffuseAcc, attribs.screenUV + .5f / CV_ScreenSize.xy, attribs.smoothness, attribs.reflectance, 
+		ApplyGI(specularAcc, diffuseAcc, diffuseAcc, int2(attribs.screenUV * CV_ScreenSize.xy), attribs.smoothness, attribs.reflectance,
 			Fwd_GiDiffuseRT, Fwd_GiSpecularRT, ssTrilinearClamp, (int)(cbSVOGI.IntegrationMode.y), cbSVOGI.IntegrationMode);
 	}
 #endif
@@ -803,7 +803,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		nIntegrMode = 2;
 		#endif
 
-		ApplyGI(specularAcc, diffuseAcc, 0, pixelUV + .5f / ScreenSize.xy, surfGloss, surfSpecCol,
+		ApplyGI(specularAcc, diffuseAcc, 0, pixelCoord, surfGloss, surfSpecCol,
 		        GiDiffuseRT, GiSpecularRT, SampStateTrilinearClamp, nIntegrMode, ForwGiIntegrationMode);
 	}
 #endif

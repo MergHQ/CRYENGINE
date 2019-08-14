@@ -193,6 +193,8 @@ protected:
 	{
 		if (GetEntitySlotId() != EmptySlotId)
 		{
+			const uint32 prevFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
+
 			if (((uint32)m_type & (uint32)EMeshType::Render) != 0)
 			{
 				m_pEntity->SetSlotFlags(GetEntitySlotId(), ENTITY_SLOT_RENDER);
@@ -223,6 +225,19 @@ protected:
 				}
 				
 				UpdateGIModeEntitySlotFlags((uint8)m_renderParameters.m_giMode, slotFlags);
+
+				const uint32 integrateIntoTerrainBits =
+					(((uint8)EMeshGIMode::IntegrateIntoTerrain & 1) ? ENTITY_SLOT_GI_MODE_BIT0 : 0) |
+					(((uint8)EMeshGIMode::IntegrateIntoTerrain & 2) ? ENTITY_SLOT_GI_MODE_BIT1 : 0) |
+					(((uint8)EMeshGIMode::IntegrateIntoTerrain & 4) ? ENTITY_SLOT_GI_MODE_BIT2 : 0);
+
+				// Request update of terrain mesh if IntegrateIntoTerrain state was modified
+				if (((slotFlags & (ENTITY_SLOT_GI_MODE_BIT0 | ENTITY_SLOT_GI_MODE_BIT1 | ENTITY_SLOT_GI_MODE_BIT2)) == integrateIntoTerrainBits) ||
+					  ((prevFlags & (ENTITY_SLOT_GI_MODE_BIT0 | ENTITY_SLOT_GI_MODE_BIT1 | ENTITY_SLOT_GI_MODE_BIT2)) == integrateIntoTerrainBits))
+				{
+					AABB nodeBox = pRenderNode->GetBBox();
+					gEnv->p3DEngine->GetITerrain()->ResetTerrainVertBuffers(&nodeBox);
+				}
 
 				m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
 

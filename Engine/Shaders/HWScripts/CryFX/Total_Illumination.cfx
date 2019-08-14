@@ -2611,7 +2611,7 @@ pixoutMRTUpscale UpScalePS(vtxOutWPOS IN)
 	pixoutMRTUpscale OUT = (pixoutMRTUpscale)0;
 
 	const float fDepthRange = .12;
-	const float fDotMax = .35;
+	const float fDotMax = .20;
 	const float fDepthC = SampleLinearDepth(sceneDepth, IN.baseTC.xy);
 	const float fDepthClampMin = 4.f / PS_NearFarClipDist.y;
 	float fTransmittanceY = 0;
@@ -2623,69 +2623,81 @@ pixoutMRTUpscale UpScalePS(vtxOutWPOS IN)
 	float4 vALD = 0;
 	float fShadowSvoFin = 0, fShadowSvoDepthMin = 1.f, fShadowSvoDepthMax = 0;
 	float fAverSmoothness = 0;
-	for (int x = -1; x <= 1; x += 2)
-		for (int y = -1; y <= 1; y += 2)
-		{
+
+	// define sampling kernel
+	const int samplesNum = 5;
+	const float4 sampleTM = float4(SVO_SrcPixSize.xy * 1.5f, SVO_SrcPixSize.xy * 0.25f);
+	const float2 arrSamples[samplesNum] =
+	{
+		// TODO: try (-1,0), (0,1) ....
+		float2( 0,-1) * sampleTM.xy - sampleTM.zw,
+		float2( 0, 1) * sampleTM.xy - sampleTM.zw,
+		float2(-1, 0) * sampleTM.xy - sampleTM.zw,
+		float2( 1, 0) * sampleTM.xy - sampleTM.zw,
+		float2( 0, 0) * sampleTM.xy - sampleTM.zw,
+	};
+
+	for (int s = 0; s < samplesNum; s++)
+	{
+		const float2 tc = IN.baseTC.xy + arrSamples[s];
+
+		const float4 vDiff_RGB_Min = tex2DlodLC(sceneRgbMin, tc);
+		const float4 vDiff_ALD_Min = tex2DlodLC(sceneAldMin, tc);
+		const float4 vDiff_RGB_Max = tex2DlodLC(sceneRgbMax, tc);
+		const float4 vDiff_ALD_Max = tex2DlodLC(sceneAldMax, tc);
+
+		// reduce artifacts around 1p weapon
+		const float fDepthMin = max(fDepthClampMin, vDiff_RGB_Min.w);
+		const float fDepthMax = max(fDepthClampMin, vDiff_RGB_Max.w);
+
+		float fLerp = saturate((fDepthC - fDepthMin) / max(fDepthMax - fDepthMin, 0.0001f));
+
+		float4 vDiff_RGB = lerp(vDiff_RGB_Min, vDiff_RGB_Max, fLerp);
+		float4 vDiff_ALD = lerp(vDiff_ALD_Min, vDiff_ALD_Max, fLerp);
+
 #if %_RT_LIGHTVOLUME1
-			const float2 tc1 = IN.baseTC.xy + float2(x, y) * SVO_SrcPixSize.xy / 2 - SVO_SrcPixSize.xy / 2;
+		const float fDepth1 = SampleLinearDepth(sceneDepth, tc.xy);
 #else
-			const float2 tc1 = IN.baseTC.xy + float2(x, y) * SVO_SrcPixSize.xy / 2;
+		const float fDepth1 = vDiff_RGB.w;
 #endif
 
-			const float4 tc = float4(tc1, 0, 0);
-
-			const float4 vDiff_RGB_Min = tex2DlodPC(sceneRgbMin, tc);
-			const float4 vDiff_ALD_Min = tex2DlodPC(sceneAldMin, tc);
-			const float4 vDiff_RGB_Max = tex2DlodPC(sceneRgbMax, tc);
-			const float4 vDiff_ALD_Max = tex2DlodPC(sceneAldMax, tc);
-
-			// reduce artifacts around 1p weapon
-			const float fDepthMin = max(fDepthClampMin, vDiff_RGB_Min.w);
-			const float fDepthMax = max(fDepthClampMin, vDiff_RGB_Max.w);
-
-			float fLerp = saturate((fDepthC - fDepthMin) / max(fDepthMax - fDepthMin, 0.0001f));
-
-			float4 vDiff_RGB = lerp(vDiff_RGB_Min, vDiff_RGB_Max, fLerp);
-			float4 vDiff_ALD = lerp(vDiff_ALD_Min, vDiff_ALD_Max, fLerp);
-
 #if %_RT_LIGHTVOLUME1
-			const float fDepth1 = SampleLinearDepth(sceneDepth, tc.xy);
+		float fTr = 0;
+		const float3 vNorm = normalize(GetWorldSpaceNormals(tc.xy, fTr, normalize(IN.CamVec.xyz)).xyz);
 #else
-			const float fDepth1 = vDiff_RGB.w;
+		const float3 vNorm = vDiff_ALD;
 #endif
 
-#if %_RT_LIGHTVOLUME1
-			float fTr = 0;
-			const float3 vNorm = normalize(GetWorldSpaceNormals(tc.xy, fTr, normalize(IN.CamVec.xyz)).xyz);
-#else
-			const float3 vNorm = vDiff_ALD;
-#endif
+		float fDotTest = lerp(.25, saturate(fTransmittanceY * 4 + dot(normalize(vNorm), vFocus) - fDotMax), saturate(length(vNorm) / max(0.0001, vDiff_ALD.w) * 8.f));
 
-			float fDotTest = lerp(.25, saturate(fTransmittanceY * 4 + dot(normalize(vNorm), vFocus) - fDotMax), saturate(length(vNorm) / max(0.0001, vDiff_ALD.w) * 8.f)) + .001;
+		float fDepTest = saturate((fDepthRange - abs(1.f - fDepthC / fDepth1)) * 4);
 
-			float fDepTest = saturate((fDepthRange - abs(1.f - fDepthC / fDepth1)) * 4) + .001;
+		float fW = fDepTest * fDotTest;
 
-			const float fW = fDepTest * fDotTest;
+		if (s == 4)
+			fW = saturate(fW * 4); // midddle sample is most important
 
-			vRGB.xyz += vDiff_RGB.xyz * fW;
-			vALD += vDiff_ALD * fW;
-			MaterialAttribsCommon gbuffer = DecodeGBufferChannels(tc1);
-			fAverSmoothness += gbuffer.Smoothness * fW;
-			vRGB.w += fW;
+		fW += +.001;
+
+		vRGB.xyz += vDiff_RGB.xyz * fW;
+		vALD += vDiff_ALD * fW;
+		MaterialAttribsCommon gbuffer = DecodeGBufferChannels(tc);
+		fAverSmoothness += gbuffer.Smoothness * fW;
+		vRGB.w += fW;
 
 #if %_RT_REVERSE_DEPTH
-			if (IsDiffuseMode())
-			{
-				// upscale svo sun shadow
-				float4 vShadowSvo = tex2DlodPC(shadowFromSvoMinMax, tc);   // shadowMin, shadowMax, depthMin, depthMax
-				float lerpShadow = saturate((fDepthC - vShadowSvo[2]) / max(vShadowSvo[3] - vShadowSvo[2], 0.0001f));
-				float shadowSvoLerped = lerp(vShadowSvo[0], vShadowSvo[1], lerpShadow);
-				fShadowSvoDepthMin = min(fShadowSvoDepthMin, vShadowSvo[2]);
-				fShadowSvoDepthMax = max(fShadowSvoDepthMax, vShadowSvo[3]);
-				fShadowSvoFin += shadowSvoLerped * fW;
-			}
-#endif
+		if (IsDiffuseMode())
+		{
+			// upscale svo sun shadow
+			float4 vShadowSvo = tex2DlodPC(shadowFromSvoMinMax, tc);   // shadowMin, shadowMax, depthMin, depthMax
+			float lerpShadow = saturate((fDepthC - vShadowSvo[2]) / max(vShadowSvo[3] - vShadowSvo[2], 0.0001f));
+			float shadowSvoLerped = lerp(vShadowSvo[0], vShadowSvo[1], lerpShadow);
+			fShadowSvoDepthMin = min(fShadowSvoDepthMin, vShadowSvo[2]);
+			fShadowSvoDepthMax = max(fShadowSvoDepthMax, vShadowSvo[3]);
+			fShadowSvoFin += shadowSvoLerped * fW;
 		}
+#endif
+	}
 
 	if (vRGB.w)
 	{

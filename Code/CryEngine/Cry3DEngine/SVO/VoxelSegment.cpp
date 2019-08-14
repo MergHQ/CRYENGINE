@@ -1006,7 +1006,9 @@ bool CVoxelSegment::UpdateBrickRenderData()
 
 	if (m_pBlockInfo == 0)
 	{
+#ifdef _DEBUG
 		Cry3DEngineBase::PrintMessage("UpdateBrickRenderData postponed %d", GetCurrPassMainFrameID());
+#endif
 		gSvoEnv->m_svoFreezeTime = -1; // prevent hang in case of full sync update
 		CVoxelSegment::m_bUpdateBrickRenderDataPostponed = 1;
 		return false;
