@@ -1635,24 +1635,38 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 		folders = GetSelectedFolders();
 	}
 
-	const CAsset* const pSelectedAsset = assets.size() == 1 ? assets[0] : nullptr;
+	bool canReimportAssets = false;
+	bool canCopyAssets = false;
+	bool hasImmutableAssets = false;
+	bool hasModifiedAssets = false;
+
+	for (const CAsset* const pAsset : assets)
+	{
+		canReimportAssets = canReimportAssets || (pAsset->GetType()->IsImported() && !pAsset->IsImmutable() && pAsset->HasSourceFile());
+		hasImmutableAssets = hasImmutableAssets || (pAsset->IsImmutable() || FileUtils::Pak::IsFileInPakOnly(pAsset->GetFile(0)) || FileUtils::Pak::IsFileInPakOnly(pAsset->GetMetadataFile()));
+		canCopyAssets = canCopyAssets || pAsset->GetType()->CanBeCopied();
+		hasModifiedAssets = hasModifiedAssets || pAsset->IsModified();
+	}
+
 	const QString selectedFolder = folders.size() == 1 ? QtUtil::ToQString(folders[0]) : QString();
 
+	const bool hasSingleAssetSelected = assets.size() == 1;
 	const bool hasAssetsSelected = !assets.empty();
 	const bool hasWritableFolderSelected = !selectedFolder.isNull() && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(selectedFolder);
 	const bool hasEmptyFolderSelected = hasWritableFolderSelected && CAssetFoldersModel::GetInstance()->IsEmptyFolder(selectedFolder);
-	const bool hasAssetWithFilesOnDiskSelected = pSelectedAsset && !pSelectedAsset->IsImmutable() && !FileUtils::Pak::IsFileInPakOnly(pSelectedAsset->GetMetadataFile());
+	const bool hasWritableAssetSelected = hasSingleAssetSelected && !hasImmutableAssets && assets.front()->IsWritable(true);
 
 	m_pActionManageWorkFiles->setEnabled(hasAssetsSelected);
-	m_pActionDelete->setEnabled(hasAssetsSelected ^ hasEmptyFolderSelected);
-	m_pActionRename->setEnabled(hasAssetsSelected ^ hasEmptyFolderSelected);
-	m_pActionCopy->setEnabled(hasAssetsSelected);
-	m_pActionDuplicate->setEnabled(hasAssetsSelected);
-	m_pActionSave->setEnabled(hasAssetsSelected);
-	m_pActionReimport->setEnabled(hasAssetsSelected);
+	m_pActionDelete->setEnabled((hasAssetsSelected && !hasImmutableAssets) ^ hasEmptyFolderSelected);
+	m_pActionRename->setEnabled(hasWritableAssetSelected ^ hasEmptyFolderSelected);
+	m_pActionCopy->setEnabled(canCopyAssets);
+	m_pActionDuplicate->setEnabled(canCopyAssets);
+	m_pActionSave->setEnabled(hasModifiedAssets);
+	m_pActionDiscardChanges->setEnabled(hasModifiedAssets);
+	m_pActionReimport->setEnabled(canReimportAssets);
 
 	GetAction("general.new_folder")->setEnabled(hasWritableFolderSelected);
-	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected ^ hasAssetWithFilesOnDiskSelected);
+	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected ^ (hasSingleAssetSelected && !hasImmutableAssets));
 	m_pActionGenerateThumbnails->setEnabled(hasWritableFolderSelected);
 
 	UpdatePasteActionState();
@@ -1772,53 +1786,23 @@ void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folder
 
 void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu& abstractMenu)
 {
-	bool canReimport = false;
-	bool canCopy = false;
-	bool isImmutable = false;
-	bool isModified = false;
-	QMap<const CAssetType*, std::vector<CAsset*>> assetsByType;
-
-	for (CAsset* asset : assets)
-	{
-		if (asset->GetType()->IsImported() && !asset->IsImmutable() && asset->HasSourceFile())
-		{
-			canReimport = true;
-		}
-
-		if (asset->IsImmutable() || FileUtils::Pak::IsFileInPakOnly(assets.front()->GetFile(0)))
-		{
-			isImmutable = true;
-		}
-
-		canCopy = canCopy || asset->GetType()->CanBeCopied();
-
-		isModified = isModified || asset->IsModified();
-
-		assetsByType[asset->GetType()].push_back(asset);
-	}
-
 	abstractMenu.FindSectionByName("Assets");
 
 	abstractMenu.AddCommandAction(m_pActionCopy);
-	m_pActionCopy->setEnabled(canCopy);
-
 	abstractMenu.AddCommandAction(m_pActionDuplicate);
-	m_pActionDuplicate->setEnabled(canCopy);
-
 	abstractMenu.AddCommandAction(m_pActionReimport);
-	m_pActionReimport->setEnabled(canReimport);
-
 	abstractMenu.AddCommandAction(m_pActionDelete);
-	m_pActionDelete->setEnabled(!isImmutable);
-
 	abstractMenu.AddCommandAction(m_pActionSave);
-	m_pActionSave->setEnabled(isModified);
-
 	abstractMenu.AddCommandAction(m_pActionDiscardChanges);
-	m_pActionDiscardChanges->setEnabled(isModified);
 
 	int section = abstractMenu.GetNextEmptySection();
 	abstractMenu.AddCommandAction(m_pActionSaveAll, section);
+
+	QMap<const CAssetType*, std::vector<CAsset*>> assetsByType;
+	for (CAsset* pAsset : assets)
+	{
+		assetsByType[pAsset->GetType()].push_back(pAsset);
+	}
 
 	//TODO : source control
 	auto it = assetsByType.begin();
@@ -1835,20 +1819,15 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	if (assets.size() == 1)
 	{
-		CAsset* pAsset = assets.front();
-
 		AddWorkFilesMenu(abstractMenu);
 
-		const bool canBeRenamed = !isImmutable && pAsset->IsWritable(true);
-
 		abstractMenu.AddCommandAction(m_pActionRename);
-		m_pActionRename->setEnabled(canBeRenamed);
-
 		abstractMenu.AddCommandAction(m_pActionShowInFileExplorer);
-		m_pActionShowInFileExplorer->setEnabled(!isImmutable);
 
 		AppendFilterDependenciesActions(&abstractMenu, assets.front());
 	}
+
+	UpdateSelectionDependantActions();
 
 	NotifyContextMenuCreation(abstractMenu, assets, folders);
 }
