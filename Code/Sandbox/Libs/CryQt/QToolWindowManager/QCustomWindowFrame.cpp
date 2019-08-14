@@ -48,6 +48,10 @@ QCustomTitleBar::QCustomTitleBar(QWidget* parent)
 	myLayout->setContentsMargins(0, 0, 0, 0);
 	myLayout->setSpacing(0);
 	m_caption = new QLabel(this);
+	// Set the caption to be transparent for mouse events since the label shouldn't handle any mouse events.
+	// Instead this Custom Title Bar will need to handle several events that might happen on the label. Ex:
+	// double clicking on the label should maximize or restore the window.
+	m_caption->setAttribute(Qt::WA_TransparentForMouseEvents);
 	
 	m_caption->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	m_sysMenuButton = new QToolButton(this);
@@ -237,7 +241,7 @@ void QCustomTitleBar::onFrameContentsChanged(QWidget* newContents)
 
 void QCustomTitleBar::mousePressEvent(QMouseEvent* event)
 {
-	if (event->button() == Qt::LeftButton && qApp->widgetAt(QCursor::pos()) == m_caption)
+	if (event->button() == Qt::LeftButton && qApp->widgetAt(QCursor::pos()) != m_sysMenuButton)
 	{
 		onBeginDrag();
 	}
@@ -265,6 +269,12 @@ void QCustomTitleBar::mouseReleaseEvent(QMouseEvent* event)
 	QFrame::mouseReleaseEvent(event);
 }
 
+void QCustomTitleBar::mouseDoubleClickEvent(QMouseEvent* pEvent)
+{
+	pEvent->accept();
+	toggleMaximizedParent();
+}
+
 bool QCustomTitleBar::eventFilter(QObject* pObject, QEvent* pEvent)
 {
 	if (pObject == m_sysMenuButton)
@@ -288,51 +298,6 @@ bool QCustomTitleBar::eventFilter(QObject* pObject, QEvent* pEvent)
 
 	return QFrame::eventFilter(pObject, pEvent);
 }
-
-bool QCustomTitleBar::nativeEvent(const QByteArray &eventType, void *message, long *result)
-{
-#if defined(WIN32) || defined(WIN64)
-	MSG* msg = reinterpret_cast<MSG*>(message);
-	if (winEvent(msg, result))
-		return true;
-#endif
-	return QFrame::nativeEvent(eventType, message, result);
-}
-
-#if defined(WIN32) || defined(WIN64)
-bool QCustomTitleBar::winEvent(MSG *msg, long *result)
-{
-	if (msg->message == WM_NCHITTEST)
-	{
-		QPoint pos(GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam));
-		QRegion children = childrenRegion();
-		if (!children.contains(mapFromGlobal(pos)))
-		{
-			*result = HTTRANSPARENT;
-			return true;
-		}
-	}
-	if (msg->message == WM_LBUTTONDBLCLK)
-	{
-		QPoint pos(GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam));
-		QRegion children = childrenRegion() - QRegion(m_caption->geometry());
-		if (!children.contains(pos))
-		{
-			toggleMaximizedParent();
-			*result = 0;
-			return true;
-		}
-		// Qt 5 does not send a MouseButtonDblClick event through the event filter for the system menu button, so send it manually
-		else if (m_sysMenuButton->geometry().contains(pos))
-		{
-			QMouseEvent me(QEvent::MouseButtonDblClick, pos, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-			QApplication::sendEvent(m_sysMenuButton, &me);
-			return true;
-		}
-	}
-	return false;
-}
-#endif
 
 QCustomWindowFrame* QCustomWindowFrame::wrapWidget(QWidget* w)
 {
@@ -509,7 +474,7 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 		}
 		break;
 	case WM_NCHITTEST:
-		if (windowState() == Qt::WindowMaximized)
+		if (windowState() & Qt::WindowMaximized)
 		{
 			return false;
 		}
@@ -591,6 +556,18 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 		*result = 0;
 		// Don't intercept the message, so default functionality still happens.
 		return false;
+	}
+	break;
+	// Qt 5 does not send a MouseButtonDblClick event through the event filter for the system menu button, so send it manually
+	case WM_LBUTTONDBLCLK:
+	{
+		QPoint pos(GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam));
+		if (m_titleBar->geometry().contains(pos))
+		{
+			QMouseEvent mouseEvent(QEvent::MouseButtonDblClick, pos, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+			QApplication::sendEvent(m_titleBar, &mouseEvent);
+			return true;
+		}
 	}
 	break;
 	}

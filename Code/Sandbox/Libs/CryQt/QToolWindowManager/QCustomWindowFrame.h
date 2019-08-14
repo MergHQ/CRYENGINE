@@ -31,12 +31,8 @@ public slots:
 protected:
 	virtual void mousePressEvent(QMouseEvent*) override;
 	virtual void mouseReleaseEvent(QMouseEvent*) override;
+	virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
 	virtual bool eventFilter(QObject*, QEvent*) override;
-	virtual bool nativeEvent(const QByteArray& eventType, void* message, long* result) override;
-
-#if (defined(_WIN32) || defined(_WIN64))
-	bool winEvent(MSG* msg, long* result);
-#endif
 
 protected:
 	bool         m_dragging;
