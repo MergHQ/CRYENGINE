@@ -905,7 +905,6 @@ void CAssetBrowser::InitMenus()
 	pMenuEdit->AddCommandAction(m_pActionReimport, section);
 
 	section = pMenuEdit->GetNextEmptySection();
-	m_pActionShowInFileExplorer = pMenuEdit->CreateCommandAction("path_utils.show_in_file_explorer", section);
 	pMenuEdit->AddCommandAction(m_pActionCopyName, section);
 	pMenuEdit->AddCommandAction(m_pActionCopyPath, section);
 
@@ -1636,11 +1635,13 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 		folders = GetSelectedFolders();
 	}
 
+	const CAsset* const pSelectedAsset = assets.size() == 1 ? assets[0] : nullptr;
 	const QString selectedFolder = folders.size() == 1 ? QtUtil::ToQString(folders[0]) : QString();
 
 	const bool hasAssetsSelected = !assets.empty();
 	const bool hasWritableFolderSelected = !selectedFolder.isNull() && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(selectedFolder);
 	const bool hasEmptyFolderSelected = hasWritableFolderSelected && CAssetFoldersModel::GetInstance()->IsEmptyFolder(selectedFolder);
+	const bool hasAssetWithFilesOnDiskSelected = pSelectedAsset && !pSelectedAsset->IsImmutable() && !FileUtils::Pak::IsFileInPakOnly(pSelectedAsset->GetMetadataFile());
 
 	m_pActionManageWorkFiles->setEnabled(hasAssetsSelected);
 	m_pActionDelete->setEnabled(hasAssetsSelected ^ hasEmptyFolderSelected);
@@ -1651,7 +1652,7 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	m_pActionReimport->setEnabled(hasAssetsSelected);
 
 	GetAction("general.new_folder")->setEnabled(hasWritableFolderSelected);
-	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected);
+	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected ^ hasAssetWithFilesOnDiskSelected);
 	m_pActionGenerateThumbnails->setEnabled(hasWritableFolderSelected);
 
 	UpdatePasteActionState();
