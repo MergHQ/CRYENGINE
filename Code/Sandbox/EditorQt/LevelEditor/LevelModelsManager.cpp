@@ -19,7 +19,7 @@ enum EFullLevelColumns
 {
 	eFullLevelColumns_LayerColor,
 	eFullLevelColumns_Visible, //Must be kept index 0 to match
-	eFullLevelColumns_Frozen,  //Must be kept index 1 to match
+	eFullLevelColumns_Locked,  //Must be kept index 1 to match
 	eFullLevelColumns_VCS,     //Must be kept index 2 to match
 	eFullLevelColumns_Name,    //Must be kept index 3 to match
 	eFullLevelColumns_Layer,
@@ -60,8 +60,8 @@ static CItemModelAttribute* FullLevel_GetColumnAttribute(int column)
 		return &LevelModelsAttributes::s_objectTypeDescAttribute;
 	case eFullLevelColumns_Visible:
 		return &LevelModelsAttributes::s_visibleAttribute;
-	case eFullLevelColumns_Frozen:
-		return &LevelModelsAttributes::s_frozenAttribute;
+	case eFullLevelColumns_Locked:
+		return &LevelModelsAttributes::s_lockedAttribute;
 	case eFullLevelColumns_VCS:
 		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eFullLevelColumns_DefaultMaterial:
@@ -117,7 +117,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 	{
 		if (section == eFullLevelColumns_Visible)
 			return CryIcon("icons:General/Visibility_True.ico");
-		if (section == eFullLevelColumns_Frozen)
+		if (section == eFullLevelColumns_Locked)
 			return CryIcon("icons:general_lock_true.ico");
 		if (section == eFullLevelColumns_VCS)
 			return CryIcon("icons:VersionControl/icon.ico");
@@ -125,7 +125,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_VCS
+		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Locked || section == eFullLevelColumns_VCS
 		    || section == eFullLevelColumns_LayerColor)
 		{
 			return QString("");
@@ -145,7 +145,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		switch (section)
 		{
 		case eFullLevelColumns_Visible:
-		case eFullLevelColumns_Frozen:
+		case eFullLevelColumns_Locked:
 		case eFullLevelColumns_VCS:
 		case eFullLevelColumns_Name:
 		case eFullLevelColumns_LayerColor:

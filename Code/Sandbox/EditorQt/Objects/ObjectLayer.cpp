@@ -638,7 +638,7 @@ void CObjectLayer::SetFrozen(bool isFrozen, bool isRecursive)
 		else
 		{
 			string title;
-			title.Format("Set Layer %s", (isFrozen ? "Frozen" : "Unfrozen"));
+			title.Format("Set Layer %s", (isFrozen ? "Locked" : "Unlocked"));
 			CUndo setFrozenUndo(title);
 			CUndo::Record(new CUndoLayerStates(this));
 		}

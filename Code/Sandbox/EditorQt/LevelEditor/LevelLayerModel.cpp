@@ -34,7 +34,7 @@
 namespace LevelModelsAttributes
 {
 CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked, Qt::CheckStateRole);
-CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_lockedAttribute("Locked", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
 CItemModelAttribute s_layerNameAttribute("Layer", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_objectTypeDescAttribute("Type", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_defaultMaterialAttribute("Default Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
@@ -93,7 +93,7 @@ CItemModelAttribute * CLevelLayerModel::GetAttributeForColumn(EObjectColumns col
 	case eObjectColumns_Visible:
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eObjectColumns_Frozen:
-		return &LevelModelsAttributes::s_frozenAttribute;
+		return &LevelModelsAttributes::s_lockedAttribute;
 	case eObjectColumns_VCS:
 		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eObjectColumns_DefaultMaterial:

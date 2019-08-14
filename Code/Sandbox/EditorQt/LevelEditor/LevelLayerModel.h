@@ -20,7 +20,7 @@ extern CItemModelAttribute s_layerNameAttribute;
 extern CItemModelAttributeEnumT<ObjectType> s_objectTypeAttribute;
 extern CItemModelAttribute s_objectTypeDescAttribute;
 extern CItemModelAttribute s_visibleAttribute;
-extern CItemModelAttribute s_frozenAttribute;
+extern CItemModelAttribute s_lockedAttribute;
 extern CItemModelAttribute s_defaultMaterialAttribute;
 extern CItemModelAttribute s_customMaterialAttribute;
 extern CItemModelAttribute s_breakableAttribute;

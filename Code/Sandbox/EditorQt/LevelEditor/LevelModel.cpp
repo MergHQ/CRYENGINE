@@ -261,7 +261,7 @@ namespace LevelModelsAttributes
 {
 CItemModelAttribute s_ExportableAttribute("Exportable", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
 CItemModelAttribute s_ExportablePakAttribute("Exportable to Pak", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
-CItemModelAttribute s_LoadedByDefaultAttribute("Loaded in Game", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_LoadedByDefaultAttribute("Auto-Load", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
 CItemModelAttribute s_HasPhysicsAttribute("Has Physics", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
 CItemModelAttribute s_PlatformAttribute("Platform", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 }
@@ -329,7 +329,7 @@ CItemModelAttribute* CLevelModel::GetColumnAttribute(int column) const
 	case eLayerColumns_Visible:
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eLayerColumns_Frozen:
-		return &LevelModelsAttributes::s_frozenAttribute;
+		return &LevelModelsAttributes::s_lockedAttribute;
 	case eLayerColumns_VCS:
 		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eLayerColumns_Exportable:
