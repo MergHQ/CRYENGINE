@@ -28,6 +28,7 @@ namespace CryVR
 		CPlugin_EmulatorVR::~CPlugin_EmulatorVR()
 		{
 			GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
+			SAFE_DELETE(m_pDevice);
 		}
 
 		bool CPlugin_EmulatorVR::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
