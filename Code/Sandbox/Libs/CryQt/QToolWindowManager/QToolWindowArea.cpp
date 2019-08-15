@@ -151,11 +151,12 @@ void QToolWindowArea::addToolWindows(const QList<QWidget*>& toolWindows, int ind
 			  setWindowTitle(title);
 			}
 		});
-		connect(toolWindow, &QWidget::windowIconChanged, this, [this, newIndex, toolWindow](const QIcon& icon)
+		connect(toolWindow, &QWidget::windowIconChanged, this, [this, toolWindow](const QIcon& icon)
 		{
+			int index = indexOf(toolWindow);
 			if (indexOf(toolWindow) >= 0)
 			{
-			  setTabIcon(newIndex, icon);
+			  setTabIcon(index, icon);
 			}
 			if (count() == 1)
 			{
