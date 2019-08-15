@@ -133,23 +133,26 @@ void CFormWidget::SetupWidgets()
 	const std::vector<_smart_ptr<CRowModel>>& childrenModels = m_pRowModel->GetChildren();
 
 	//Cleanup rows without a matching model in the new models tree
-	auto rowsIterator = std::remove_if(m_rows.begin(), m_rows.end(), [&childrenModels, this](const std::unique_ptr<SFormRow>& row)
+	auto rowsIterator = std::remove_if(m_rows.begin(), m_rows.end(), [&childrenModels, this](std::unique_ptr<SFormRow>& pRow)
 		{
 			//Look for a model in use matching this row model
-			bool foundModel = std::find(childrenModels.begin(), childrenModels.end(), row->m_pModel) != childrenModels.end();
-			return row->m_pModel->IsRoot() || row->m_pModel->IsHidden() || !foundModel;
+			const bool foundModel = std::find(childrenModels.begin(), childrenModels.end(), pRow->m_pModel) != childrenModels.end();
+
+			if (!pRow->m_pModel->IsRoot() && !pRow->m_pModel->IsHidden() && foundModel)
+			{
+				return false;
+			}
+
+			// The row is about to be removed, release row widgets and pointers to property tree
+			ReleaseRowWidget(pRow);
+			if (pRow->m_pChildContainer)
+			{
+				pRow->m_pChildContainer->ReleasePropertyTree();
+			}
+
+			return true;
 		});
 
-	// Go through all the rows about to be removed and make sure to release their widgets and pointers to property tree
-	std::for_each(rowsIterator, m_rows.end(), [this](std::unique_ptr<SFormRow>& pRow)
-	{
-		ReleaseRowWidget(pRow);
-
-		if (pRow->m_pChildContainer)
-		{
-			pRow->m_pChildContainer->ReleasePropertyTree();
-		}
-	});
 	m_rows.erase(rowsIterator, m_rows.end());
 
 	const int count = m_pRowModel->GetChildren().size();
