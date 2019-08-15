@@ -390,6 +390,8 @@ public:
 			if (numbox)
 			{
 				numbox->valueChanged(numbox->value());
+				pEvent->accept();
+				return;
 			}
 		}
 
