@@ -101,6 +101,8 @@ void PySaveLayoutAs()
 
 void FindSubPanes(IPane* pPane, const char* paneClassName, std::vector<IPane*>& result)
 {
+	MAKE_SURE(pPane, return);
+
 	for (IPane* pSubPane : pPane->GetSubPanes())
 	{
 		if (strcmp(pSubPane->GetPaneTitle(), paneClassName) == 0)
@@ -421,7 +423,11 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 
 	m_bToolsDirty = true;
 
-	IPane::s_signalPaneCreated(pPane->m_pane);
+	// May be nullptr for MFC Tools
+	if (pPane->m_pane)
+	{
+		IPane::s_signalPaneCreated(pPane->m_pane);
+	}
 
 	return pPane;
 }
@@ -671,7 +677,7 @@ std::vector<IPane*> CTabPaneManager::FindAllPanelsByClass(const char* paneClassN
 		{
 			result.push_back(tool->m_pane);
 		}
-		else
+		else if (tool->m_pane)
 		{
 			FindSubPanes(tool->m_pane, paneClassName, result);
 		}
