@@ -590,7 +590,7 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		abstractMenu.AddCommandAction(GetAction("general.isolate_locked"), section);
 	}
 
-	if (layers.size() || layerFolders.size())
+	if (layers.size() && layerFolders.empty())
 	{
 		PopulateExistingSectionsForLayers(abstractMenu);
 
