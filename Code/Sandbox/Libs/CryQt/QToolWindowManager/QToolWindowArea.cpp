@@ -596,7 +596,9 @@ void QToolWindowArea::showContextMenu(const QPoint& point)
 	int tabIndex = tabBar()->tabAt(point);
 	if (tabIndex >= 0)
 	{
-		widget(tabIndex)->customContextMenuRequested(tabBar()->mapToGlobal(point));
+		QMenu menu(this);
+		connect(menu.addAction(tr("Close")), &QAction::triggered, [this, tabIndex]() { closeTab(tabIndex); });
+		menu.exec(mapToGlobal(QPoint(point.x(), point.y())));
 	}
 }
 
