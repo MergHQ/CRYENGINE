@@ -34,7 +34,7 @@ constexpr int g_connectionsNameColumn = static_cast<int>(CConnectionsModel::ECol
 
 //////////////////////////////////////////////////////////////////////////
 CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
-	: QWidget(pParent)
+	: CEditorWidget(pParent)
 	, m_pControl(nullptr)
 	, m_pConnectionModel(new CConnectionsModel(this))
 	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this))
@@ -99,6 +99,8 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 			RefreshConnectionProperties();
 		}, reinterpret_cast<uintptr_t>(this));
 
+	RegisterAction("general.delete", &CConnectionsWidget::RemoveSelectedConnection);
+
 	QObject::connect(m_pConnectionModel, &CConnectionsModel::SignalConnectionAdded, this, &CConnectionsWidget::OnConnectionAdded);
 }
 
@@ -121,11 +123,7 @@ bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 
 		if (pKeyEvent != nullptr)
 		{
-			if (pKeyEvent->key() == Qt::Key_Delete)
-			{
-				RemoveSelectedConnection();
-			}
-			else if (pKeyEvent->key() == Qt::Key_Space)
+			if (pKeyEvent->key() == Qt::Key_Space)
 			{
 				ExecuteConnection();
 			}
@@ -220,7 +218,7 @@ void CConnectionsWidget::OnConnectionAdded(ControlId const id)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::RemoveSelectedConnection()
+bool CConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl != nullptr)
 	{
@@ -266,6 +264,8 @@ void CConnectionsWidget::RemoveSelectedConnection()
 			}
 		}
 	}
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Common/SharedData.h"
+#include <EditorFramework/EditorWidget.h>
 #include <QWidget>
 
 class QPropertyTreeLegacy;
@@ -14,7 +15,7 @@ class CControl;
 class CConnectionsModel;
 class CTreeView;
 
-class CConnectionsWidget final : public QWidget
+class CConnectionsWidget final : public CEditorWidget
 {
 	Q_OBJECT
 
@@ -47,7 +48,7 @@ private:
 	bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QObject
 
-	void       RemoveSelectedConnection();
+	bool       RemoveSelectedConnection();
 	void       RefreshConnectionProperties();
 	void       UpdateSelectedConnections();
 	void       ResizeColumns();
@@ -55,7 +56,7 @@ private:
 	XmlNodeRef ConstructTemporaryTriggerConnections(CControl const* const pControl);
 
 	CControl*                         m_pControl;
-	QPropertyTreeLegacy* const              m_pConnectionProperties;
+	QPropertyTreeLegacy* const        m_pConnectionProperties;
 	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
 	CConnectionsModel* const          m_pConnectionModel;
 	CTreeView* const                  m_pTreeView;
