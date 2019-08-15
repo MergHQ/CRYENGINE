@@ -164,7 +164,10 @@ public:
 		//If we are releasing left mouse it might be the end of a sliding op or a selection on the line edit
 		if (pEvent->button() == Qt::LeftButton)
 		{
-			setCursor(Qt::ArrowCursor);
+			if (!getTextEditMode())
+			{
+				setCursor(Qt::ArrowCursor);
+			}
 
 			//slide op is finished, edit state can become none
 			if (m_editState.editState == EditState::Slider)
