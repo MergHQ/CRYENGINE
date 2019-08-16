@@ -1632,7 +1632,7 @@ void CInlineWidgetBox::ReleaseWidgets(QPropertyTree* pPropertyTree)
 {
 	while (m_pHBoxLayout->count() > 0)
 	{
-		QLayoutItem* pItem = m_pHBoxLayout->takeAt(layout()->count() - 1);
+		const QScopedPointer<QLayoutItem> pItem(m_pHBoxLayout->takeAt(layout()->count() - 1));
 		QWidget* pItemWidget = pItem->widget();
 		if (pItemWidget)
 		{

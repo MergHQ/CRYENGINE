@@ -192,6 +192,8 @@ public:
 		virtual void Release(Product* pProduct) override
 		{
 			pProduct->setParent(nullptr);
+			// Force hide this widget since setting the parent to nullptr will only conditionally hide the widget
+			pProduct->hide();
 			m_productPool.push(pProduct);
 		}
 
