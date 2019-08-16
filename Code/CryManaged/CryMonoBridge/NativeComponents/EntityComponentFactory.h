@@ -323,6 +323,7 @@ public:
 
 protected:
 	void CacheMethods(bool isAbstract);
+	void InitializeComponent(std::shared_ptr<CManagedEntityComponent> pComponent) const;
 
 public:
 	CManagedComponentClassDescription                      m_classDescription;
