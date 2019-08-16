@@ -62,12 +62,17 @@ public:
 		return pComboBox;
 	}
 
-	virtual void UpdateWidget(QWidget* widget, const QVariant& value) override
+	virtual void UpdateWidget(QWidget* pWidget, const QVariant& value) override
 	{
-		QMenuComboBox* combo = qobject_cast<QMenuComboBox*>(widget);
-		if (combo)
+		QMenuComboBox* const pComboBox = qobject_cast<QMenuComboBox*>(pWidget);
+		if (pComboBox)
 		{
-			combo->SetChecked(value.toStringList());
+			const int versionControlStates = value.toInt();
+			for (int index = 0, indexCount = pComboBox->GetItemCount(); index < indexCount; ++index)
+			{
+				const QVariant itemValue = pComboBox->GetData(index);
+				pComboBox->SetChecked(pComboBox->GetItem(index), itemValue.toInt() & versionControlStates);
+			}
 		}
 	}
 
