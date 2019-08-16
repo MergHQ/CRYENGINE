@@ -123,9 +123,8 @@ void CClothComponent::ProcessEvent(const SEntityEvent& event)
 	switch (event.event)
 	{
 		case ENTITY_EVENT_RESET:
-			if (!m_pStatObj || !(m_pStatObj->GetFlags() & STATIC_OBJECT_GENERATED))
-				break;
-			m_pStatObj = nullptr;
+			if (m_pStatObj && m_pStatObj->GetFlags() & STATIC_OBJECT_GENERATED)
+				m_pStatObj = nullptr;
 		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
 			Physicalize();
 			break;
