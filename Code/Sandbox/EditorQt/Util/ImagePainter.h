@@ -4,12 +4,12 @@
 
 #include "Terrain/Heightmap.h"
 
-class CHeightmap;
+class CLayer;
 
 // Brush structure used for painting.
 struct SEditorPaintBrush
 {
-	SEditorPaintBrush(class CHeightmap& rHeightmap, class CLayer& rLayer, bool bMaskByLayerSettings, uint32 dwLayerIdMask, bool bFlood);
+	SEditorPaintBrush(CHeightmap& rHeightmap, CLayer& rLayer, bool bMaskByLayerSettings, uint32 dwLayerIdMask, bool bFlood);
 
 	CHeightmap&   m_rHeightmap;       // for mask support
 	unsigned char color;              // Painting color

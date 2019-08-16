@@ -6,6 +6,7 @@
 class CHeightmap;
 class CLayer;
 struct SDisplayContext;
+struct CUndoTPElement;
 
 /** Terrain Texture brush types.
  */
@@ -85,8 +86,6 @@ public:
 	void         Action_CollectUndo(float x, float y, float radius);
 	void         Action_StopUndo();
 
-	static void  Command_Activate();
-
 	virtual void Serialize(Serialization::IArchive& ar) override;
 
 private:
@@ -98,9 +97,9 @@ private:
 	QPoint m_lastMousePoint;
 
 	//! Flag is true if painting mode. Used for Undo.
-	bool                   m_bIsPainting;
+	bool            m_bIsPainting;
 
-	struct CUndoTPElement* m_pTPElem;
+	CUndoTPElement* m_pTPElem;
 
 	// Cache often used interfaces.
 	I3DEngine*           m_3DEngine;

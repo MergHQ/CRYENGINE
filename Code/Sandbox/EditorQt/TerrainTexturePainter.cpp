@@ -691,6 +691,8 @@ void CTerrainTexturePainter::PaintLayer(CLayer* pLayer, const Vec3& center, bool
 		float fX = center.y / fTerrainSize;             // 0..1
 		float fY = center.x / fTerrainSize;             // 0..1
 
+		Action_CollectUndo(fX, fY, br.fRadius);
+
 		// paint terrain materials
 		if (m_brush.bDetailLayer)
 		{
@@ -711,7 +713,6 @@ void CTerrainTexturePainter::PaintLayer(CLayer* pLayer, const Vec3& center, bool
 
 			if (pLayer->GetTexture().IsValid())
 			{
-				Action_CollectUndo(fX, fY, br.fRadius);
 				pRGBLayer->PaintBrushWithPatternTiled(fX, fY, br, pLayer->GetTexture());
 			}
 		}
