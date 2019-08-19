@@ -98,10 +98,12 @@ bool CMaterialType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParam
 	string materialName;
 	materialName.Format("%s%s", asset.GetFolder(), asset.GetName());
 	CMaterial* newMaterial = GetIEditor()->GetMaterialManager()->CreateMaterial(materialName);
-	CRY_ASSERT(newMaterial->Save());
+	if (!newMaterial->Save())
+	{
+		return false;
+	}
 
 	asset.AddFile( newMaterial->GetFilename(true).c_str() );
-
 	return true;
 }
 

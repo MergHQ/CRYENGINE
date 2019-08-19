@@ -203,7 +203,8 @@ bool CAssetFoldersModel::setData(const QModelIndex& index, const QVariant& value
 				return false;
 		}
 
-		CRY_ASSERT(m_addedFolders.removeOne(oldName));
+		const bool removed = m_addedFolders.removeOne(oldName);
+		CRY_ASSERT(removed);
 		folder->m_name = newName;
 		m_addedFolders.append(GetPath(folder));
 		Private_AssetFoldersModel::SetAddedFoldersPersonalization(m_addedFolders);
@@ -710,7 +711,8 @@ void CAssetFoldersModel::DeleteFolder(const QString& folderPath)
 		CRY_ASSERT(pFolder->m_empty);
 		beginRemoveRows(folderIndex.parent(), folderIndex.row(), folderIndex.row());
 		pFolder->m_parent->m_subFolders.erase(pFolder->m_parent->m_subFolders.begin() + folderIndex.row());
-		CRY_ASSERT(m_addedFolders.removeOne(folderPath));
+		const bool removed = m_addedFolders.removeOne(folderPath);
+		CRY_ASSERT(removed);
 		Private_AssetFoldersModel::SetAddedFoldersPersonalization(m_addedFolders);
 		endRemoveRows();
 	}
