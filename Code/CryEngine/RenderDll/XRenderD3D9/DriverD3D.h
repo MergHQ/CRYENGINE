@@ -754,7 +754,7 @@ private:
 	// PRIVATE MEMBERS
 	//////////////////////////////////////////////////////////////////////////
 	bool m_bInitialized = false;
-	uint32 m_maskRenderPhaseLog = 0U; // see ERenderPhase
+	uint32 m_maskRenderPhaseLog[MAX_RECURSION_LEVELS] = { 0U }; // see ERenderPhase
 
 	// Windows context
 	char     m_WinTitle[80];

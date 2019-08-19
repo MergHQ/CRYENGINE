@@ -1163,7 +1163,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 		m_SceneRecurseCount++;
 	}
 
-	m_maskRenderPhaseLog |= eRP_BeginFrame;
+	m_maskRenderPhaseLog[m_SceneRecurseCount - 1] |= eRP_BeginFrame;
 }
 
 bool CD3D9Renderer::RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc)
@@ -3186,6 +3186,11 @@ void CD3D9Renderer::RenderAux_RT()
 
 void CD3D9Renderer::EndFrame()
 {
+	if (!m_bSystemResourcesInit)
+	{
+		return;
+	}
+
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	//////////////////////////////////////////////////////////////////////
@@ -3205,33 +3210,33 @@ void CD3D9Renderer::RT_EndFrame()
 {
 	FUNCTION_PROFILER_RENDERER();
 
+	if (!m_SceneRecurseCount && !(m_maskRenderPhaseLog[m_SceneRecurseCount - 1] & eRP_BeginFrame))
+	{
+		iLog->Log("EndScene without BeginScene\n");
+		return;
+	}
+
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler->BeginSection("END");
 #endif
 
-	m_maskRenderPhaseLog |= eRP_EndFrame;
+	m_maskRenderPhaseLog[m_SceneRecurseCount - 1] |= eRP_EndFrame;
 
 	// If SubmitRenderViewForRendering is not called ...
-	if (!(m_maskRenderPhaseLog & eRP_PreRenderScene))
+	if (!(m_maskRenderPhaseLog[m_SceneRecurseCount - 1] & eRP_PreRenderScene))
 	{
 		// ... call memory pool managements ...
 		RT_PreRenderScene(nullptr);
 
 		// ... and pretend everything happened the right way.
-		m_maskRenderPhaseLog |=
+		m_maskRenderPhaseLog[m_SceneRecurseCount - 1] |=
 			eRP_PreRenderScene +
 			eRP_RenderScene +
 			eRP_PostRenderScene;
 	}
 
-	CRY_ASSERT(m_maskRenderPhaseLog == eRP_AllRenderPhases);
-	m_maskRenderPhaseLog = 0;
-
-	if (!m_SceneRecurseCount)
-	{
-		iLog->Log("EndScene without BeginScene\n");
-		return;
-	}
+	CRY_ASSERT(m_maskRenderPhaseLog[m_SceneRecurseCount - 1] == eRP_AllRenderPhases);
+	m_maskRenderPhaseLog[m_SceneRecurseCount - 1] = 0;
 
 	CTimeValue TimeEndF = iTimer->GetAsyncTime();
 

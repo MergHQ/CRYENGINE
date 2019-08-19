@@ -538,7 +538,7 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		pActiveGraphicsPipeline->m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
 	}
 
-	m_maskRenderPhaseLog |= eRP_PreRenderScene;
+	m_maskRenderPhaseLog[m_SceneRecurseCount - 1] |= eRP_PreRenderScene;
 }
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
@@ -558,7 +558,7 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 		gRenDev->GetIRenderAuxGeom()->Submit();
 	}
 
-	m_maskRenderPhaseLog |= eRP_PostRenderScene;
+	m_maskRenderPhaseLog[m_SceneRecurseCount - 1] |= eRP_PostRenderScene;
 }
 
 // Render thread only scene rendering
@@ -663,7 +663,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 	if (CRendererCVars::CV_r_FlushToGPU >= 1)
 		GetDeviceObjectFactory().FlushToGPU();
 
-	m_maskRenderPhaseLog |= eRP_RenderScene;
+	m_maskRenderPhaseLog[m_SceneRecurseCount - 1] |= eRP_RenderScene;
 }
 
 //======================================================================================================
