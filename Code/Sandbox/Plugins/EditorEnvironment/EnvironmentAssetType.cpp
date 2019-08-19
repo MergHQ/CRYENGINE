@@ -85,6 +85,23 @@ private:
 	}
 };
 
+class CAutoRestoreCurrentPreset
+{
+public:
+	CAutoRestoreCurrentPreset()
+		: m_currentPreset(GetISystem()->GetI3DEngine()->GetTimeOfDay()->GetCurrentPresetName())
+	{
+	}
+
+	~CAutoRestoreCurrentPreset()
+	{
+		GetISystem()->GetI3DEngine()->GetTimeOfDay()->SetCurrentPreset(m_currentPreset);
+	}
+
+private:
+	const string m_currentPreset;
+};
+
 }
 
 REGISTER_ASSET_TYPE(CEnvironmentAssetType)
@@ -140,6 +157,10 @@ void CEnvironmentAssetType::OnInit()
 
 bool CEnvironmentAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
+	// ITimeOfDay::AddNewPreset sets the newly created preset as the current one, 
+	// we don’t want this, so in this way we restore the current one at the function exit.
+	Private_EnvironmentAssetType::CAutoRestoreCurrentPreset autoRestoreCurrentPreset;
+
 	const string dataFilename = PathUtil::RemoveExtension(asset.GetMetadataFile());
 	asset.SetFiles({ dataFilename });
 	ITimeOfDay* const pTimeOfDay = GetISystem()->GetI3DEngine()->GetTimeOfDay();
@@ -150,6 +171,9 @@ bool CEnvironmentAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCre
 
 	// Try to apply the default time of day settings.
 	pTimeOfDay->ImportPreset(dataFilename, ITimeOfDay::GetDefaultPresetFilepath());
+
+	// Do not add the new preset to the active level.
+	pTimeOfDay->RemovePreset(dataFilename);
 
 	return pTimeOfDay->SavePreset(dataFilename);
 }
