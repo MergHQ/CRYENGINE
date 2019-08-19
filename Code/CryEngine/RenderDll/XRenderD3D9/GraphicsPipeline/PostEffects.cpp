@@ -1435,53 +1435,11 @@ CHud3DPass::~CHud3DPass()
 		delete *it;
 	}
 	m_hudPrimitiveArray.clear();
-
-	SAFE_RELEASE_FORCE(m_Cached3DHUD);
-	SAFE_RELEASE_FORCE(m_Cached3DHUD_r4);
 }
 
 void CHud3DPass::Init(CPostEffectContext* p)
 {
 	m_pContext = p;
-}
-
-void CHud3DPass::Update()
-{
-	auto* pRenderView = m_pContext->GetRenderView();
-	auto* p3DHUD = m_pContext->GetPostEffect(EPostEffectID::HUD3D);
-	const bool shouldApplyPersHUD = (p3DHUD && p3DHUD->IsActive());
-
-	if ((m_Cached3DHUD->GetDevTexture() != nullptr) != shouldApplyPersHUD)
-		Resize(pRenderView->GetRenderResolution()[0], pRenderView->GetRenderResolution()[1]);
-}
-
-void CHud3DPass::Resize(int renderWidth, int renderHeight)
-{
-	auto* p3DHUD = m_pContext->GetPostEffect(EPostEffectID::HUD3D);
-	const bool shouldApplyPersHUD = (p3DHUD && p3DHUD->IsActive());
-
-	const int width  = renderWidth , width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2;
-	const int height = renderHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2;
-
-	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-
-	m_Cached3DHUD = CTexture::GetOrCreateTextureObjectPtr("$Cached3DHUD", width, height, 1, eTT_2D, flags, eTF_R8G8B8A8, TO_MODELHUD);
-	if (m_Cached3DHUD)
-	{
-		if (!shouldApplyPersHUD && CTexture::IsTextureExist(m_Cached3DHUD))
-			m_Cached3DHUD->ReleaseDeviceTexture(false);
-		else if (shouldApplyPersHUD && (m_Cached3DHUD->Invalidate(width, height, eTF_R8G8B8A8) || !CTexture::IsTextureExist(m_Cached3DHUD)))
-			m_Cached3DHUD->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
-	}
-
-	m_Cached3DHUD_r4 = CTexture::GetOrCreateTextureObjectPtr("$Cached3DHUD 1/4", width_r4, height_r4, 1, eTT_2D, flags, eTF_R8G8B8A8, TO_MODELHUD);
-	if (m_Cached3DHUD_r4)
-	{
-		if (!shouldApplyPersHUD && CTexture::IsTextureExist(m_Cached3DHUD_r4))
-			m_Cached3DHUD_r4->ReleaseDeviceTexture(false);
-		else if (shouldApplyPersHUD && (m_Cached3DHUD_r4->Invalidate(width_r4, height_r4, eTF_R8G8B8A8) || !CTexture::IsTextureExist(m_Cached3DHUD_r4)))
-			m_Cached3DHUD_r4->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
-	}
 }
 
 void CHud3DPass::Execute()
@@ -1529,10 +1487,11 @@ void CHud3DPass::ExecuteFlashUpdate(CHud3D& hud3d)
 	if (!hud3d.m_pRenderData[nThreadID].empty() || bForceRefresh) //&& m_nFlashUpdateFrameID != rd->GetFrameID(false) )
 	{
 		auto pGraphicsPipeline = m_pContext->GetRenderView()->GetGraphicsPipeline();
+		auto PipelineResources = pGraphicsPipeline->GetPipelineResources();
 
 		// Share hud render target with scene normals
-		hud3d.m_pHUD_RT       = m_Cached3DHUD;
-		hud3d.m_pHUDScaled_RT = m_Cached3DHUD_r4;
+		hud3d.m_pHUD_RT       = PipelineResources.m_pTexHUD3D[0];
+		hud3d.m_pHUDScaled_RT = PipelineResources.m_pTexHUD3D[1];
 
 		if ((m_pContext->GetRenderView()->GetFrameId() % max(1, (int)CRenderer::CV_r_PostProcessHUD3DCache)) != 0)
 		{

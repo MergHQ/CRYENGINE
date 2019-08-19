@@ -24,7 +24,7 @@ void CGraphicsPipelineResources::Init()
 
 	m_pTexVelocityObjects[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
 	// Only used for VR, but we need to support runtime switching
-	m_pTexVelocityObjects[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects_R").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
+ 	m_pTexVelocityObjects[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects_R").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
 
 	m_pTexSceneNormalsMap = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsMap").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_NORMALMAP);
 	m_pTexSceneDiffuse = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuse").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
@@ -78,6 +78,9 @@ void CGraphicsPipelineResources::Init()
 	m_pTexWaterVolumeRefl[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$WaterVolumeRefl").c_str(), 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAP);
 	m_pTexWaterVolumeRefl[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$WaterVolumeReflPrev").c_str(), 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAPPREV);
 
+	m_pTexHUD3D[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$Cached3DHUD").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+	m_pTexHUD3D[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$Cached3DHUD 1/4").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+
 	CreateResources(0, 0);
 }
 
@@ -97,6 +100,7 @@ void CGraphicsPipelineResources::CreateResources(int resourceWidth, int resource
 	CreateHDRMaps(resourceWidth, resourceHeight);
 	CreatePostFXMaps(resourceWidth, resourceHeight);
 	CreateSceneMaps(resourceWidth, resourceHeight);
+	CreateHUDMaps(resourceWidth, resourceHeight);
 
 	m_resourceWidth = resourceWidth;
 	m_resourceHeight = resourceHeight;
@@ -118,6 +122,7 @@ void CGraphicsPipelineResources::Resize(int renderWidth, int renderHeight)
 		CreateHDRMaps(resourceWidth, resourceHeight);
 		CreatePostFXMaps(resourceWidth, resourceHeight);
 		CreateSceneMaps(resourceWidth, resourceHeight);
+		CreateHUDMaps(resourceWidth, resourceHeight);
 	}
 
 	m_resourceWidth = resourceWidth;
@@ -320,6 +325,38 @@ void CGraphicsPipelineResources::CreateSceneMaps(int resourceWidth, int resource
 	}
 }
 
+void CGraphicsPipelineResources::CreateHUDMaps(int resourceWidth, int resourceHeight)
+{
+	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2;
+	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2;
+
+	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+
+	if (!m_pTexHUD3D[0])
+	{
+		m_pTexHUD3D[0] = CTexture::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$Cached3DHUD").c_str(), width, height, Clr_Empty, eTT_2D, flags, eTF_R8G8B8A8, TO_MODELHUD);
+	}
+	else
+	{
+		m_pTexHUD3D[0]->SetFlags(flags);
+		m_pTexHUD3D[0]->SetWidth(width);
+		m_pTexHUD3D[0]->SetHeight(height);
+		m_pTexHUD3D[0]->CreateRenderTarget(eTF_R8G8B8A8, Clr_Empty);
+	}
+
+	if (!m_pTexHUD3D[1])
+	{
+		m_pTexHUD3D[1] = CTexture::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$Cached3DHUD 1/4").c_str(), width_r4, height_r4, Clr_Empty, eTT_2D, flags, eTF_R8G8B8A8, TO_MODELHUD);
+	}
+	else
+	{
+		m_pTexHUD3D[1]->SetFlags(flags);
+		m_pTexHUD3D[1]->SetWidth(width);
+		m_pTexHUD3D[1]->SetHeight(height);
+		m_pTexHUD3D[1]->CreateRenderTarget(eTF_R8G8B8A8, Clr_Empty);
+	}
+}
+
 void CGraphicsPipelineResources::PrepareRainOcclusionMaps()
 {
 	if (!m_pTexRainOcclusion)
@@ -459,6 +496,8 @@ void CGraphicsPipelineResources::Shutdown()
 	SAFE_RELEASE_FORCE(m_pTexVelocityTiles[2]);
 	SAFE_RELEASE_FORCE(m_pTexWaterVolumeRefl[0]);
 	SAFE_RELEASE_FORCE(m_pTexWaterVolumeRefl[1]);
+	SAFE_RELEASE_FORCE(m_pTexHUD3D[0]);
+	SAFE_RELEASE_FORCE(m_pTexHUD3D[1]);
 
 	SAFE_RELEASE_FORCE(m_pTexSceneCoCTemp);
 	for (int i = 0; i < MIN_DOF_COC_K; i++)

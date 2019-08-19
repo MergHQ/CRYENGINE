@@ -325,8 +325,6 @@ public:
 	~CHud3DPass();
 
 	virtual void Init(CPostEffectContext* p) final;
-	virtual void Update() final;
-	virtual void Resize(int renderWidth, int renderHeight) final;
 	virtual void Execute() final;
 
 	void ExecuteFlashUpdate(class CHud3D & hud3d);
@@ -340,9 +338,6 @@ private:
 	void SetShaderParams(EShaderStage shaderStages, CRenderPrimitive::ConstantManager& constantManager, const struct SHudData& data, const class CHud3D& hud3d) const;
 
 private:
-	_smart_ptr<CTexture>          m_Cached3DHUD = nullptr;
-	_smart_ptr<CTexture>          m_Cached3DHUD_r4 = nullptr;
-
 	CPrimitiveRenderPass          m_passDownsampleHud4x4;
 	CPrimitiveRenderPass          m_passUpdateBloom;
 	CGaussianBlurPass             m_passBlurGaussian;

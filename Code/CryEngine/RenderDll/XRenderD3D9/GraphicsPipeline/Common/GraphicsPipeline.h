@@ -108,6 +108,8 @@ public:
 	CTexture* m_pTexWaterVolumeRefl[2] = { nullptr, nullptr };                              // CWaterStage, water volume reflections buffer
 	CTexture* m_pTexRainSSOcclusion[2] = { nullptr, nullptr };                              // CRainStage, screen-space rain occlusion accumulation
 
+	CTexture* m_pTexHUD3D[2] = { nullptr, nullptr };                                        // CHud3DPass
+
 	CTexture* m_pTexRainOcclusion = nullptr;                                                // CRainStage, CSnowStage, top-down rain occlusion
 	CTexture* m_pTexLinearDepthFixup = nullptr;
 	ResourceViewHandle m_pTexLinearDepthFixupUAV;
@@ -152,6 +154,7 @@ private:
 	void CreateHDRMaps(int resourceWidth, int resourceHeight);
 	void CreatePostFXMaps(int resourceWidth, int resourceHeight);
 	void CreateSceneMaps(int resourceWidth, int resourceHeight);
+	void CreateHUDMaps(int resourceWidth, int resourceHeight);
 
 private:
 	CGraphicsPipeline& m_graphicsPipeline;
