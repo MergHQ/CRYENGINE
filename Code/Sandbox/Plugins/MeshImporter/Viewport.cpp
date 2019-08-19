@@ -16,8 +16,8 @@ CSplitViewport::CSplitViewport(QWidget* parent)
 	, m_splitDirection(eSplitDirection_Horizontal)
 {
 	IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc;
-	graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
-	graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+	graphicsPipelineDesc.type = EGraphicsPipelineType::CharacterTool;
+	graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_AO | SHDF_ZPASS | SHDF_ALLOW_SKY;
 
 	setContentsMargins(0, 0, 0, 0);
 	m_pSecondaryViewport = new QViewport(gEnv, graphicsPipelineDesc, parent);
