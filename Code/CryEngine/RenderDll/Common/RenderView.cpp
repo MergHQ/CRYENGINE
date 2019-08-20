@@ -33,7 +33,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 	, m_permanentRenderObjectsToCompile(64, 1 << 20 /* capacity = 1 MiB*/)
 	, m_temporaryCompiledObjects(64, 1 << 20 /* capacity = 1 MiB*/)
 	, m_shaderItemsToUpdate(64, 1 << 20 /* capacity = 1 MiB*/)
-	, m_permanentObjects(64, 1 << 20 /* capacity = 1 MiB*/)
+	, m_permanentObjects(64, (1 << 14) * sizeof(SPermanentObjectRecord) /* capacity = 16 ki objects*/)
 	, m_viewInfoCount(1)
 	, m_bPostWriteExecuted(false)
 {
