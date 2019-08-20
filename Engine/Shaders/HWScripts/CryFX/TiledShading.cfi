@@ -361,7 +361,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
                 attribs.areaAttribs.position = position;
                 attribs.areaAttribs.lightArrayIdx = GetResourceIndexAndMipClamps(Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].resIndex).x;
 
-                Callback_ShadingDirect(attribs, lightParams, diffuseAcc, specularTerm);
+                Callback_ShadingDirect(attribs, lightParams, diffuseTerm, specularTerm);
 
 				diffuseAcc += diffuseTerm;
                 specularAcc += specularTerm;
