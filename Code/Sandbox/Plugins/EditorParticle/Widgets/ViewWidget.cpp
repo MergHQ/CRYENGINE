@@ -414,7 +414,7 @@ bool CGraphView::PopulateMenuWithFeatures(const char* szTitle, CryGraphEditor::C
 
 		const QString actionName = QString(featureParams.m_featureName);
 		QAction* pAction = new QAction(actionName, 0);
-		QObject::connect(pAction, &QAction::triggered, this, [&featureParams, &nodeItem, index]()
+		QObject::connect(pAction, &QAction::triggered, this, [this, &featureParams, &nodeItem, index]()
 			{
 				GetIEditor()->GetIUndoManager()->Begin();
 				CFeatureItem* pFeatureItem;
@@ -424,10 +424,16 @@ bool CGraphView::PopulateMenuWithFeatures(const char* szTitle, CryGraphEditor::C
 					pFeatureItem = nodeItem.AddFeature(featureParams);
 
 				if (pFeatureItem)
+				{
 					GetIEditor()->GetIUndoManager()->Accept("Undo feature add");
-				else
-					GetIEditor()->GetIUndoManager()->Cancel();
 
+					// Force the inspector widget to update content.
+					BroadcastSelectionChange();
+				}
+				else
+				{
+					GetIEditor()->GetIUndoManager()->Cancel();
+				}
 			});
 
 		result->second.m_subActions[actionName] = pAction;

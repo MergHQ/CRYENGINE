@@ -94,9 +94,6 @@ protected Q_SLOTS:
 private:
 	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
 
-	//
-	CInspectorLegacy* m_pInspector;
-
 	QAction*          m_pReloadEffectMenuAction;
 	QAction*          m_pShowEffectOptionsMenuAction;
 };

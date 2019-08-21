@@ -207,9 +207,9 @@ protected:
 	void AddCommentItem(CAbstractCommentItem& comment);
 	void AddConnectionItem(CAbstractConnectionItem& connection);
 
-private:
-
 	void BroadcastSelectionChange(bool forceClear = false);
+
+private:
 
 	void MoveSelection(const QPointF& delta);
 	void PlaceSelection();
