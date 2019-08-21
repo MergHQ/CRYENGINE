@@ -32,10 +32,6 @@ namespace EditorSubstance
 		void OnAccept();
 		void OnEditOutputs();
 
-		virtual bool eventFilter(QObject *, QEvent *) override;
-
-		virtual void resizeEvent(QResizeEvent *e) override;
-
 		virtual bool event(QEvent *e) override;
 		void OnOutputEditorAccepted();
 		void OnOutputEditorRejected();
@@ -49,7 +45,6 @@ namespace EditorSubstance
 		string m_substanceArchive;
 		string m_graphName;
 		string m_finalFileName;
-		QWidget* m_pModalGuard;
 		CAssetFoldersView* m_foldersView;
 		CFileNameLineEdit* m_pPathEdit;
 		CSubstanceOutputEditorDialog* m_pOutputsGraphEditor;

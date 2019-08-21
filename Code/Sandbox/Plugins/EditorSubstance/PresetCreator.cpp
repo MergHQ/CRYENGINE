@@ -32,9 +32,6 @@ namespace EditorSubstance
 		m_pButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 		connect(m_pButtons, &QDialogButtonBox::accepted, this, &CPressetCreator::OnAccept);
 		connect(m_pButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-		m_pModalGuard = new QFrame();
-		m_pModalGuard->resize(size());
-		m_pModalGuard->hide();
 		m_foldersView = new CAssetFoldersView(this);
 		m_foldersView->SelectFolder(asset->GetFolder().c_str());
 		m_foldersView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -135,9 +132,6 @@ namespace EditorSubstance
 		m_pOutputsWidget->setDisabled(true);
 		m_pButtons->setDisabled(true);
 		m_pOutputsGraphEditor->Popup();
-		m_pModalGuard->show();
-		m_pModalGuard->installEventFilter(this);
-
 	}
 
 	void CPressetCreator::OnOutputEditorAccepted()
@@ -154,8 +148,6 @@ namespace EditorSubstance
 		m_pButtons->setDisabled(false);
 		m_pOutputsGraphEditor->deleteLater();
 		m_pOutputsGraphEditor = nullptr;
-		m_pModalGuard->removeEventFilter(this);
-		m_pModalGuard->hide();
 	}
 
 	void CPressetCreator::keyPressEvent(QKeyEvent *e)
@@ -187,22 +179,6 @@ namespace EditorSubstance
 			else {
 				QApplication::sendEvent(parent(), e);
 			}
-	}
-
-	bool CPressetCreator::eventFilter(QObject *obj, QEvent *event)
-	{
-		if (m_pOutputsGraphEditor)
-		{
-			OnEditOutputs();
-			event->accept();
-			return true;
-		}
-		return CEditorDialog::eventFilter(obj, event);
-	}
-
-	void CPressetCreator::resizeEvent(QResizeEvent *e)
-	{
-		m_pModalGuard->resize(e->size());
 	}
 
 	bool CPressetCreator::event(QEvent *e)
