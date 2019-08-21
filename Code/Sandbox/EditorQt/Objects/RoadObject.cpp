@@ -535,8 +535,8 @@ void CRoadObject::AlignHeightMap()
 		{
 			for (int tx = int(fminy / unitSize); tx <= int(fmaxy / unitSize) + unitSize; ++tx)
 			{
-				int x = ty * unitSize;
-				int y = tx * unitSize;
+				float x = ty * unitSize;
+				float y = tx * unitSize;
 
 				Vec3 p3 = Vec3(x, y, 0.0f);
 
