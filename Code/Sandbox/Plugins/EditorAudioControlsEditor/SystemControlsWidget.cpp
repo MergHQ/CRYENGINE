@@ -114,7 +114,7 @@ XmlNodeRef ConstructTemporaryTrigger(CControl const* const pControl)
 
 //////////////////////////////////////////////////////////////////////////
 CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
-	: QWidget(pParent)
+	: CEditorWidget(pParent)
 	, m_pSystemFilterProxyModel(new CSystemFilterProxyModel(this))
 	, m_pSourceModel(new CSystemSourceModel(this))
 	, m_pTreeView(new CTreeView(this))
@@ -163,6 +163,8 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	{
 		setEnabled(false);
 	}
+
+	RegisterAction("general.delete", &CSystemControlsWidget::DeleteSelectedControls);
 
 	QObject::connect(m_pMountingProxyModel, &CMountingProxyModel::rowsInserted, this, &CSystemControlsWidget::SelectNewAsset);
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CSystemControlsWidget::OnContextMenu);
@@ -300,30 +302,45 @@ void CSystemControlsWidget::InitAddControlWidget(QVBoxLayout* const pLayout)
 //////////////////////////////////////////////////////////////////////////
 bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
-	if ((pEvent->type() == QEvent::KeyRelease) && !m_pTreeView->IsEditing())
+	switch (pEvent->type())
 	{
-		QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
-
-		if (pKeyEvent != nullptr)
+	case QEvent::KeyRelease:
 		{
-			if (pKeyEvent->key() == Qt::Key_Delete)
+			if (!m_pTreeView->IsEditing())
 			{
-				OnDeleteSelectedControls();
+				QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+
+				if (pKeyEvent != nullptr)
+				{
+					if (pKeyEvent->key() == Qt::Key_Space)
+					{
+						ExecuteControl();
+					}
+				}
 			}
-			else if (pKeyEvent->key() == Qt::Key_Space)
+
+			break;
+		}
+	case QEvent::MouseButtonDblClick:
+		{
+			if (!m_pTreeView->IsEditing())
 			{
 				ExecuteControl();
 			}
+
+			break;
 		}
-	}
-	else if ((pEvent->type() == QEvent::MouseButtonDblClick) && !m_pTreeView->IsEditing())
-	{
-		ExecuteControl();
-	}
-	else if (pEvent->type() == QEvent::Drop)
-	{
-		m_pTreeView->selectionModel()->clearSelection();
-		m_pTreeView->selectionModel()->clearCurrentIndex();
+	case QEvent::Drop:
+		{
+			m_pTreeView->selectionModel()->clearSelection();
+			m_pTreeView->selectionModel()->clearCurrentIndex();
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 
 	return QWidget::eventFilter(pObject, pEvent);
@@ -634,7 +651,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 				m_pTreeView->edit(nameColumnIndex);
 			});
 
-		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControls(); });
+		pContextMenu->addAction(tr("Delete"), [&]() { DeleteSelectedControls(); });
 		pContextMenu->addSeparator();
 		pContextMenu->addAction(tr("Expand Selection"), [=]() { m_pTreeView->ExpandSelection(); });
 		pContextMenu->addAction(tr("Collapse Selection"), [=]() { m_pTreeView->CollapseSelection(); });
@@ -679,7 +696,7 @@ void CSystemControlsWidget::OnRenameSelectedControls(string const& name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::OnDeleteSelectedControls()
+bool CSystemControlsWidget::DeleteSelectedControls()
 {
 	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 	int const numSelected = selection.length();
@@ -795,6 +812,8 @@ void CSystemControlsWidget::OnDeleteSelectedControls()
 			}
 		}
 	}
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

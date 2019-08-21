@@ -4,7 +4,6 @@
 
 #include "Common/SharedData.h"
 #include <EditorFramework/EditorWidget.h>
-#include <QWidget>
 
 class QPropertyTreeLegacy;
 class QAttributeFilterProxyModel;

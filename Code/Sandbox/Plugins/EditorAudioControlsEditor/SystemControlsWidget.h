@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common.h"
-#include <QWidget>
+#include <EditorFramework/EditorWidget.h>
 
 class QAction;
 class QVBoxLayout;
@@ -20,7 +20,7 @@ class CSystemLibraryModel;
 class CSystemFilterProxyModel;
 class CTreeView;
 
-class CSystemControlsWidget final : public QWidget
+class CSystemControlsWidget final : public CEditorWidget
 {
 	Q_OBJECT
 
@@ -47,7 +47,6 @@ public:
 private slots:
 
 	void OnRenameSelectedControls(string const& name);
-	void OnDeleteSelectedControls();
 	void OnContextMenu(QPoint const& pos);
 	void OnUpdateCreateButtons();
 
@@ -68,6 +67,7 @@ private:
 	CControl*           CreateControl(string const& name, EAssetType const type, CAsset* const pParent);
 	CAsset*             CreateFolder(CAsset* const pParent);
 	void                CreateParentFolder();
+	bool                DeleteSelectedControls();
 	bool                IsParentFolderAllowed() const;
 	bool                IsDefaultControlSelected() const;
 

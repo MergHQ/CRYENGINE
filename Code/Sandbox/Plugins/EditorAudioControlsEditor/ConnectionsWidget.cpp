@@ -222,7 +222,6 @@ bool CConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl != nullptr)
 	{
-		auto const messageBox = new CQuestionDialog();
 		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(g_connectionsNameColumn);
 
 		if (!selectedIndexes.empty())
@@ -239,6 +238,7 @@ bool CConnectionsWidget::RemoveSelectedConnection()
 				text = "Are you sure you want to delete the " + QString::number(numSelected) + " selected connections?";
 			}
 
+			auto const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion(g_szEditorName, text);
 
 			if (messageBox->Execute() == QDialogButtonBox::Yes)

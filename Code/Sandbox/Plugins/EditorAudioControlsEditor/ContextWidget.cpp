@@ -29,7 +29,7 @@ constexpr int g_contextNameColumn = static_cast<int>(CContextModel::EColumns::Na
 
 //////////////////////////////////////////////////////////////////////////
 CContextWidget::CContextWidget(QWidget* const pParent)
-	: QWidget(pParent)
+	: CEditorWidget(pParent)
 	, m_pContextModel(new CContextModel(this))
 	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this))
 	, m_pTreeView(new CTreeView(this))
@@ -47,14 +47,14 @@ CContextWidget::CContextWidget(QWidget* const pParent)
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pTreeView->setModel(m_pAttributeFilterProxyModel);
 	m_pTreeView->sortByColumn(g_contextNameColumn, Qt::AscendingOrder);
-	m_pTreeView->viewport()->installEventFilter(this);
-	m_pTreeView->installEventFilter(this);
 	m_pTreeView->setItemsExpandable(false);
 	m_pTreeView->setRootIsDecorated(false);
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CContextModel::EColumns::Notification), QHeaderView::ResizeToContents);
 	m_pTreeView->SetNameColumn(g_contextNameColumn);
 	m_pTreeView->TriggerRefreshHeaderColumns();
+
+	RegisterAction("general.delete", &CContextWidget::DeleteSelectedContexts);
 
 	QObject::connect(m_pContextModel, &CContextModel::rowsInserted, this, &CContextWidget::SelectNewContext);
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CContextWidget::OnContextMenu);
@@ -136,7 +136,7 @@ void CContextWidget::OnContextMenu(QPoint const& pos)
 
 				pContextMenu->addSeparator();
 				pContextMenu->addAction(tr("Rename"), [&]() { RenameContext(); });
-				pContextMenu->addAction(tr("Delete"), [&]() { DeleteContext(pContext); });
+				pContextMenu->addAction(tr("Delete"), [&]() { DeleteSelectedContexts(); });
 			}
 		}
 	}
@@ -145,7 +145,7 @@ void CContextWidget::OnContextMenu(QPoint const& pos)
 		pContextMenu->addAction(tr("Activate"), [&]() { ActivateMultipleContexts(); });
 		pContextMenu->addAction(tr("Deactivate"), [&]() { DeactivateMultipleContexts(); });
 		pContextMenu->addSeparator();
-		pContextMenu->addAction(tr("Delete"), [&]() { DeleteMultipleContexts(); });
+		pContextMenu->addAction(tr("Delete"), [&]() { DeleteSelectedContexts(); });
 	}
 	else
 	{
@@ -171,45 +171,6 @@ void CContextWidget::OnItemDoubleClicked(QModelIndex const& index)
 			gEnv->pAudioSystem->ActivateContext(pContext->GetId());
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CContextWidget::eventFilter(QObject* pObject, QEvent* pEvent)
-{
-	if (pEvent->type() == QEvent::KeyRelease)
-	{
-		QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
-
-		if (pKeyEvent != nullptr)
-		{
-			if (pKeyEvent->key() == Qt::Key_Delete)
-			{
-				QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
-				int const numSelections = selection.size();
-
-				if (numSelections == 1)
-				{
-					QModelIndex const& index = m_pTreeView->currentIndex();
-
-					if (index.isValid())
-					{
-						CContext const* const pContext = CContextModel::GetContextFromIndex(index);
-
-						if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
-						{
-							DeleteContext(pContext);
-						}
-					}
-				}
-				else if (numSelections > 1)
-				{
-					DeleteMultipleContexts();
-				}
-			}
-		}
-	}
-
-	return QWidget::eventFilter(pObject, pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -282,57 +243,54 @@ void CContextWidget::RenameContext()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CContextWidget::DeleteContext(CContext const* const pContext)
+bool CContextWidget::DeleteSelectedContexts()
 {
-	QString const text = R"(Are you sure you want to delete the context ")" +
-	                     QtUtil::ToQString(pContext->GetName()) +
-	                     R"("?)" +
-	                     "\nAll controls in this context will be moved to the global context!";
+	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
 
-	auto const messageBox = new CQuestionDialog();
-	messageBox->SetupQuestion(g_szEditorName, text);
-
-	if (messageBox->Execute() == QDialogButtonBox::Yes)
+	if (!selection.empty())
 	{
-		CryAudio::ContextId const contextId = pContext->GetId();
-		g_contextManager.DeleteContext(pContext);
-		g_assetsManager.ChangeContext(contextId, CryAudio::GlobalContextId);
-	}
-}
+		int const numSelected = selection.size();
+		QString text;
 
-//////////////////////////////////////////////////////////////////////////
-void CContextWidget::DeleteMultipleContexts()
-{
-	QString const text = "Are you sure you want to delete the selected contexts?\nAll controls in these contexts will be moved to the global context!";
-
-	auto const messageBox = new CQuestionDialog();
-	messageBox->SetupQuestion(g_szEditorName, text);
-
-	if (messageBox->Execute() == QDialogButtonBox::Yes)
-	{
-		QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
-		std::vector<CContext const*> contexts;
-		contexts.reserve(static_cast<size_t>(selection.size()));
-
-		for (auto const& index : selection)
+		if (numSelected == 1)
 		{
-			if (index.isValid())
-			{
-				CContext const* const pContext = CContextModel::GetContextFromIndex(index);
+			text = tr("Are you sure you want to delete the selected context?\nAll controls in this context will be moved to the global context!");
+		}
+		else
+		{
+			text = tr("Are you sure you want to delete the selected contexts?\nAll controls in these contexts will be moved to the global context!");
+		}
 
-				if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
+		auto const messageBox = new CQuestionDialog();
+		messageBox->SetupQuestion(g_szEditorName, text);
+
+		if (messageBox->Execute() == QDialogButtonBox::Yes)
+		{
+			std::vector<CContext const*> contexts;
+			contexts.reserve(static_cast<size_t>(numSelected));
+
+			for (auto const& index : selection)
+			{
+				if (index.isValid())
 				{
-					contexts.push_back(pContext);
+					CContext const* const pContext = CContextModel::GetContextFromIndex(index);
+
+					if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
+					{
+						contexts.push_back(pContext);
+					}
 				}
 			}
-		}
 
-		for (auto const pContext : contexts)
-		{
-			g_assetsManager.ChangeContext(pContext->GetId(), CryAudio::GlobalContextId);
-			g_contextManager.DeleteContext(pContext);
+			for (auto const pContext : contexts)
+			{
+				g_assetsManager.ChangeContext(pContext->GetId(), CryAudio::GlobalContextId);
+				g_contextManager.DeleteContext(pContext);
+			}
 		}
 	}
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

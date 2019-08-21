@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Common/SharedData.h"
-#include <QWidget>
+#include <EditorFramework/EditorWidget.h>
 
 class QAttributeFilterProxyModel;
 class QSearchBox;
@@ -12,9 +12,8 @@ namespace ACE
 {
 class CContextModel;
 class CTreeView;
-class CContext;
 
-class CContextWidget final : public QWidget
+class CContextWidget final : public CEditorWidget
 {
 	Q_OBJECT
 
@@ -40,18 +39,13 @@ private slots:
 
 private:
 
-	// QObject
-	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
-	// ~QObject
-
 	void ActivateContext(CryAudio::ContextId const contextId);
 	void DeactivateContext(CryAudio::ContextId const contextId);
 	void ActivateMultipleContexts();
 	void DeactivateMultipleContexts();
 	void AddContext();
 	void RenameContext();
-	void DeleteContext(CContext const* const pContext);
-	void DeleteMultipleContexts();
+	bool DeleteSelectedContexts();
 	void SelectNewContext(QModelIndex const& parent, int const row);
 
 	QSearchBox* const                 m_pSearchBox;
