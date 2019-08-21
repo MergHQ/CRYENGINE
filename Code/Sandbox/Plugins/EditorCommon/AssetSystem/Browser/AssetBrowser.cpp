@@ -913,11 +913,6 @@ void CAssetBrowser::InitMenus()
 	section = pMenuEdit->GetNextEmptySection();
 	pMenuEdit->AddCommandAction(m_pActionShowInFileExplorer, section);
 
-	pMenuFile->signalAboutToShow.Connect([this]()
-	{
-		UpdatePasteActionState();
-	});
-
 	//View menu
 	AddToMenu(CEditor::MenuItems::ViewMenu);
 
@@ -1660,6 +1655,7 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	m_pActionDelete->setEnabled((hasAssetsSelected && !hasImmutableAssets) ^ hasEmptyFolderSelected);
 	m_pActionRename->setEnabled(hasWritableAssetSelected ^ hasEmptyFolderSelected);
 	m_pActionCopy->setEnabled(canCopyAssets);
+	m_pActionPaste->setEnabled(hasWritableFolderSelected && !Private_AssetBrowser::g_clipboard.empty() && !m_pFolderFilterModel->IsRecursive());
 	m_pActionDuplicate->setEnabled(canCopyAssets);
 	m_pActionSave->setEnabled(hasModifiedAssets);
 	m_pActionDiscardChanges->setEnabled(hasModifiedAssets);
@@ -1668,13 +1664,6 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	GetAction("general.new_folder")->setEnabled(hasWritableFolderSelected);
 	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected ^ (hasSingleAssetSelected && !hasImmutableAssets));
 	m_pActionGenerateThumbnails->setEnabled(hasWritableFolderSelected);
-
-	UpdatePasteActionState();
-}
-
-void CAssetBrowser::UpdatePasteActionState()
-{
-	m_pActionPaste->setEnabled(!Private_AssetBrowser::g_clipboard.empty() && !m_pFolderFilterModel->IsRecursive());
 }
 
 void CAssetBrowser::OnFolderViewContextMenu()
@@ -1737,7 +1726,7 @@ void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 	CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New Asset"));
 	FillCreateAssetMenu(pCreateAssetMenu, selectedFolders.size() == 1 && !pModel->IsReadOnlyFolder(folder));
 
-	abstractMenu.AddCommandAction(GetAction("general.paste"), foldersSection);
+	abstractMenu.AddCommandAction(m_pActionPaste, foldersSection);
 	abstractMenu.AddCommandAction(GetAction("general.import"), foldersSection);
 	abstractMenu.AddCommandAction(m_pActionShowInFileExplorer, foldersSection);
 	abstractMenu.AddCommandAction(m_pActionGenerateThumbnails, foldersSection);
@@ -2334,7 +2323,18 @@ void CAssetBrowser::OnRenameAsset(CAsset& asset)
 	auto view = GetFocusedView();
 	if (!view)
 	{
-		return;
+		if (m_pDetailsView->isVisible())
+		{
+			view = m_pDetailsView;
+		}
+		else if (m_pThumbnailView->isVisible())
+		{
+			view = m_pThumbnailView->GetInternalView();
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	auto column = view == m_pDetailsView ? EAssetColumns::eAssetColumns_Name : EAssetColumns::eAssetColumns_Thumbnail;

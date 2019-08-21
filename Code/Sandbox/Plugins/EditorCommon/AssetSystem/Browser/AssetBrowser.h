@@ -158,7 +158,6 @@ private:
 	void               OnSelectionChanged();
 
 	void               UpdateSelectionDependantActions();
-	void               UpdatePasteActionState();
 
 	void               OnContextMenu();
 	void               AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset);
