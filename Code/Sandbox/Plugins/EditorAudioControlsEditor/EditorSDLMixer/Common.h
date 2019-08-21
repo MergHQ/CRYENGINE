@@ -14,6 +14,10 @@ namespace Impl
 {
 namespace SDLMixer
 {
+class CDataPanel;
+
+extern CDataPanel* g_pDataPanel;
+
 using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::SDL_mixer::SPoolSizes>;
 extern ConnectionsByContext g_connections;
 

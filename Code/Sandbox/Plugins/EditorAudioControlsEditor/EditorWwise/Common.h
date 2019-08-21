@@ -12,6 +12,10 @@ namespace Impl
 {
 namespace Wwise
 {
+class CDataPanel;
+
+extern CDataPanel* g_pDataPanel;
+
 using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Wwise::SPoolSizes>;
 extern ConnectionsByContext g_connections;
 

@@ -41,11 +41,9 @@ struct IImpl
 	virtual void Initialize(SImplInfo& implInfo, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) = 0;
 
 	//! Creates a new widget that is used for displaying middleware data in the middleware data panel.
+	//! \param pParent - parent widget of the middleware data panel.
 	//! \return A pointer to the data panel.
-	virtual QWidget* CreateDataPanel() = 0;
-
-	//! Destroys the data panel.
-	virtual void DestroyDataPanel() = 0;
+	virtual QWidget* CreateDataPanel(QWidget* const pParent) = 0;
 
 	//! Reloads all the middleware control data.
 	//! \param implInfo - Info struct to be filled by the middleware implementation.

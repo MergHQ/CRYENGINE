@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace SDLMixer
 {
+CDataPanel* g_pDataPanel = nullptr;
 ConnectionsByContext g_connections;
 } // namespace SDLMixer
 } // namespace Impl

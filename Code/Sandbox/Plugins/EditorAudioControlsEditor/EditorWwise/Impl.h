@@ -13,8 +13,6 @@ namespace Impl
 {
 namespace Wwise
 {
-class CDataPanel;
-
 class CImpl final : public IImpl
 {
 public:
@@ -29,8 +27,7 @@ public:
 
 	// IImpl
 	virtual void           Initialize(SImplInfo& implInfo, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) override;
-	virtual QWidget*       CreateDataPanel() override;
-	virtual void           DestroyDataPanel() override;
+	virtual QWidget*       CreateDataPanel(QWidget* const pParent) override;
 	virtual void           Reload(SImplInfo& implInfo) override;
 	virtual IItem*         GetItem(ControlId const id) const override;
 	virtual CryIcon const& GetItemIcon(IItem const* const pIItem) const override;
@@ -79,7 +76,6 @@ private:
 	CItem             m_rootItem { "", g_invalidControlId, EItemType::None };
 	ItemCache         m_itemCache;   // cache of the items stored by id for faster access
 	ConnectionIds     m_connectionsByID;
-	CDataPanel*       m_pDataPanel;
 	string            m_implName;
 	string            m_projectPath;
 	string const      m_assetsPath;

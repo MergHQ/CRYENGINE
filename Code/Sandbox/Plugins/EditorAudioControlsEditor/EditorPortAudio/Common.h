@@ -13,6 +13,10 @@ namespace Impl
 {
 namespace PortAudio
 {
+class CDataPanel;
+
+extern CDataPanel* g_pDataPanel;
+
 using ConnectionsByContext = std::map<CryAudio::ContextId, uint32>;
 extern ConnectionsByContext g_connections;
 

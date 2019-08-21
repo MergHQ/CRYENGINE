@@ -12,6 +12,10 @@ namespace Impl
 {
 namespace Adx2
 {
+class CDataPanel;
+
+extern CDataPanel* g_pDataPanel;
+
 using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Adx2::SPoolSizes>;
 extern ConnectionsByContext g_connections;
 

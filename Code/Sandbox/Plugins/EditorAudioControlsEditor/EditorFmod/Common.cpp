@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace Fmod
 {
+CDataPanel* g_pDataPanel = nullptr;
 string g_language = "";
 ConnectionsByContext g_connections;
 } // namespace Fmod

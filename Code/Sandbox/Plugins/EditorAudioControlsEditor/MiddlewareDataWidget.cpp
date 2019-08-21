@@ -49,7 +49,7 @@ void CMiddlewareDataWidget::InitImplDataWidget()
 {
 	if (g_pIImpl != nullptr)
 	{
-		m_pImplDataPanel = g_pIImpl->CreateDataPanel();
+		m_pImplDataPanel = g_pIImpl->CreateDataPanel(this);
 		m_pLayout->addWidget(m_pImplDataPanel);
 
 		g_pIImpl->SignalGetConnectedSystemControls.Connect([&](ControlId const id, SControlInfos& controlInfos)
@@ -89,7 +89,6 @@ void CMiddlewareDataWidget::ClearImplDataWidget()
 		g_pIImpl->SignalFilesDropped.DisconnectById(reinterpret_cast<uintptr_t>(this));
 		m_pLayout->removeWidget(m_pImplDataPanel);
 		m_pImplDataPanel = nullptr;
-		g_pIImpl->DestroyDataPanel();
 	}
 }
 

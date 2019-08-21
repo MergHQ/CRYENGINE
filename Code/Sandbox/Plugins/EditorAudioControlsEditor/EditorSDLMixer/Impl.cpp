@@ -130,8 +130,7 @@ void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_pDataPanel(nullptr)
-	, m_assetAndProjectPath(CRY_AUDIO_DATA_ROOT "/" +
+	: m_assetAndProjectPath(CRY_AUDIO_DATA_ROOT "/" +
 	                        string(CryAudio::Impl::SDL_mixer::g_szImplFolderName) +
 	                        "/"
 	                        + string(CryAudio::g_szAssetsFolderName))
@@ -143,7 +142,11 @@ CImpl::CImpl()
 CImpl::~CImpl()
 {
 	Clear();
-	DestroyDataPanel();
+
+	if (g_pDataPanel != nullptr)
+	{
+		delete g_pDataPanel;
+	}
 
 	CItem::FreeMemoryPool();
 	CEventConnection::FreeMemoryPool();
@@ -172,21 +175,10 @@ void CImpl::Initialize(
 }
 
 //////////////////////////////////////////////////////////////////////////
-QWidget* CImpl::CreateDataPanel()
+QWidget* CImpl::CreateDataPanel(QWidget* const pParent)
 {
-	DestroyDataPanel();
-	m_pDataPanel = new CDataPanel(*this);
-	return m_pDataPanel;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DestroyDataPanel()
-{
-	if (m_pDataPanel != nullptr)
-	{
-		delete m_pDataPanel;
-		m_pDataPanel = nullptr;
-	}
+	g_pDataPanel = new CDataPanel(*this, pParent);
+	return g_pDataPanel;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -210,9 +202,9 @@ void CImpl::Reload(SImplInfo& implInfo)
 		}
 	}
 
-	if (m_pDataPanel != nullptr)
+	if (g_pDataPanel != nullptr)
 	{
-		m_pDataPanel->Reset();
+		g_pDataPanel->Reset();
 	}
 }
 
@@ -737,45 +729,45 @@ void CImpl::DestructConnection(IConnection const* const pIConnection)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnBeforeReload()
 {
-	if (m_pDataPanel != nullptr)
+	if (g_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnBeforeReload();
+		g_pDataPanel->OnBeforeReload();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnAfterReload()
 {
-	if (m_pDataPanel != nullptr)
+	if (g_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnAfterReload();
+		g_pDataPanel->OnAfterReload();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnSelectConnectedItem(ControlId const id) const
 {
-	if (m_pDataPanel != nullptr)
+	if (g_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnSelectConnectedItem(id);
+		g_pDataPanel->OnSelectConnectedItem(id);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnFileImporterOpened()
 {
-	if (m_pDataPanel != nullptr)
+	if (g_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnFileImporterOpened();
+		g_pDataPanel->OnFileImporterOpened();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnFileImporterClosed()
 {
-	if (m_pDataPanel != nullptr)
+	if (g_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnFileImporterClosed();
+		g_pDataPanel->OnFileImporterClosed();
 	}
 }
 

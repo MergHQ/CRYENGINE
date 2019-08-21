@@ -29,7 +29,7 @@ public:
 	CDataPanel& operator=(CDataPanel const&) = delete;
 	CDataPanel& operator=(CDataPanel&&) = delete;
 
-	explicit CDataPanel(CImpl const& impl);
+	explicit CDataPanel(CImpl const& impl, QWidget* const pParent);
 	virtual ~CDataPanel() override;
 
 	void Reset();

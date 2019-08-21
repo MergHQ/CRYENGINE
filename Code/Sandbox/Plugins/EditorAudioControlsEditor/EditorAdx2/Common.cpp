@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace Adx2
 {
+CDataPanel* g_pDataPanel = nullptr;
 ConnectionsByContext g_connections;
 } // namespace Adx2
 } // namespace Impl

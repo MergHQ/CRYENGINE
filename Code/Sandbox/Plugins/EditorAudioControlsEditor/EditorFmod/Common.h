@@ -12,6 +12,10 @@ namespace Impl
 {
 namespace Fmod
 {
+class CDataPanel;
+
+extern CDataPanel* g_pDataPanel;
+
 using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Fmod::SPoolSizes>;
 extern ConnectionsByContext g_connections;
 

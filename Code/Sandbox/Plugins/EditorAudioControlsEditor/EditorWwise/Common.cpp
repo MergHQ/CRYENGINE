@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace Wwise
 {
+CDataPanel* g_pDataPanel = nullptr;
 ConnectionsByContext g_connections;
 } // namespace Wwise
 } // namespace Impl

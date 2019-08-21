@@ -31,8 +31,9 @@ CryAudio::Impl::SDL_mixer::STriggerInfo g_previewTriggerInfo;
 bool g_isPreviewPlaying = false;
 
 //////////////////////////////////////////////////////////////////////////
-CDataPanel::CDataPanel(CImpl const& impl)
-	: m_impl(impl)
+CDataPanel::CDataPanel(CImpl const& impl, QWidget* const pParent)
+	: QWidget(pParent)
+	, m_impl(impl)
 	, m_pFilterProxyModel(new CFilterProxyModel(this))
 	, m_pModel(new CItemModel(impl, impl.GetRootItem(), this))
 	, m_pTreeView(new CTreeView(this))
@@ -78,6 +79,11 @@ CDataPanel::CDataPanel(CImpl const& impl)
 CDataPanel::~CDataPanel()
 {
 	StopEvent();
+
+	if (g_pDataPanel == this)
+	{
+		g_pDataPanel = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

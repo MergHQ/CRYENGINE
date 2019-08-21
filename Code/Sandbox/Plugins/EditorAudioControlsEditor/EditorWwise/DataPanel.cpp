@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "DataPanel.h"
 
+#include "Common.h"
 #include "Impl.h"
 #include "FilterProxyModel.h"
 #include "TreeView.h"
@@ -28,8 +29,9 @@ CryAudio::Impl::Wwise::STriggerInfo g_previewTriggerInfo;
 bool g_isPreviewPlaying = false;
 
 //////////////////////////////////////////////////////////////////////////
-CDataPanel::CDataPanel(CImpl const& impl)
-	: m_impl(impl)
+CDataPanel::CDataPanel(CImpl const& impl, QWidget* const pParent)
+	: QWidget(pParent)
+	, m_impl(impl)
 	, m_pFilterProxyModel(new CFilterProxyModel(this))
 	, m_pModel(new CItemModel(impl.GetRootItem(), this))
 	, m_pTreeView(new CTreeView(this))
@@ -71,6 +73,11 @@ CDataPanel::CDataPanel(CImpl const& impl)
 CDataPanel::~CDataPanel()
 {
 	StopEvent();
+
+	if (g_pDataPanel == this)
+	{
+		g_pDataPanel = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace PortAudio
 {
+CDataPanel* g_pDataPanel = nullptr;
 ConnectionsByContext g_connections;
 } // namespace PortAudio
 } // namespace Impl
