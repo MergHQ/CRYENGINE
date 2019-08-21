@@ -777,7 +777,16 @@ struct probeLayeredData
     float3 S2_transmittance;
 };
 
+struct CustomForwardShadingAttribs
+{
+    float in_eta;
+    layer_properties_t properties[layers_count + thin_film];
+    probeLayeredData probeData;
+};
+
+#include "ShadeLib.cfi"
 float3 layeredBRDFimpl(float in_eta, layer_properties_t properties[layers_count + thin_film], float3 i, float3 o, float3 n,
+                       AreaLightShadingAttribs areaAttribs, bool isAreaLight,
                        out probeLayeredData probeData, bool accumulate_layered_data = false)
 {
 	// Base conductor layer properties
@@ -917,7 +926,19 @@ float3 layeredBRDFimpl(float in_eta, layer_properties_t properties[layers_count 
 
 			    // Add lobe for idx->(idx-1)
                 const float accmulated_roughness = sigma_to_roughness(V);
-                intensity += BRDF(specular, diffuse, accmulated_roughness, n, i, o) * dot_in;
+                if (isAreaLight)
+                {
+                    float3 diffAcc = 0;
+                    float3 specAcc = 0;
+                    AreaLightLTC_GGX(n, o, 1.0f - accmulated_roughness, specular, areaAttribs.position,
+		                             areaAttribs.lightPos, areaAttribs.lightArrayIdx, areaAttribs.transform, Fwd_SpotTexArray, diffAcc, specAcc);
+
+                    intensity += (diffAcc * diffuse) + specAcc;
+                }
+                else
+                {
+                    intensity += BRDF(specular, diffuse, accmulated_roughness, n, i, o) * dot_in;
+                }
 
                 if (accumulate_layered_data)
                 {
@@ -935,24 +956,24 @@ float3 layeredBRDFimpl(float in_eta, layer_properties_t properties[layers_count 
 	
 	return intensity;
 }
+
+float3 layeredBRDF(float in_eta, layer_properties_t properties[layers_count + thin_film], float3 i, float3 o, float3 n, AreaLightShadingAttribs areaAttribs)
+{
+    probeLayeredData probeData;
+    return layeredBRDFimpl(in_eta, properties, i, o, n, areaAttribs, true, probeData, false);
+}
 float3 layeredBRDF(float in_eta, layer_properties_t properties[layers_count + thin_film], float3 i, float3 o, float3 n)
 {
     probeLayeredData probeData;
-    return layeredBRDFimpl(in_eta, properties, i, o, n, probeData, false);
+    AreaLightShadingAttribs areaAttribs = (AreaLightShadingAttribs) 0;
+    return layeredBRDFimpl(in_eta, properties, i, o, n, areaAttribs, false, probeData, false);
 }
 float3 layeredBRDF(float in_eta, layer_properties_t properties[layers_count + thin_film], float3 i, float3 o, float3 n,
                    out probeLayeredData probeData)
 {
-    return layeredBRDFimpl(in_eta, properties, i, o, n, probeData, true);
+    AreaLightShadingAttribs areaAttribs = (AreaLightShadingAttribs) 0;
+    return layeredBRDFimpl(in_eta, properties, i, o, n, areaAttribs, false, probeData, true);
 }
-
-struct CustomForwardShadingAttribs
-{
-    float in_eta;
-    layer_properties_t properties[layers_count + thin_film];
-    probeLayeredData probeData;
-};
-#include "ShadeLib.cfi"
 
 void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightParams light, out float3 diffuse, out float3 specular)
 {
@@ -961,7 +982,11 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
     const float3 i = light.lightVec;
 
     diffuse = 0;
-    specular = light.illuminance * layeredBRDF(attribs.custom.in_eta, attribs.custom.properties, i, o, n);
+
+    if (light.type == LIGHT_TYPE_REGULAR_AREA)
+		specular = light.illuminance * layeredBRDF(attribs.custom.in_eta, attribs.custom.properties, i, o, n, attribs.areaAttribs);
+	else
+        specular = light.illuminance * layeredBRDF(attribs.custom.in_eta, attribs.custom.properties, i, o, n);
 }
 void Callback_ShadingProbe(in ForwardShadingAttribs attribs, in STiledLightShadeInfo light, float3 lightVec,
                            float probeWeight, float NdotV, float occlusion, float occlSpec, uint4 resIndexClamps, SamplerState ssTrilinearClamp,
@@ -1003,6 +1028,7 @@ float3 tiledShading(float in_eta, layer_properties_t properties[layers_count + t
 					out float3 diffuse_contributions)
 {
     ForwardShadingAttribs attribs;
+    attribs.areaAttribs = (AreaLightShadingAttribs) 0; // will be filled out by TiledForwardShading
     attribs.screenUV = screenUV;
     attribs.worldPos = P;
     attribs.normal = attribs.normalSpecProbe = n;
