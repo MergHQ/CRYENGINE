@@ -286,11 +286,6 @@ int main(int argc, char* argv[])
 	mainFrame->PostLoad();
 
 	splash.close();
-	
-	if (GetIEditorImpl()->IsInMatEditMode())
-	{
-		// TODO: special mode where we only show a material editor.
-	}
 
 	theApp.PostInit();
 

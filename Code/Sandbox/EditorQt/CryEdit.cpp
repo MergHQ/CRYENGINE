@@ -237,7 +237,6 @@ public:
 	bool   m_bTest;
 	bool   m_bAutoLoadLevel;
 	bool   m_bExport;
-	bool   m_bMatEditMode;
 	bool   m_bExportTexture;
 	bool   m_bPrecacheShaders;
 	bool   m_bPrecacheShadersLevels;
@@ -259,7 +258,6 @@ public:
 		: m_exportParamNum(-1)
 		, m_paramNum(0)
 		, m_bExport(false)
-		, m_bMatEditMode(false)
 		, m_bPrecacheShaders(false)
 		, m_bPrecacheShadersLevels(false)
 		, m_bPrecacheShaderList(false)
@@ -367,10 +365,6 @@ private:
 			m_gameCmdLine += " -VTUNE";
 			return;
 		}
-		else if (bFlag && wcsicmp(lpszParam, L"MatEdit") == 0)
-		{
-			m_bMatEditMode = true;
-		}
 		else if (bFlag && wcsicmp(lpszParam, L"BatchMode") == 0)
 		{
 			m_bConsoleMode = true;
@@ -472,8 +466,6 @@ void CCryEditApp::InitFromCommandLine(CEditCommandLineInfo& cmdInfo)
 	m_bMergeShaders = cmdInfo.m_bMergeShaders;
 	m_bExportMode = cmdInfo.m_bExport;
 	m_bRunPythonScript = cmdInfo.m_bRunPythonScript;
-
-	m_pEditor->SetMatEditMode(cmdInfo.m_bMatEditMode);
 
 	if (m_bExportMode)
 	{
@@ -750,8 +742,7 @@ bool CCryEditApp::InitInstance()
 		}
 	}
 
-	if (!GetIEditorImpl()->IsInMatEditMode())
-		m_pEditor->InitFinished();
+	m_pEditor->InitFinished();
 
 	InitLevel(cmdInfo);
 
@@ -934,26 +925,24 @@ bool CCryEditApp::IdleProcessing(bool bBackgroundUpdate)
 		else
 		{
 			GetIEditorImpl()->GetSystem()->GetProfilingSystem()->StartFrame();
-			if (!GetIEditorImpl()->IsInMatEditMode())
+
+			//Engine update is disabled during level load
+			//This condition will not always hold true and we should aim to remove this,
+			//as many things may depend on the engine systems being updated during editor time, no matter what we are doing with level load
+			//This was added to temporarily prevent an assert in the entity system
+			//TODO: Remove this when the engine supports update during loading better
+			if (!GetIEditorImpl()->GetDocument()->IsLevelBeingLoaded())
 			{
-				//Engine update is disabled during level load
-				//This condition will not always hold true and we should aim to remove this,
-				//as many things may depend on the engine systems being updated during editor time, no matter what we are doing with level load
-				//This was added to temporarily prevent an assert in the entity system
-				//TODO: Remove this when the engine supports update during loading better
-				if (!GetIEditorImpl()->GetDocument()->IsLevelBeingLoaded())
-				{
-					GetIEditorImpl()->GetGameEngine()->Update();
-				}
-
-				if (m_pEditor)
-				{
-					m_pEditor->Update();
-				}
-
-				// synchronize all animations to ensure that their computation has finished
-				GetIEditorImpl()->GetSystem()->GetIAnimationSystem()->SyncAllAnimations();
+				GetIEditorImpl()->GetGameEngine()->Update();
 			}
+
+			if (m_pEditor)
+			{
+				m_pEditor->Update();
+			}
+
+			// synchronize all animations to ensure that their computation has finished
+			GetIEditorImpl()->GetSystem()->GetIAnimationSystem()->SyncAllAnimations();
 
 			GetIEditorImpl()->Notify(eNotify_OnIdleUpdate);
 			GetIEditorImpl()->GetSystem()->GetProfilingSystem()->EndFrame();

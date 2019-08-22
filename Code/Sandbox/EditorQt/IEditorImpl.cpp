@@ -182,10 +182,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pMainThreadWorker = new CMainThreadWorker;
 
 	m_bUpdates = true;
-
 	m_bSelectionLocked = false;
-
-	m_bMatEditMode = false;
 	m_bShowStatusText = true;
 
 	doc_use_subfolder_for_crash_backup = 0;
@@ -1194,11 +1191,6 @@ bool CEditorImpl::IsSourceControlAvailable()
 		return true;
 
 	return false;
-}
-
-void CEditorImpl::SetMatEditMode(bool bIsMatEditMode)
-{
-	m_bMatEditMode = bIsMatEditMode;
 }
 
 void CEditorImpl::ShowStatusText(bool bEnable)

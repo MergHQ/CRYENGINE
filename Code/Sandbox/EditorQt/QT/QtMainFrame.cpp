@@ -830,11 +830,7 @@ void CEditorMainFrame::PostLoad()
 
 	GetIEditorImpl()->GetTrayArea()->RegisterTrayWidget<CTraySearchBox>(0);
 	InitMenuBar();
-
-	if (!GetIEditorImpl()->IsInMatEditMode())
-	{
-		InitLayout();
-	}
+	InitLayout();
 
 	GetIEditorImpl()->GetTrayArea()->MainFrameInitialized();
 	GetIEditorImpl()->Notify(eNotify_OnMainFrameInitialized);
@@ -1655,10 +1651,8 @@ bool CEditorMainFrame::BeforeClose()
 void CEditorMainFrame::SaveConfig()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
-	if (!GetIEditorImpl()->IsInMatEditMode())
-	{
-		CTabPaneManager::GetInstance()->SaveLayout();
-	}
+
+	CTabPaneManager::GetInstance()->SaveLayout();
 	CKeybindEditor::SaveUserKeybinds();
 	GetIEditor()->GetPersonalizationManager()->SavePersonalization();
 }

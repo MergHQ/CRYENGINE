@@ -543,10 +543,7 @@ void CMaterialManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	{
 	case eNotify_OnMainFrameInitialized:
 		InitMatSender();
-		if (!GetIEditorImpl()->IsInMatEditMode())
-		{
-			qApp->installNativeEventFilter(&SMaterialManagerFilter::GetInstance());
-		}
+		qApp->installNativeEventFilter(&SMaterialManagerFilter::GetInstance());
 		break;
 	case eNotify_OnIdleUpdate:
 		m_pHighlighter->Update();

@@ -139,7 +139,6 @@ public:
 	virtual bool        IsInPreviewMode() override;
 	virtual bool        IsInConsolewMode();
 	virtual bool        IsInLevelLoadTestMode();
-	virtual bool        IsInMatEditMode() { return m_bMatEditMode; }
 
 	//! Enables/Disable updates of editor.
 	void         EnableUpdate(bool enable) { m_bUpdates = enable; }
@@ -407,9 +406,6 @@ protected:
 	string m_levelNameBuffer;
 	std::map<int, std::function<bool(const string&, string&)>> m_deprecatedPropertyEditors;
 
-	//! True if the editor is in material edit mode. Fast preview of materials.
-	//! In this mode only very limited functionality is available.
-	bool m_bMatEditMode;
 	bool m_bShowStatusText;
 	int  doc_use_subfolder_for_crash_backup;
 	bool m_bInitialized;
