@@ -13,6 +13,7 @@ class CUndoEntityObject final : public CUndoBaseObject
 	{
 		CryGUID componentInstanceGUID;
 		std::unique_ptr<Schematyc::CClassProperties> pProperties;
+		CryTransform::CTransform transform;
 	};
 
 public:
@@ -49,7 +50,7 @@ public:
 				if (pComponent == nullptr)
 					continue;
 
-				RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get());
+				RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get(), cachedComponent.transform);
 			}
 
 			pObject->SetLayerModified();
@@ -72,7 +73,7 @@ public:
 				if (pComponent == nullptr)
 					continue;
 
-				RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get());
+				RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get(), cachedComponent.transform);
 			}
 
 			pObject->SetLayerModified();
@@ -80,13 +81,19 @@ public:
 	}
 
 protected:
-	void RestoreComponentProperties(IEntityComponent* pComponent, const Schematyc::CClassProperties& properties)
+	void RestoreComponentProperties(IEntityComponent* pComponent, const Schematyc::CClassProperties& properties, const CryTransform::CTransform& transform)
 	{
+		if (pComponent->GetComponentFlags().Check(IEntityComponent::EFlags::Transform) && transform != *pComponent->GetTransform())
+		{
+			pComponent->SetTransformMatrix(transform.ToMatrix34());
+		}
+
 		bool membersChanged = !properties.Compare(pComponent->GetClassDesc(), pComponent);
 		if (membersChanged)
 		{
 			// Restore members from the previously recorded class properties
 			properties.Apply(pComponent->GetClassDesc(), pComponent);
+
 			// Notify this component about changed property.
 			SEntityEvent entityEvent(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 			pComponent->SendEvent(entityEvent);
@@ -99,10 +106,16 @@ protected:
 
 		entity.VisitComponents([&destinationVector](IEntityComponent* pComponent)
 		{
+			CryTransform::CTransform transform;
 			std::unique_ptr<Schematyc::CClassProperties> pClassProperties(new Schematyc::CClassProperties());
 			pClassProperties->Read(pComponent->GetClassDesc(), pComponent);
 
-			destinationVector.emplace_back(SCachedComponent{ pComponent->GetGUID(), std::move(pClassProperties) });
+			if (pComponent->GetComponentFlags().Check(IEntityComponent::EFlags::Transform))
+			{
+				transform = *pComponent->GetTransform();
+			}
+
+			destinationVector.emplace_back(SCachedComponent{ pComponent->GetGUID(), std::move(pClassProperties), transform });
 		});
 	}
 

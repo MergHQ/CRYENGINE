@@ -34,8 +34,11 @@ public:
 	explicit inline CTransform(const Matrix34& transform)
 		: m_translation(transform.GetTranslation())
 		, m_scale(transform.GetScale())
-		, m_rotation(Matrix33(transform))
-	{}
+	{
+		Matrix33 rotation(transform);
+		rotation.OrthonormalizeFast();
+		m_rotation = rotation;
+	}
 
 	inline void SetTranslation(const Vec3& translation)
 	{
