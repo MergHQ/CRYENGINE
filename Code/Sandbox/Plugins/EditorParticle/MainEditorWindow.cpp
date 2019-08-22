@@ -103,9 +103,6 @@ CParticleEditor::CParticleEditor()
 
 void CParticleEditor::RegisterActions()
 {
-	RegisterAction("general.copy", &CParticleEditor::OnCopy);
-	RegisterAction("general.paste", &CParticleEditor::OnPaste);
-	RegisterAction("general.delete", &CParticleEditor::OnDelete);
 	RegisterAction("general.import", &CParticleEditor::OnImport);
 	RegisterAction("general.undo", &CParticleEditor::OnUndo);
 	RegisterAction("general.redo", &CParticleEditor::OnRedo);
@@ -123,8 +120,7 @@ void CParticleEditor::InitMenu()
 {
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save,  CEditor::MenuItems::SaveAs,
-		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,
-		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete };
+		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo };
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 
 	{

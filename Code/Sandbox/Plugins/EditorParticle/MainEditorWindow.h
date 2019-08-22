@@ -77,9 +77,6 @@ private:
 	bool OnReload();
 	bool OnImport();
 
-	bool OnCopy() { return false; }
-	bool OnPaste() { return false; }
-	bool OnDelete() { return false; }
 	bool OnUndo();
 	bool OnRedo();
 
