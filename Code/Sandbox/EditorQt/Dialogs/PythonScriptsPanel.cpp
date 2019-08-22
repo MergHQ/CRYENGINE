@@ -68,11 +68,16 @@ CPythonScriptsPanel::CPythonScriptsPanel()
 
 	m_pTree = new QAdvancedTreeView();
 	m_pTree->setModel(sortModel);
-	//m_pTree->setRootIndex(sortFilterRootIndex);
 	m_pTree->setSelectionMode(QTreeView::ExtendedSelection);
 	m_pTree->setUniformRowHeights(true);
 	m_pTree->setAllColumnsShowFocus(true);
+
 	m_pTree->setHeaderHidden(true);
+	m_pTree->SetColumnVisible(CFileTreeModel::eColumn_LastModified, false);
+	m_pTree->SetColumnVisible(CFileTreeModel::eColumn_Type, false);
+	m_pTree->SetColumnVisible(CFileTreeModel::eColumn_Size, false);
+	m_pTree->SetColumnVisible(CFileTreeModel::eColumn_Archive, false);
+
 	pLayout->addWidget(m_pTree);
 
 	pSearchBox->SetAutoExpandOnSearch(m_pTree);
