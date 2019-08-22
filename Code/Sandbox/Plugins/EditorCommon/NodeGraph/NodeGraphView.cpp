@@ -10,6 +10,7 @@
 
 #include "AbstractNodeItem.h"
 
+#include "Commands/QCommandAction.h"
 #include "NodeWidget.h"
 #include "PinWidget.h"
 #include "ConnectionWidget.h"
@@ -135,6 +136,11 @@ CNodeGraphView::CNodeGraphView()
 
 	m_pTooltip.reset(new QTrackingTooltip());
 	m_pTooltip->SetAutoHide(false);
+
+	// TODO: Implement a proper wrapper around CNodeGraphView, which is inherited from CEditorWidget.
+	addAction((QAction*)GetIEditor()->GetICommandManager()->GetCommandAction("general.copy"));
+	addAction((QAction*)GetIEditor()->GetICommandManager()->GetCommandAction("general.paste"));
+	// ~TODO
 
 	QObject::connect(&m_pendingItemPlacementTimer, &QTimer::timeout, this, &CNodeGraphView::RunPendingItemPlacement);
 }
