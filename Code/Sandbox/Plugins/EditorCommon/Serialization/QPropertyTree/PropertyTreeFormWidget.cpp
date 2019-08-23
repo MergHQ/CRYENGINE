@@ -560,9 +560,10 @@ void CFormWidget::paintEvent(QPaintEvent* pEvent)
 	{
 		const std::unique_ptr<SFormRow>& pRow = m_rows[i];
 		const _smart_ptr<const CRowModel>& rowModel = pRow->m_pModel;
+		const bool isGroup = pRow->HasChildren();
 
 		//Draw group frame
-		if (pRow->HasChildren() && m_groupBorderWidth > 0)
+		if (isGroup && m_groupBorderWidth > 0)
 		{
 			QRect rowFrame = pRow->rowRect;
 			QPainterPath path;
@@ -577,10 +578,13 @@ void CFormWidget::paintEvent(QPaintEvent* pEvent)
 		}
 
 		//Draw labels
-
 		QRect textRect = pRow->rowRect;
 		textRect.setLeft(textRect.left() + textIndent);
-		textRect.setRight(GetSplitterPosition());
+		// If it's a group without an inline widget, the splitter position should not affect labels
+		if (!isGroup)
+		{
+			textRect.setRight(GetSplitterPosition());
+		}
 
 		pStyle->drawItemText(&painter, textRect, flags, styleOption.palette, isEnabled(), rowModel->GetLabel(), foregroundRole());
 
