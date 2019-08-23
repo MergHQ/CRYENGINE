@@ -346,7 +346,7 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 
 		bool bInsideVolume = false;
 		Vec3 lightPos = Vec3(lightInfo.posRad);
-		if (lightPos.GetDistance(camPos) < lightInfo.posRad.w * 1.25f)
+		if ((lightPos.GetDistance(camPos) - viewInfo.nearClipPlane) < lightInfo.posRad.w * 1.5f)
 		{
 			bInsideVolume = true;
 		}
