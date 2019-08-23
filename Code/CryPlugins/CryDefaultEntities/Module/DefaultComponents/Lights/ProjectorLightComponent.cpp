@@ -85,7 +85,7 @@ void CProjectorLightComponent::Initialize()
 	{
 		light.m_Flags |= DLF_CASTSHADOW_MAPS;
 
-		light.SetShadowBiasParams(1.f, 1.f);
+		light.SetShadowBiasParams(m_shadows.m_shadowBias, m_shadows.m_shadowSlopeBias);
 		light.m_fShadowUpdateMinRadius = light.m_fRadius;
 
 		float shadowUpdateRatio = 1.f;
