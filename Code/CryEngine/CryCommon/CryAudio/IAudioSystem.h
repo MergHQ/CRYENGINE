@@ -154,8 +154,20 @@ struct SCreateObjectData
 		char const* const szName_ = nullptr,
 		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
 		CTransformation const& transformation_ = CTransformation::GetEmptyObject(),
-		bool const setCurrentEnvironments_ = false,
-		ListenerIds const& listenerIds_ = g_defaultListenerIds)
+		bool const setCurrentEnvironments_ = false)
+		: szName(szName_)
+		, occlusionType(occlusionType_)
+		, transformation(transformation_)
+		, setCurrentEnvironments(setCurrentEnvironments_)
+		, listenerIds{DefaultListenerId}
+	{}
+
+	explicit SCreateObjectData(
+		char const* const szName_,
+		EOcclusionType const occlusionType_,
+		CTransformation const& transformation_,
+		bool const setCurrentEnvironments_,
+		ListenerIds const& listenerIds_)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)

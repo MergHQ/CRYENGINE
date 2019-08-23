@@ -117,8 +117,6 @@ constexpr LibraryId DefaultLibraryId = StringToId(g_szDefaultLibraryName);
 constexpr ContextId GlobalContextId = StringToId(g_szGlobalContextName);
 constexpr ListenerId DefaultListenerId = StringToId("ThisIsTheHopefullyUniqueIdForTheDefaultListener");
 
-static ListenerIds const g_defaultListenerIds{ DefaultListenerId };
-
 /**
  * @enum CryAudio::ERequestFlags
  * @brief A strongly typed enum class representing flags that can be passed into methods via the SRequestUserData parameter that control how an internally generated request behaves or what to do along with it.
