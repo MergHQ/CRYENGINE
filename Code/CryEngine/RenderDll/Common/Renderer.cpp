@@ -1407,11 +1407,12 @@ bool CRenderer::EF_ReloadFile(const char* szFileName)
 			CTexture::ReloadFile(correctedName);
 			return true; // Still, it can fail later, check FT_FAILED
 		}
-		else
+		else if (CTextureCompiler::IsImageFormatSupported(szExtension))
 		{
 			char buffer[512];
 			return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(szFileName, buffer, sizeof(buffer), false) != CTextureCompiler::EResult::Failed;
 		}
+		return false;
 #endif //defined(CRY_ENABLE_RC_HELPER)
 
 	}

@@ -246,7 +246,19 @@ void CAssetGenerator::OnCompilationStarted(const char* szSource, const char* szT
 void CAssetGenerator::OnCompilationFinished(const char* szSource, const char* szTarget, ERcExitCode eReturnCode)
 {
 	using namespace Private_AssetGenerator;
+
+	if (eReturnCode != ERcExitCode::eRcExitCode_Success)
+	{
+		return;
+	}
+
 	if (!IsGameFolderPath(szSource))
+	{
+		return;
+	}
+
+	string reasonToReject;
+	if (!CAssetType::IsValidAssetPath(string().Format("%s.cryasset", szTarget), reasonToReject))
 	{
 		return;
 	}

@@ -417,6 +417,12 @@ QString ToGamePath(const QString& path)
 		fixedPath = fixedPath.right(fixedPath.length() - gameDir.length());
 	}
 
+	const QString cacheDir = QtUtil::ToQString(GetEditorCacheRelativePath()) + "/";
+	if (fixedPath.startsWith(cacheDir, Qt::CaseInsensitive))
+	{
+		fixedPath = fixedPath.right(fixedPath.length() - cacheDir.length());
+	}
+
 	return fixedPath;
 }
 

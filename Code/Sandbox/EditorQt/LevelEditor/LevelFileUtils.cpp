@@ -54,7 +54,7 @@ bool IsAnySubFolderLevelAbsolute(const AbsolutePath& path)
 
 bool IsPathToLevel(const AssetPath& assetPath)
 {
-	return IsPathToLevelAbsolute(ConvertAssetToAbsolutePath(assetPath));
+	return IsPathToLevelAbsolute(ConvertAssetToAbsolutePath(PathUtil::ToGamePath(assetPath)));
 }
 
 AbsolutePath GetEngineBasePath()

@@ -148,8 +148,8 @@ bool CAssetManager::SaveCryasset(const IConfig* const pConfig, const char* szSou
 		files.emplace_back(pFiles[i]);
 	}
 
-	const string metadataFilename = GetMetadataFilename(files.front());
-	std::unique_ptr<CAsset> pAsset = CAsset::Create(m_pRc, metadataFilename);
+	const string metadataFilepath = szOutputFolder ? PathUtil::Make(szOutputFolder, PathUtil::GetFile(GetMetadataFilename(files.front()))) : GetMetadataFilename(files.front());
+	std::unique_ptr<CAsset> pAsset = CAsset::Create(m_pRc, metadataFilepath);
 	if (!pAsset)
 	{
 		return false;
@@ -168,13 +168,12 @@ bool CAssetManager::SaveCryasset(const IConfig* const pConfig, const char* szSou
 		CollectMetadataDetails(pAsset->GetMetadataRoot(), szSourceFilepath);
 	}
 
-	const string targetFile = szOutputFolder ? PathUtil::Make(szOutputFolder, PathUtil::GetFile(metadataFilename)) : metadataFilename;
-	if (!pAsset->Save(targetFile))
+	if (!pAsset->Save(metadataFilepath))
 	{
-		RCLogError("Can't write metadata file '%s'", targetFile.c_str());
+		RCLogError("Can't write metadata file '%s'", metadataFilepath.c_str());
 		return false;
 	}
-	m_pRc->AddInputOutputFilePair(szSourceFilepath ? files.front() : szSourceFilepath, targetFile.c_str());
+	m_pRc->AddInputOutputFilePair(szSourceFilepath ? files.front() : szSourceFilepath, metadataFilepath.c_str());
 	return true;
 }
 

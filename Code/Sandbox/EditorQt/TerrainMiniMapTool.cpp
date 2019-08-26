@@ -6,13 +6,14 @@
 #include "CryEditDoc.h"
 #include "GameEngine.h"
 
-#include <Util/Image.h>
 #include <Util/ImageTIF.h>
 
-#include <PathUtils.h>
+#include "AssetSystem/AssetManagerHelpers.h"
 #include <IUndoManager.h>
 #include <IUndoObject.h>
+#include <PathUtils.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <Util/Image.h>
 #include <Viewport.h>
 
 #include <CryGame/IGameFramework.h>
@@ -230,12 +231,13 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 		imageTIF.SaveRAW(imageTIFFile, image.GetData(), image.GetWidth(), image.GetHeight(), 1, 4, false, "Minimap");
 	}
 
+	// The CTextureCompiler generates dds files in the cache folder.
+	// With this flag we force generation of a copy of dds and the corresponding cryasset files directly in the level folder.
 	if (m_exportDds)
 	{
-		// Manual dds conversion not supported, leave it to the RC
-		CResourceCompilerHelper::CallResourceCompiler(imageTIFFile, nullptr, nullptr, false, CResourceCompilerHelper::eRcExePath_editor, true, true);
+		AssetManagerHelpers::RCLogger rcLogger;
+		CResourceCompilerHelper::CallResourceCompiler(imageTIFFile, nullptr, &rcLogger, false, CResourceCompilerHelper::eRcExePath_editor, true, true);
 	}
-
 
 	XmlNodeRef dataNode = GetISystem()->LoadXmlFromFile(dataFile);
 	if (!dataNode)
@@ -439,6 +441,7 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 		ar(Serialization::Range(extends, kMinExtend, 10000.0f), "size", "Size");
 		ar(fileName, "filename", "File Name");
 		ar(m_exportDds, "dds", "Export as DDS");
+		ar.doc("Makes Mini Map visible in the resource browser as a texture asset.");
 		ar(m_exportTif, "tif", "Export as TIF");
 		ar(Serialization::Range(brightness, 0.01f, 1.0f, 0.01f), "brightness", "Brightness");
 
