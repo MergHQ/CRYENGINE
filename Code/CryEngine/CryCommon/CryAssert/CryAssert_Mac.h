@@ -2,7 +2,7 @@
 
 bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, bool* pIgnore)
 {
-	if (!Cry::Assert::IgnoreAllAsserts() && Cry::Assert::ShowDialogOnAssert())
+	if (Cry::Assert::ShowDialogOnAssert())
 	{
 		static char s_charBuffer[4096];
 		size_t file_len = strlen(szFile);
@@ -42,7 +42,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 			*pIgnore = true;
 			break;
 		case 2:
-			Cry::Assert::IgnoreAllAsserts(true);
+			Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
 			break;
 		case 3:
 			return true;

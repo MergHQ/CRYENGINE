@@ -3650,10 +3650,6 @@ void CGame::RegisterConsoleCommands()
 	REGISTER_COMMAND("FlyCamSetPoint", CmdFlyCamSetPoint, VF_CHEAT, "Sets a fly cam point");
 	REGISTER_COMMAND("FlyCamPlay", CmdFlyCamPlay, VF_CHEAT, "Plays the flycam path");
 
-#if defined(USE_CRY_ASSERT)
-	REGISTER_COMMAND("IgnoreAllAsserts", CmdIgnoreAllAsserts, VF_CHEAT, "Ignore all asserts");
-#endif
-
 	REGISTER_COMMAND("pl_reload", CmdReloadPlayer, VF_CHEAT, "Reload player's data.");
 	REGISTER_COMMAND("pl_health", CmdSetPlayerHealth, VF_CHEAT, "Sets a player's health.");
 	REGISTER_COMMAND("switch_game_multiplayer", CmdSwitchGameMultiplayer, VF_CHEAT, "Switches game between single and multiplayer");
@@ -3985,14 +3981,6 @@ void CGame::CmdFlyCamPlay(IConsoleCmdArgs *pArgs)
 		}
 	}
 }
-
-#if defined(USE_CRY_ASSERT)
-void CGame::CmdIgnoreAllAsserts(IConsoleCmdArgs *pArgs)
-{
-	Cry::Assert::IgnoreAllAsserts(true);	
-	gEnv->bTesting = true;
-}
-#endif
 
 //------------------------------------------------------------------------
 void CGame::CmdLastInv(IConsoleCmdArgs *pArgs)

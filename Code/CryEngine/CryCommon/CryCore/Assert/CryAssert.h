@@ -48,9 +48,6 @@
 
 				bool IsInAssert();
 
-				bool IgnoreAllAsserts();
-				void IgnoreAllAsserts(bool ignoreAsserts);
-
 				bool ShowDialogOnAssert();
 				void ShowDialogOnAssert(bool showAssertDialogue);
 
@@ -61,6 +58,7 @@
 				bool IsAssertLevel(ELevel assertLevel);
 				void SetAssertLevel(ELevel assertLevel);
 
+				// The callback will be invoked before any assert that is not ignored or disabled
 				CustomPreAssertCallback GetCustomPreAssertCallback();
 				bool SetCustomAssertCallback(CustomPreAssertCallback customAssertCallback);
 
@@ -86,7 +84,6 @@
 						CustomPreAssertCallback customPreAssertCallback = nullptr;
 						ELevel assertLevel = ELevel::Enabled;
 						bool isInAssertHandler = false;
-						bool ignoreAllAsserts = false;
 						bool showAssertDialog = true;
 						bool logAlways = false;
 						// used to ensure we only assert in one thread at a time

@@ -13,7 +13,7 @@
 #define IDC_CRYASSERT_BUTTON_REPORT     1006
 #define IDC_CRYASSERT_BUTTON_STOP       1007
 #define IDC_CRYASSERT_BUTTON_BREAK      1008
-#define IDC_CRYASSERT_BUTTON_IGNORE_ALL 1009
+#define IDC_CRYASSERT_BUTTON_DISABLE    1009
 #define IDC_CRYASSERT_BUTTON_MODULE     1010
 #define IDC_CRYASSERT_STATIC_TEXT       0
 
@@ -34,7 +34,7 @@
 #define DLG_ITEM_TEXT_12                L"Ignore"
 #define DLG_ITEM_TEXT_13                L"Report as Bug"
 #define DLG_ITEM_TEXT_14                L"Break"
-#define DLG_ITEM_TEXT_15                L"Ignore All"
+#define DLG_ITEM_TEXT_15                L"Disable Asserts"
 
 namespace Cry {
 	namespace Assert {
@@ -100,7 +100,7 @@ namespace Cry {
 			{
 				BUTTON_CONTINUE,
 				BUTTON_IGNORE,
-				BUTTON_IGNORE_ALL,
+				BUTTON_DISABLE,
 				BUTTON_BREAK,
 				BUTTON_STOP,
 				BUTTON_REPORT_AS_BUG,
@@ -160,8 +160,8 @@ namespace Cry {
 					EndDialog(hDlg, 0);
 					break;
 
-				case IDC_CRYASSERT_BUTTON_IGNORE_ALL:
-					gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_IGNORE_ALL;
+				case IDC_CRYASSERT_BUTTON_DISABLE:
+					gs_pAssertInfo->btnChosen = SCryAssertInfo::BUTTON_DISABLE;
 					EndDialog(hDlg, 0);
 					break;
 
@@ -285,7 +285,7 @@ namespace Cry {
 
 		bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, bool* pIgnore)
 		{
-			if (Cry::Assert::ShowDialogOnAssert() && !Cry::Assert::IgnoreAllAsserts())
+			if (Cry::Assert::ShowDialogOnAssert())
 			{
 				SCryAssertInfo assertInfo;
 
@@ -318,7 +318,7 @@ namespace Cry {
 					0, 0, DLG_TITLE, 8, DLG_FONT,
 					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                      0, 7,           113, 50,  14,  IDC_CRYASSERT_BUTTON_CONTINUE, 0xFFFF, 0x0080, DLG_ITEM_TEXT_0, 0 },
 					{ BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                   0, 60,          113, 50,  14,  IDC_CRYASSERT_BUTTON_IGNORE, 0xFFFF, 0x0080, DLG_ITEM_TEXT_12, 0 },
-					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | (gEnv ? 0 : WS_DISABLED) | WS_TABSTOP,                                           0, 113,         113, 50,  14,  IDC_CRYASSERT_BUTTON_IGNORE_ALL, 0xFFFF, 0x0080, DLG_ITEM_TEXT_15, 0 },
+					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | (gEnv ? 0 : WS_DISABLED) | WS_TABSTOP,                                           0, 113,         113, 50,  14,  IDC_CRYASSERT_BUTTON_DISABLE, 0xFFFF, 0x0080, DLG_ITEM_TEXT_15, 0 },
 					{ BS_PUSHBUTTON | WS_CHILD | (IsDebuggerPresent() ? WS_VISIBLE : 0) | WS_TABSTOP,                                          0, 271,         113, 50,  14,  IDC_CRYASSERT_BUTTON_BREAK, 0xFFFF, 0x0080, DLG_ITEM_TEXT_14, 0 },
 					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                      0, 324,         113, 50,  14,  IDC_CRYASSERT_BUTTON_STOP, 0xFFFF, 0x0080, DLG_ITEM_TEXT_1, 0 },
 					{ BS_GROUPBOX | WS_CHILD | WS_VISIBLE,                                                                                     0, 7,           7,   366, 100, IDC_CRYASSERT_STATIC_TEXT, 0xFFFF, 0x0080, DLG_ITEM_TEXT_2, 0 },
@@ -354,9 +354,9 @@ namespace Cry {
 				{
 				case SCryAssertInfo::BUTTON_CONTINUE:
 					break;
-				case SCryAssertInfo::BUTTON_IGNORE_ALL:
-					Cry::Assert::IgnoreAllAsserts(true);
-					// intentional fall through
+				case SCryAssertInfo::BUTTON_DISABLE:
+					Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
+					break;
 				case SCryAssertInfo::BUTTON_IGNORE:
 					*pIgnore = true;
 					break;
@@ -387,7 +387,7 @@ namespace Cry {
 #undef IDC_CRYASSERT_BUTTON_REPORT
 #undef IDC_CRYASSERT_BUTTON_STOP
 #undef IDC_CRYASSERT_BUTTON_BREAK
-#undef IDC_CRYASSERT_BUTTON_IGNORE_ALL
+#undef IDC_CRYASSERT_BUTTON_DISABLE
 #undef IDC_CRYASSERT_BUTTON_MODULE
 #undef IDC_CRYASSERT_STATIC_TEXT
 

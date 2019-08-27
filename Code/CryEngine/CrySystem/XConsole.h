@@ -319,7 +319,7 @@ private: // ----------------------------------------------------------
 	ConsoleVarSinks                m_consoleVarSinks;
 
 	ConfigVars                     m_configVars;              // temporary data of cvars that haven't been created yet
-	std::multimap<string, string>  m_configCommands;  // temporary data of commands that haven't been created yet
+	std::multimap<string, string>  m_configCommands;          // temporary data of commands that haven't been created yet
 
 	int                            m_nScrollPos;
 	int                            m_nTempScrollMax;          // for currently opened console, reset to m_nScrollMax

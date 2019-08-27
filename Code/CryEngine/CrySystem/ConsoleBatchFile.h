@@ -26,11 +26,8 @@ class CConsoleBatchFile
 {
 public:
 	static void Init();
-	static bool ExecuteConfigFile(const char* filename);
-
 private:
 	static void ExecuteFileCmdFunc(IConsoleCmdArgs* args);
-	static IConsole* m_pConsole;
 };
 
 #endif

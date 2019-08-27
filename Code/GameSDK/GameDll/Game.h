@@ -719,10 +719,6 @@ protected:
 	static void CmdFlyCamSetPoint(IConsoleCmdArgs* pArgs);
 	static void CmdFlyCamPlay(IConsoleCmdArgs* pArgs);
 
-#if defined(USE_CRY_ASSERT)
-	static void CmdIgnoreAllAsserts(IConsoleCmdArgs* pArgs);
-#endif
-
 	static void CmdReloadPlayer(IConsoleCmdArgs* cmdArgs);
 
 	static void CmdSetPlayerHealth(IConsoleCmdArgs* pArgs);

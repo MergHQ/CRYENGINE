@@ -83,7 +83,7 @@ void CXConsoleVariableCVarGroup::OnLoadConfigurationEntry_End()
 }
 
 CXConsoleVariableCVarGroup::CXConsoleVariableCVarGroup(IConsole* pConsole, const string& name, const char* szFileName, int flags)
-	: CXConsoleVariableInt(pConsole, name, 0, flags, 0, true)
+	: CXConsoleVariableInt(pConsole, name, 0, flags, nullptr, true)
 {
 	gEnv->pSystem->LoadConfiguration(szFileName, this, eLoadConfigSystemSpec);
 }
