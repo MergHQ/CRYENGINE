@@ -232,7 +232,7 @@ void DiscTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 void DiscTool::Serialize(Serialization::IArchive& ar)
 {
 	__super::Serialize(ar);
-	m_DiscParameter.Serialize(ar);
+	m_DiscParameter.Serialize(ar, false);
 }
 
 bool DiscTool::IsPhaseFirstStepOnPrimitiveCreation() const

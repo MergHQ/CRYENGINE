@@ -15,9 +15,17 @@ struct DiscParameter
 	{
 	}
 
-	void Serialize(Serialization::IArchive& ar)
+	void Serialize(Serialization::IArchive& ar, bool sphere)
 	{
-		ar(SUBDIVISION_RANGE(m_NumOfSubdivision), "SubdivisionCount", "Subdivision Count");
+		if (sphere)
+		{
+			ar(SUBDIVISION_SPHERE_RANGE(m_NumOfSubdivision), "SubdivisionCount", "Subdivision Count");
+		}
+		else
+		{
+			ar(SUBDIVISION_RANGE(m_NumOfSubdivision), "SubdivisionCount", "Subdivision Count");
+		}
+
 		if (ar.isEdit())
 			ar(LENGTH_RANGE(m_Radius), "Radius", "Radius");
 		ar(m_b90DegreeSnap, "90 Degrees Snap", "90 Degrees Snap");

@@ -16,6 +16,12 @@ public:
 	}
 	~SphereTool(){}
 
+	virtual void Serialize(Serialization::IArchive& ar) override
+	{
+		ShapeTool::Serialize(ar);
+		m_DiscParameter.Serialize(ar, true);
+	}
+
 protected:
 	void UpdateShape() override;
 	void UpdateDesignerBasedOnSpherePolygons(const BrushMatrix34& tm);

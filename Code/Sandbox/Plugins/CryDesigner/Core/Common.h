@@ -264,9 +264,10 @@ stack_string                                GetSaveStateFilePath(const char* nam
 bool                                        LoadSettings(const Serialization::SStruct& outObj, const char* name);
 bool                                        SaveSettings(const Serialization::SStruct& outObj, const char* name);
 
-inline Serialization::RangeDecorator<float> LENGTH_RANGE(float& value)    { return Serialization::Range(value, 0.01f, 100.0f); }
-inline Serialization::RangeDecorator<int>   SUBDIVISION_RANGE(int& value) { return Serialization::Range(value, 3, 256); }
-inline Serialization::RangeDecorator<float> STEPRISE_RANGE(float& value)  { return Serialization::Range(value, 0.1f, 10.0f); }
+inline Serialization::RangeDecorator<float> LENGTH_RANGE(float& value)           { return Serialization::Range(value, 0.01f, 100.0f); }
+inline Serialization::RangeDecorator<int>   SUBDIVISION_RANGE(int& value)        { return Serialization::Range(value, 3, 256); }
+inline Serialization::RangeDecorator<int>   SUBDIVISION_SPHERE_RANGE(int& value) { return Serialization::Range(value, 3, 36); }
+inline Serialization::RangeDecorator<float> STEPRISE_RANGE(float& value)         { return Serialization::Range(value, 0.1f, 10.0f); }
 };
 
 #define CRYDESIGNER_USER_DIRECTORY "CryDesigner"
