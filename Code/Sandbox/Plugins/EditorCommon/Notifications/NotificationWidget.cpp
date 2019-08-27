@@ -40,8 +40,13 @@ CNotificationWidget::CNotificationWidget(int notificationId, QWidget* pParent /*
 	, m_bDisableTimerHide(false)
 	, m_pParent(pParent)
 {
+	// Notifications should not steal focus from any other window
 	setFocusPolicy(Qt::FocusPolicy::NoFocus);
 	setAttribute(Qt::WA_ShowWithoutActivating);
+	// Force this window to have a native window handle since we need to force it to draw on top of other windows as well
+	// Also make sure not to create native windows for it's ancestors
+	setAttribute(Qt::WA_DontCreateNativeAncestors);
+	setAttribute(Qt::WA_NativeWindow);
 	// Now that the correct flags are set for this widget not to steal focus, set the parent
 	setParent(pParent);
 
@@ -174,11 +179,19 @@ void CNotificationWidget::CombineNotifications(const QString& newTitle)
 
 void CNotificationWidget::ShowAt(const QPoint& globalPos)
 {
+	QPoint localPos = globalPos;
+	QWidget* pParent = parentWidget();
+	if (pParent)
+	{
+		localPos = pParent->mapFromGlobal(localPos);
+	}
+
 	show();
 	layout()->setSizeConstraint(QLayout::SetMinAndMaxSize);
 	adjustSize();
+	
 	// Move the Widget after calling show(). Size is otherwise incorrect
-	move(globalPos.x() - width(), globalPos.y());
+	move(localPos.x() - width(), localPos.y());
 
 	CNotificationCenter* pNotificationCenter = static_cast<CNotificationCenter*>(GetIEditor()->GetNotificationCenter());
 	Internal::CNotification* pNotification = pNotificationCenter->GetNotification(m_id);
