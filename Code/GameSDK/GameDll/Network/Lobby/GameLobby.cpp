@@ -5504,6 +5504,9 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 			const SCryMatchMakingConnectionUID requestedUID = pPacket->ReadConnectionUID();
 			CryLog("    client identifying itself as uid=%u, sid=%" PRIu64, requestedUID.m_uid, requestedUID.m_sid);
 
+			// currently unused bHavePlaylist
+			pPacket->ReadBool();
+
 			ICryMatchMaking *pMatchmaking = gEnv->pNetwork->GetLobby()->GetLobbyService()->GetMatchMaking();
 			CRY_ASSERT(pMatchmaking);
 			CrySessionID joinersSessionId = pMatchmaking->ReadSessionIDFromPacket(pPacket);
