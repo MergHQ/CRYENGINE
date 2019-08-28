@@ -60,7 +60,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 			*pIgnore = true;
 			break;
 		case 2:
-			Cry::Assert::IgnoreAllAsserts(true);
+			Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
 			break;
 		case 3:
 			return true;

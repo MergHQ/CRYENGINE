@@ -268,8 +268,7 @@ void CSystem::SaveConfiguration()
 CSystemConfiguration::CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType, ELoadConfigurationFlags flags)
 	: m_strSysConfigFilePath(strSysConfigFilePath), m_bError(false), m_pSink(pSink), m_configType(configType), m_flags(flags)
 {
-	assert(pSink);
-
+	CRY_ASSERT(pSink);
 	m_pSystem = pSystem;
 	m_bError = !ParseSystemConfig();
 }
@@ -394,106 +393,85 @@ bool CSystemConfiguration::ParseSystemConfig()
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Couldn't get length for Config file %s", filename.c_str());
 		return false;
 	}
-	char* sAllText = new char[nLen + 16];
-	if (file.ReadRaw(sAllText, nLen) < (size_t)nLen)
+	char* szFullText = new char[nLen + 16];
+	if (file.ReadRaw(szFullText, nLen) < (size_t)nLen)
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Couldn't read Config file %s", filename.c_str());
 		return false;
 	}
-	sAllText[nLen] = '\0';
-	sAllText[nLen + 1] = '\0';
+	szFullText[nLen] = '\0';
+	szFullText[nLen + 1] = '\0';
 
-	string strGroup;      // current group e.g. "[General]"
+	string strGroup; // current group e.g. "[General]"
 
-	char* strLast = sAllText + nLen;
-	char* str = sAllText;
+	char* strLast = szFullText + nLen;
+	char* str = szFullText;
 	while (str < strLast)
 	{
-		char* s = str;
+		char* szLineStart = str;
+		// find the first line break
 		while (str < strLast && *str != '\n' && *str != '\r')
 			str++;
+		// clear it to handle the line as one string
 		*str = '\0';
 		str++;
+		// and skip any remaining line break chars
 		while (str < strLast && (*str == '\n' || *str == '\r'))
 			str++;
 
-		string strLine = s;
-
-		// detect groups e.g. "[General]"   should set strGroup="General"
-		{
-			string strTrimmedLine(RemoveWhiteSpaces(strLine));
-			size_t size = strTrimmedLine.size();
-
-			if (size >= 3)
-				if (strTrimmedLine[0] == '[' && strTrimmedLine[size - 1] == ']') // currently no comments are allowed to be behind groups
-				{
-					strGroup = &strTrimmedLine[1];
-					strGroup.resize(size - 2);                              // remove [ and ]
-					continue;                                               // next line
-				}
-		}
-
-		//trim all whitespace characters at the beginning and the end of the current line and store its size
+		//trim all whitespace characters at the beginning and the end of the current line
+		string strLine = szLineStart;
 		strLine.Trim();
-		size_t strLineSize = strLine.size();
 
-		//skip comments, comments start with ";" or "--" but may have preceding whitespace characters
-		if (strLineSize > 0)
-		{
-			if (strLine[0] == ';')
-				continue;
-			else if (strLine.find("--") == 0)
-				continue;
-		}
 		//skip empty lines
-		else
+		if (strLine.empty())
 			continue;
 
+		// detect groups e.g. "[General]" should set strGroup="General"
+		const size_t strLineSize = strLine.size();
+		if (strLineSize >= 3)
+		{
+			if (strLine[0] == '[' && strLine[strLineSize - 1] == ']') // currently no comments are allowed to be behind groups
+			{
+				strGroup = &strLine[1]; // removes '['
+				strGroup.pop_back();    // removes ']'
+				continue;               // next line
+			}
+		}
+
+		//skip comments, comments start with ";" or "--" (any preceding whitespaces have already been trimmed)
+		if (strLine[0] == ';' || strLine.find("--") == 0)
+			continue;
+		
 		//if line contains a '=' try to read and assign console variable
-		string::size_type posEq(strLine.find("=", 0));
+		const string::size_type posEq(strLine.find("=", 0));
 		if (string::npos != posEq)
 		{
-			string stemp(strLine, 0, posEq);
-			string strKey(RemoveWhiteSpaces(stemp));
+			string strKey(strLine, 0, posEq);
+			strKey.Trim();
 
-			//				if (!strKey.empty())
+			// extract value and remove surrounding quotes, if present
+			string strValue(strLine, posEq + 1, strLine.size() - (posEq + 1));
+			strValue.Trim();
+			if (strValue.front() == '"' && strValue.back() == '"')
 			{
-				// extract value
-				string::size_type posValueStart(strLine.find("\"", posEq + 1) + 1);
-				// string::size_type posValueEnd( strLine.find( "\"", posValueStart ) );
-				string::size_type posValueEnd(strLine.rfind('\"'));
-
-				string strValue;
-
-				if (string::npos != posValueStart && string::npos != posValueEnd)
-					strValue = string(strLine, posValueStart, posValueEnd - posValueStart);
-				else
-				{
-					string strTmp(strLine, posEq + 1, strLine.size() - (posEq + 1));
-					strValue = RemoveWhiteSpaces(strTmp);
-				}
-
-				{
-					// replace '\\\\' with '\\' and '\\\"' with '\"'
-					strValue.replace("\\\\", "\\");
-					strValue.replace("\\\"", "\"");
-
-					//						m_pSystem->GetILog()->Log("Setting %s to %s",strKey.c_str(),strValue.c_str());
-					m_pSink->OnLoadConfigurationEntry(strKey, strValue, strGroup);
-				}
+				strValue.pop_back();
+				strValue.erase(0, 1);
 			}
+			
+			strValue.replace("\\\\", "\\");
+			strValue.replace("\\\"", "\"");
+
+			m_pSink->OnLoadConfigurationEntry(strKey, strValue, strGroup);
 		}
 		else
 		{
 			gEnv->pLog->LogWithType(ILog::eWarning, "%s -> invalid configuration line: %s", filename.c_str(), strLine.c_str());
 		}
-
 	}
 
-	delete[]sAllText;
-
 	m_pSink->OnLoadConfigurationEntry_End();
-
+	delete[] szFullText;
 	return true;
 }
 

@@ -59,6 +59,25 @@ static bool        IsFloatingPointException(EXCEPTION_POINTERS* pex);
 extern LONG WINAPI CryEngineExceptionFilterWER(struct _EXCEPTION_POINTERS* pExceptionPointers);
 extern LONG WINAPI CryEngineExceptionFilterMiniDump(struct _EXCEPTION_POINTERS* pExceptionPointers, const char* szDumpPath, MINIDUMP_TYPE mdumpValue);
 
+#ifdef USE_CRY_ASSERT
+struct SDisableAssertScope
+{
+	SDisableAssertScope()
+		: m_wasLevel(Cry::Assert::GetAssertLevel())
+	{
+		Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled); 
+	}
+
+	~SDisableAssertScope()
+	{
+		Cry::Assert::SetAssertLevel(m_wasLevel); 
+	}
+
+private:
+	const Cry::Assert::ELevel m_wasLevel;
+};
+#endif
+
 //=============================================================================
 CONTEXT CaptureCurrentContext()
 {
@@ -987,7 +1006,7 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 	}
 
 #ifdef USE_CRY_ASSERT
-	Cry::Assert::IgnoreAllAsserts(true);
+	SDisableAssertScope noAsserts;
 #endif
 
 	gEnv->pLog->FlushAndClose();
@@ -1376,8 +1395,7 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 	int prev_sys_no_crash_dialog = g_cvars.sys_no_crash_dialog;
 
 #ifdef USE_CRY_ASSERT
-	Cry::Assert::IgnoreAllAsserts(true);
-	Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
+	SDisableAssertScope noAsserts;
 #endif
 
 	g_cvars.sys_no_crash_dialog = 1;

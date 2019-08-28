@@ -345,8 +345,27 @@ CXConsole::~CXConsole()
 
 	CNotificationNetworkConsole::Shutdown();
 
+	for (auto& nameValuePair : m_configVars)
+	{
+		if (nameValuePair.first.CompareNoCase("sys_cvar_overrides_path") == 0) // from system.cfg, but not handled as a CVar
+			continue;
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_WARNING, 
+			"The CVar '%s' was found in a config file but was never registered.", nameValuePair.first.c_str());
+	}
+
+	for (auto& nameArgumentsPair : m_configCommands)
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_WARNING,
+			"The command '%s %s' was found in a config file but was never registered.", nameArgumentsPair.first.c_str(), nameArgumentsPair.second.c_str());
+	}
+
 	while (!m_mapVariables.empty())
 		UnregisterVariableImpl(m_mapVariables.begin());
+	while (!m_mapCommands.empty())
+	{
+		string command = m_mapCommands.begin()->first;
+		RemoveCommand(command.c_str());
+	}
 }
 
 void CXConsole::FreeRenderResources()
@@ -745,6 +764,7 @@ void CXConsole::RegisterVar(const string& name, ICVar* pCVar, ConsoleVarFunc pCh
 		}
 
 		SetProcessingGroup(wasProcessingGroup);
+		m_configVars.erase(it);
 	}
 	else
 	{
@@ -779,9 +799,9 @@ bool CXConsole::CVarNameLess(const std::pair<const char*, ICVar*>& lhs, const st
 	return strcmp(lhs.first, rhs.first) < 0;
 }
 
-void CXConsole::LoadConfigVar(const char* sVariable, const char* sValue)
+void CXConsole::LoadConfigVar(const char* szVariable, const char* sValue)
 {
-	ICVar* pCVar = GetCVar(sVariable);
+	ICVar* pCVar = GetCVar(szVariable);
 	if (pCVar)
 	{
 		const bool isConst = pCVar->IsConstCVar();
@@ -830,7 +850,12 @@ void CXConsole::LoadConfigVar(const char* sVariable, const char* sValue)
 		return;
 	}
 
-	auto configVar = m_configVars.find(sVariable);
+	if (!CRY_VERIFY(m_mapCommands.find(szVariable) == m_mapCommands.end(), "Tried to load config CVar '%s', but it is registered as a command.", szVariable))
+	{
+		return;
+	}
+
+	auto configVar = m_configVars.find(szVariable);
 	if (configVar != m_configVars.end())
 	{
 		uint32 nCVarFlags = configVar->second.nCVarOrFlags;
@@ -851,7 +876,7 @@ void CXConsole::LoadConfigVar(const char* sVariable, const char* sValue)
 	if (m_currentLoadConfigType == eLoadConfigInit)
 		temp.nCVarOrFlags |= VF_SYSSPEC_OVERWRITE;
 
-	m_configVars[sVariable] = temp;
+	m_configVars[szVariable] = temp;
 }
 
 void CXConsole::LoadConfigCommand(const char* szCommand, const char* szArguments)
@@ -859,7 +884,10 @@ void CXConsole::LoadConfigCommand(const char* szCommand, const char* szArguments
 	auto it = m_mapCommands.find(szCommand);
 	if (it == m_mapCommands.end())
 	{
-		m_configCommands.emplace(szCommand, szArguments);
+		if (CRY_VERIFY(GetCVar(szCommand) == nullptr, "Tried to load config command '%s', but it is registered as a CVar.", szCommand))
+		{
+			m_configCommands.emplace(szCommand, szArguments);
+		}
 	}
 	else
 	{
@@ -1818,6 +1846,11 @@ void CXConsole::AddCommand(const char* szCommand, ConsoleCommandFunc func, int n
 {
 	AssertName(szCommand);
 
+	if (m_configVars.find(szCommand) != m_configVars.end())
+	{
+		gEnv->pLog->LogWarning("The command '%s' appeared in a config file, but only CVars are allowed in config files.", szCommand);
+	}
+
 	if (m_mapCommands.find(szCommand) == m_mapCommands.end())
 	{
 		CConsoleCommand cmd;
@@ -2189,7 +2222,7 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 			{
 				if (m_system.GetIScriptSystem())
 					m_system.GetIScriptSystem()->ExecuteBuffer(command + 1, strlen(command) - 1);
-				m_bDrawCursor = 0;
+				m_bDrawCursor = false;
 			}
 			return;
 		}

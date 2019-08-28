@@ -2,6 +2,7 @@
 
 #include "CryAssert.h"
 #include <CrySystem/ISystem.h>
+#include <CrySystem/IConsole.h>
 #include <CryThreading/CryAtomics.h>
 
 #if defined(USE_CRY_ASSERT)
@@ -98,19 +99,6 @@ namespace Cry {
 			return gEnv ? gEnv->assertSettings.isInAssertHandler : false;
 		}
 		
-		bool IgnoreAllAsserts()
-		{
-			return gEnv ? gEnv->assertSettings.ignoreAllAsserts : false;
-		}
-
-		void IgnoreAllAsserts(bool ignoreAsserts)
-		{
-			if (gEnv)
-			{
-				gEnv->assertSettings.ignoreAllAsserts = ignoreAsserts;
-			}
-		}
-
 		bool ShowDialogOnAssert()
 		{
 			return gEnv ? (!gEnv->bUnattendedMode && !gEnv->bTesting && gEnv->assertSettings.showAssertDialog) : true;
@@ -120,6 +108,16 @@ namespace Cry {
 		{
 			if (gEnv)
 			{
+				if (gEnv->pConsole)
+				{
+					if (ICVar* pAssertDialogueVar = gEnv->pConsole->GetCVar("sys_assert_dialogues"))
+					{
+						if (showAssertDialogue != (pAssertDialogueVar->GetIVal() != 0))
+						{
+							pAssertDialogueVar->Set(showAssertDialogue ? 1 : 0);
+						}
+					}
+				}
 				gEnv->assertSettings.showAssertDialog = showAssertDialogue;
 			}
 		}
@@ -133,6 +131,17 @@ namespace Cry {
 		{
 			if (gEnv)
 			{
+				if (gEnv->pConsole)
+				{
+					if (ICVar* pLogAssertsVar = gEnv->pConsole->GetCVar("sys_log_asserts"))
+					{
+						if (logAlways != (pLogAssertsVar->GetIVal() != 0))
+						{
+							pLogAssertsVar->Set(logAlways ? 1 : 0);
+						}
+					}
+				}
+
 				gEnv->assertSettings.logAlways = logAlways;
 			}
 		}
@@ -151,6 +160,17 @@ namespace Cry {
 		{
 			if (gEnv)
 			{
+				if (gEnv->pConsole)
+				{
+					if (ICVar* pAssertsVar = gEnv->pConsole->GetCVar("sys_asserts"))
+					{
+						if (int(assertLevel) != pAssertsVar->GetIVal())
+						{
+							pAssertsVar->Set(int(assertLevel));
+						}
+					}
+				}
+
 				gEnv->assertSettings.assertLevel = assertLevel;
 			}
 		}
@@ -183,14 +203,13 @@ namespace Cry {
 			bool CryAssertIsEnabled()
 			{
 				const bool suppressGlobally = Cry::Assert::IsAssertLevel(ELevel::Disabled);
-				const bool suppressedByUser = Cry::Assert::IgnoreAllAsserts();
 #ifdef eCryModule
 				const bool suppressedCurrentModule = !Cry::Assert::AreAssertsEnabledForModule(eCryModule);
 #else
 				const bool suppressedCurrentModule = false;
 #endif
 
-				return !(suppressGlobally || suppressedByUser || suppressedCurrentModule);
+				return !(suppressGlobally || suppressedCurrentModule);
 			}
 
 			void CryAssertFormat(const char* szFormat, ...)
@@ -244,7 +263,7 @@ namespace Cry {
 					volatile int* lock = gEnv ? &gEnv->assertSettings.lock : &dummyLock;
 					CryWriteLock(lock);
 				
-					if (cond.bLogAssert || !cond.bIgnoreAssert)
+					if (!cond.bIgnoreAssert)
 					{
 						if (CustomPreAssertCallback cb_preCustomAssert = Cry::Assert::GetCustomPreAssertCallback())
 						{
