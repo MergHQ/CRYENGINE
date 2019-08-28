@@ -159,12 +159,12 @@ void CParticleComponentRuntime::AddParticles(SUpdateContext& context)
 
 	m_parameters.CopyToDevice();
 
-	// copy parentData and newbornData
-	if (updateData.parentData.size())
-		m_parentDataRenderThread.UpdateBufferContentAligned(updateData.parentData.begin(), updateData.parentData.size());
-
 	if (m_parameters->numNewBorns)
 	{
+		// copy parentData and newbornData
+		if (updateData.parentData.size())
+			m_parentDataRenderThread.UpdateBufferContentAligned(updateData.parentData.begin(), updateData.parentData.size());
+
 		TDynArrayAligned<TParticleId> newBornIndices;
 		newBornIndices.reserve(m_parameters->numNewBorns);
 		for (const auto& entry : updateData.spawnEntries)
