@@ -219,7 +219,8 @@ void UVMappingEditor::RegisterMenuButtons(EUVMappingToolGroup what, QGridLayout*
 	auto iTool = tools.begin();
 	for (; iTool != tools.end(); ++iTool)
 	{
-		EUVMappingTool tool = *iTool;
+		const EUVMappingTool tool = *iTool;
+		const bool stateless = IsUvMappingToolStateless(tool);
 		const char* szName = GetUVMapptingToolDesc().name(tool);
 		QString icon = QString("icons:Designer/Designer_UV_%1.ico").arg(szName);
 		icon.replace(" ", "_");
@@ -230,9 +231,8 @@ void UVMappingEditor::RegisterMenuButtons(EUVMappingToolGroup what, QGridLayout*
 		pButton->setIconSize(QSize(24, 24));
 		pButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 		pButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-		pButton->setCheckable(true);
-		QObject::connect(pButton, &QToolButton::clicked, this, [ = ] { SetTool(tool);
-		                 });
+		pButton->setCheckable(!stateless);
+		QObject::connect(pButton, &QToolButton::clicked, this, [ = ] { SetTool(tool); });
 		where->addWidget(pButton, counter / columnNumber, counter % columnNumber, 1, 1);
 		m_pButtons[tool] = pButton;
 		++counter;
@@ -498,9 +498,31 @@ void UVMappingEditor::RenderElements(SDisplayContext& dc, ColorB color, UVElemen
 
 void UVMappingEditor::SetTool(EUVMappingTool tool)
 {
-	//Note: the "tool" design is also being used for tools that behave more like buttons and not like modes
-	//These tools reset the previous tool on Enter(), however this can lead to stack overflows if two of these tools are
-	//called one after another, so be careful!
+	if (m_ToolMap.find(tool) == m_ToolMap.end())
+		m_ToolMap[tool] = UVMappingToolFactory::the().Create(tool);
+
+	if (IsUvMappingToolStateless(tool))
+	{
+		// Execute tools like "Flip" that can work as regular push button
+		SetStatelessTool(tool);
+	}
+	else
+	{
+		//Note: the "tool" STATEFULL design is also being used for tools that behave more like buttons and not like modes
+		//These tools reset the previous tool on Enter(), however this can lead to stack overflows if two of these tools are
+		//called one after another, so be careful!
+		SetStatefullTool(tool);
+	}
+}
+
+void UVMappingEditor::SetStatelessTool(EUVMappingTool tool)
+{
+	if (GetDesigner())
+		m_ToolMap[tool]->Enter();
+}
+
+void UVMappingEditor::SetStatefullTool(EUVMappingTool tool)
+{
 	if (m_Tool == tool)
 		return;
 
@@ -513,9 +535,6 @@ void UVMappingEditor::SetTool(EUVMappingTool tool)
 	m_PrevTool = m_Tool;
 	m_Tool = tool;
 
-	if (m_ToolMap.find(m_Tool) == m_ToolMap.end())
-		m_ToolMap[m_Tool] = UVMappingToolFactory::the().Create(m_Tool);
-
 	if (GetDesigner())
 		m_ToolMap[m_Tool]->Enter();
 
@@ -526,6 +545,7 @@ void UVMappingEditor::SetTool(EUVMappingTool tool)
 
 	m_pButtons[m_Tool]->setChecked(true);
 }
+
 
 UVIslandManager* UVMappingEditor::GetUVIslandMgr() const
 {

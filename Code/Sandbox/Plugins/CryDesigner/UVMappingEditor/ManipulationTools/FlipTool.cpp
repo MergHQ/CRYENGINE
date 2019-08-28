@@ -1,10 +1,10 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "../UVMappingEditor.h"
 #include "FlipTool.h"
-#include "../UVUndo.h"
-#include "../UVCluster.h"
+#include "UVMappingEditor/UVCluster.h"
+#include "UVMappingEditor/UVMappingEditor.h"
+#include "UVMappingEditor/UVUndo.h"
 
 namespace Designer {
 namespace UVMapping
@@ -28,7 +28,6 @@ void FlipHoriTool::Enter()
 		CUndo::Record(new UVMoveUndo);
 		Flip(Vec2(1.0f, 0.0f));
 	}
-	GetUVEditor()->SetTool(GetUVEditor()->GetPrevTool());
 }
 
 void FlipVertTool::Enter()
@@ -39,7 +38,6 @@ void FlipVertTool::Enter()
 		CUndo::Record(new UVMoveUndo);
 		Flip(Vec2(0.0f, 1.0f));
 	}
-	GetUVEditor()->SetTool(GetUVEditor()->GetPrevTool());
 }
 }
 }

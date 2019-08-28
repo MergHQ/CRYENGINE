@@ -15,7 +15,6 @@ public:
 	FlipTool(EUVMappingTool tool) : BaseTool(tool) {}
 
 protected:
-	void Flip(UVIslandPtr pUVIsland, const Vec2& pivot, const Vec2& normal);
 	void Flip(const Vec2& normal);
 };
 

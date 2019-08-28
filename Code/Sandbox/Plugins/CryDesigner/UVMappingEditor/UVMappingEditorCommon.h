@@ -44,6 +44,8 @@ enum EUVMappingTool
 	eUVMappingTool_Alignment
 };
 
+bool IsUvMappingToolStateless(EUVMappingTool tool);
+
 enum EPrincipleAxis
 {
 	ePrincipleAxis_X,

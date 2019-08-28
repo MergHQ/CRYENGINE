@@ -14,6 +14,12 @@
 namespace Designer {
 namespace UVMapping
 {
+
+bool IsUvMappingToolStateless(EUVMappingTool tool)
+{
+	return tool == eUVMappingTool_FlipHori || tool == eUVMappingTool_FlipVert;
+}
+
 void AddUVPolygon(std::vector<UVPolygon>& uvPolygons, PolygonPtr polygon, UVIslandPtr pUVIsland)
 {
 	std::vector<UVVertex> uvs;

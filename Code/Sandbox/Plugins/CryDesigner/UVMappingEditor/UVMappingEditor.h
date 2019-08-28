@@ -128,6 +128,9 @@ private:
 	void RegisterMenuButtons(EUVMappingToolGroup what, QGridLayout* where, int columnNumber);
 	void RegisterDesignerNotifyCallback();
 
+	void SetStatelessTool(EUVMappingTool tool);
+	void SetStatefullTool(EUVMappingTool tool);
+
 	QViewport*                                     m_pViewport;
 	std::shared_ptr<CDisplayViewportAdapter>       m_pViewportAdapter;
 	QMenuComboBox*                                 m_pPivotComboBox;
