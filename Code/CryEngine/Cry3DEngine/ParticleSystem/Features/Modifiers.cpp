@@ -489,13 +489,14 @@ struct SSpecData
 
 const SSpecData gConfigSpecs[] =
 {
-	{ "Low",      "Low",            CONFIG_LOW_SPEC },
-	{ "Medium",   "Medium",         CONFIG_MEDIUM_SPEC },
-	{ "High",     "High",           CONFIG_HIGH_SPEC },
-	{ "VeryHigh", "Very High",      CONFIG_VERYHIGH_SPEC },
-	{ "XBO",      "Xbox One",       CONFIG_DURANGO },
-	{ "XboxOneX", "Xbox One X",     CONFIG_DURANGO_X },
-	{ "PS4",      "Playstation 4",  CONFIG_ORBIS },
+	{ "Low",      "Low",               CONFIG_LOW_SPEC },
+	{ "Medium",   "Medium",            CONFIG_MEDIUM_SPEC },
+	{ "High",     "High",              CONFIG_HIGH_SPEC },
+	{ "VeryHigh", "Very High",         CONFIG_VERYHIGH_SPEC },
+	{ "XBO",      "Xbox One",          CONFIG_DURANGO },
+	{ "XboxOneX", "Xbox One X",        CONFIG_DURANGO_X },
+	{ "PS4",      "Playstation 4",     CONFIG_ORBIS },
+	{ "PS4Pro",   "Playstation 4 Pro", CONFIG_ORBIS_NEO },
 };
 
 const uint gNumConfigSpecs = sizeof(gConfigSpecs) / sizeof(gConfigSpecs[0]);

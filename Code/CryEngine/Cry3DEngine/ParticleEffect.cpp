@@ -676,9 +676,10 @@ void ResourceParticleParams::ComputeEnvironmentFlags()
 	// Construct config spec mask for allowed consoles.
 	mConfigSpecMask = ((BIT(eConfigMax) * 2 - 1) & ~(BIT(eConfigMin) - 1)) << CONFIG_LOW_SPEC;
 	mConfigSpecMask |=
-	  Platforms.PS4 * BIT(CONFIG_ORBIS)
-	  + Platforms.XBoxOne * BIT(CONFIG_DURANGO)
-	  + Platforms.XBoxOneX * BIT(CONFIG_DURANGO_X)
+		Platforms.PS4 * BIT(CONFIG_ORBIS) + 
+		Platforms.PS4Pro * BIT(CONFIG_ORBIS_NEO) +
+		Platforms.XBoxOne * BIT(CONFIG_DURANGO) +
+		Platforms.XBoxOneX * BIT(CONFIG_DURANGO_X)
 	;
 }
 

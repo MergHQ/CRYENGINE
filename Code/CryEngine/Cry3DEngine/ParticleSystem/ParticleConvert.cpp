@@ -995,6 +995,7 @@ void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
 	ConvertValue(spec, "XBoxOne", params.Platforms.XBoxOne);
 	ConvertValue(spec, "XBoxOneX", params.Platforms.XBoxOneX);
 	ConvertValue(spec, "PS4", params.Platforms.PS4);
+	ConvertValue(spec, "PS4Pro", params.Platforms.PS4Pro);
 	AddFeature(component, spec);
 }
  

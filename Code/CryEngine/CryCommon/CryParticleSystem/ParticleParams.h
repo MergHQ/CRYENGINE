@@ -979,7 +979,7 @@ struct ParticleParams
 
 	struct SPlatforms
 	{
-		TSmallBoolTrue PCDX, PS4, XBoxOne, XBoxOneX;
+		TSmallBoolTrue PCDX, PS4, PS4Pro, XBoxOne, XBoxOneX;
 		AUTO_STRUCT_INFO;
 	} Platforms;                                    //!< Platforms this effect runs on.
 

@@ -178,7 +178,7 @@ public:
 		}
 		else if ((particleSpec == CONFIG_DURANGO || particleSpec == CONFIG_DURANGO_X) && m_XBoxOne)
 			return true;
-		else if (particleSpec == CONFIG_ORBIS && m_PS4)
+		else if ((particleSpec == CONFIG_ORBIS || particleSpec == CONFIG_ORBIS_NEO) && m_PS4)
 			return true;
 
 		return false;
