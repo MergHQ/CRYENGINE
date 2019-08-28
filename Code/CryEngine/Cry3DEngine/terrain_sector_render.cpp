@@ -827,10 +827,10 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 	if (!pLeafData)
 		return;
 
-	_smart_ptr<IRenderMesh>& pRenderMesh = pLeafData->m_pRenderMesh;
-
 	InvalidatePermanentRenderObject();
+	m_manipulationFrame = -1;
 
+	_smart_ptr<IRenderMesh>& pRenderMesh = pLeafData->m_pRenderMesh;
 	UpdateRenderMesh(&m_pUpdateTerrainTempData->m_StripsInfo);
 
 	// update detail layers indices
