@@ -4851,7 +4851,7 @@ public:
 
 		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
 		{
-			xml->setAttr("+position", m_position);
+			xml->setAttr("position", m_position);
 		}
 
 		return xml;
