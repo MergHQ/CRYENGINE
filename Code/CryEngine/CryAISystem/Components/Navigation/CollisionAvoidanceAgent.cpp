@@ -8,29 +8,38 @@ using namespace Cry::AI::CollisionAvoidance;
 
 CCollisionAvoidanceAgent::~CCollisionAvoidanceAgent()
 {
-	Unregister();
+	CRY_ASSERT_MESSAGE(!m_pAttachedEntity, "Collision Agent was never unregistered from the Collision Avoidance System.");
 }
 
+// If agent is already registered, calling this function will have no effect.
 bool CCollisionAvoidanceAgent::Register(IEntity* pEntity)
 {
-	if (pEntity)
+	if (!pEntity)
 	{
-		m_pAttachedEntity = pEntity;
-		return gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
+		CRY_ASSERT(pEntity, "Parameter 'pEntity' must be non-null.");
+		return false;
 	}
-	CRY_ASSERT(pEntity, "Parameter 'pEntity' must be non-null.");
-	return false;
+
+	const bool registeredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
+	if (!registeredSuccessfully)
+	{
+		return false;
+	}
+
+	m_pAttachedEntity = pEntity;
+	return true;
 }
 
 bool CCollisionAvoidanceAgent::Unregister()
 {
-	if (m_pAttachedEntity)
+	const bool unregisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
+	if (!unregisteredSuccessfully)
 	{
-		m_pAttachedEntity = nullptr;
-		return gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
+		return false;
 	}
-	CRY_ASSERT(m_pAttachedEntity, "Can't unregister an agent who was not registered.");
-	return false;
+
+	m_pAttachedEntity = nullptr;
+	return true;
 }
 
 NavigationAgentTypeID CCollisionAvoidanceAgent::GetNavigationTypeId() const

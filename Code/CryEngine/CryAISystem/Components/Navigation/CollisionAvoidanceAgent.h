@@ -27,6 +27,6 @@ public:
 	virtual void                          ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime) override;
 
 private:
-	CEntityAINavigationComponent* m_pOwningNavigationComponent;
-	IEntity*                      m_pAttachedEntity;
+	CEntityAINavigationComponent* m_pOwningNavigationComponent = nullptr;
+	IEntity*                      m_pAttachedEntity = nullptr;
 };
