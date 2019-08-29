@@ -230,6 +230,12 @@ int CObjectContainer::ReleaseDeregisteredObjects(bool checkForLeaks)
 				AILogComment("Releasing object %p @%6d proxy %p \"%s\" ",
 				             object, id, proxy, name);
 #endif
+				// Id needs to be erased before the object is released.
+				// Releasing the object will destroy the CPipeUser which will also call CAIActor destructor which will stop behavior tree execution.
+				// Stopping the behavior tree execution will Terminate all running nodes. Some of them may ask the ObjectContainer for a PipeUser. To make sure it returns a nullptr and doesn't cause a pure virtual function call, we need to remove from the container first.
+				
+				m_objects.erase(id);
+
 				if (object)
 				{
 
@@ -242,7 +248,6 @@ int CObjectContainer::ReleaseDeregisteredObjects(bool checkForLeaks)
 					//m_DeregisteredObjects.push_back(*itO);
 				}
 
-				m_objects.erase(id);
 
 				// Special case: if this ID is in the reserve list, we now need to add a null object to reserve the ID.
 				// This is because the object's ID has been reserved while the object still existed.
