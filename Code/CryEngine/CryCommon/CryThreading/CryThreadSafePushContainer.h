@@ -27,8 +27,8 @@
 //   Usually this should not be a limitation. As the container<T> is usually used by < 10 threads.
 //   It becomes a limitation if new threads are spawned and destroyed constantly and access a container<T> type. Then m_workers runs out of pre-allocated worker objects.
 // - We can place elements into consecutive memory locations by reserving a fixed range of virtual memory at construction time. 
-//   The maximumCapacity passed into the constructor defines this hard limit on the total size of the container.
-//   Use a large enough safety margin, as exceeding this limit causes a fatal error.
+//   The maximumCapacity passed into the constructor defines this limit on the total size of the container.
+//   Use a generous safety margin, as exceeding this limit impacts performance.
 //   (The default is 128MB.)
 // - To reduce management overhead, invalid elements are marked by writing a special 'tombstone value' to their memory location.
 //   Elements with this value are then skipped when iterating over the container.
@@ -61,16 +61,16 @@ namespace CryMT
 			char m_padding[64 - sizeof(threadID) - sizeof(T*) - sizeof(uint32) - sizeof(uint16)];
 		};
 
-		class iterator : public std::iterator<std::bidirectional_iterator_tag, T, std::ptrdiff_t>
+		class iterator : public std::iterator<std::forward_iterator_tag, T, std::ptrdiff_t>
 		{
 		public:
 			//////////////////////////////////////////////////////////////////////////
-			iterator(T* ptr, T* pBegin, T* pEnd)
+			iterator(T* ptr, const CThreadSafePushContainer<T>& baseContainer)
 				: m_ptr(ptr)
-				, m_pBegin(pBegin)
-				, m_pEnd(pEnd)
-			{
-			}
+				, m_pBegin(baseContainer.beginPtr())
+				, m_pEnd(baseContainer.endPtr())
+				, m_pContainer(baseContainer)
+			{}
 
 			//////////////////////////////////////////////////////////////////////////
 			iterator(const iterator& x) = default;
@@ -108,6 +108,12 @@ namespace CryMT
 					// must check against end first, so we don't access out of bounds memory!
 				} while (m_ptr < m_pEnd && *reinterpret_cast<int32*>(m_ptr) == s_tombstone);
 
+				// we've reached the end, so might have to continue with the next container
+				if (m_ptr >= m_pEnd && m_pContainer.m_pFallbackContainer != nullptr)
+				{
+					new (this) iterator(m_pContainer.m_pFallbackContainer->beginPtr(), *m_pContainer.m_pFallbackContainer);
+				}
+
 				return *this;
 			}
 
@@ -128,6 +134,15 @@ namespace CryMT
 					// must check against begin first, so we don't access out of bounds memory!
 				} while (m_pBegin <= m_ptr && *reinterpret_cast<int32*>(m_ptr) == s_tombstone);
 
+				if (m_ptr < m_pBegin && m_pContainer.m_pParentContainer != nullptr)
+				{
+					new (this) iterator(m_pContainer.m_pParentContainer->endPtr() - 1, *m_pContainer.m_pParentContainer);
+					if (*reinterpret_cast<int32*>(m_ptr) == s_tombstone)
+					{
+						--(*this);
+					}
+				}
+
 				return *this;
 			}
 
@@ -140,9 +155,10 @@ namespace CryMT
 			}
 
 		private:
-			T * m_ptr;
-			T* const m_pBegin;
-			T* const m_pEnd;
+			T* m_ptr;
+			T* m_pBegin;
+			T* m_pEnd;
+			const CThreadSafePushContainer<T>& m_pContainer;
 		};
 
 	public:
@@ -179,6 +195,7 @@ namespace CryMT
 		void GetMemoryUsage(ICrySizer*) const;
 
 	private:
+		CThreadSafePushContainer(CThreadSafePushContainer<T>* parent);
 
 		// Disable copy/assignment
 		CThreadSafePushContainer(const CThreadSafePushContainer &rOther) = delete;
@@ -186,17 +203,19 @@ namespace CryMT
 
 		T* beginPtr() const;
 		T* endPtr() const;
+		size_t ownCapacity() const;
 
 		T* push_back_impl(uint32& index);
-		void CheckForTombstone(uint32 index) const;
+		// check that a pushed object is not a tombstone
+		void PostInsertTombstoneCheck(uint32 index) const;
 
 		SWorker* GetWorker();
 		void GetNextDataBlock(SWorker* pWorker);
 
-		bool IsValidEntry(uint32 index) const;
+		bool IsTombEntry(uint32 index) const;
 
 		template<typename... Args>
-		void DefaultConstructElements(void* pElements, uint32 numElements, Args&&... args);
+		void DefaultConstructElement(void* pElement, Args&&... args);
 		void DestroyElements(T* pElements, uint32 numElements);
 		
 	private:
@@ -211,13 +230,18 @@ namespace CryMT
 
 		const int m_numElementsPerStride;
 		SWorker m_workers[s_nMaxThreads];
+
+		// we don't want to crash, when the container runs full, so we use a follow-up instead
+		CryCriticalSection           m_nextContainerLock;
+		CThreadSafePushContainer<T>* m_pParentContainer;
+		CThreadSafePushContainer<T>* m_pFallbackContainer;
 	};
 
 	///////////////////////////////////////////////////////////////////////////////
 	template<typename T>
 	inline CThreadSafePushContainer<T>::CThreadSafePushContainer(uint32 elementsPerStride, size_t maxCapacity)
 		: CVirtualMemory(), m_reservedMemorySize(Align(maxCapacity, GetSystemPageSize()))
-		, m_numElementsPerStride(elementsPerStride)
+		, m_numElementsPerStride(elementsPerStride), m_pParentContainer(nullptr), m_pFallbackContainer(nullptr)
 	{
 		CRY_ASSERT(alignof(T) <= GetSystemPageSize());
 		m_pAllocationBase = (T*)ReserveAddressRange(m_reservedMemorySize, "CThreadSafePushContainer");
@@ -230,18 +254,30 @@ namespace CryMT
 	}
 
 	template<typename T>
+	inline CThreadSafePushContainer<T>::CThreadSafePushContainer(CThreadSafePushContainer<T>* parent)
+		: CThreadSafePushContainer(parent->m_numElementsPerStride, parent->m_reservedMemorySize)
+	{
+		m_pParentContainer = parent;
+	}
+
+	template<typename T>
 	inline CThreadSafePushContainer<T>::~CThreadSafePushContainer()
 	{
 		clear();
 		UnreserveAddressRange(m_pAllocationBase, m_reservedMemorySize);
+		SAFE_DELETE(m_pFallbackContainer);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	template<typename T>
 	inline T& CThreadSafePushContainer<T>::operator[](uint32 n)
 	{
-		CRY_ASSERT(n < capacity(), "CThreadSafeAddContainer out of bound access detected");
-		CRY_ASSERT(IsValidEntry(n), "The element for the given index '%d' is marked as invalid.", n);
+		CRY_ASSERT(!IsTombEntry(n), "Accessing element at index '%d', but it is marked as invalid.", n);
+
+		if (ownCapacity() <= n && CRY_VERIFY(m_pFallbackContainer != nullptr, "CThreadSafeAddContainer out of bound access detected"))
+		{
+			return (*m_pFallbackContainer)[n - ownCapacity()];
+		}
 		return beginPtr()[n];
 	}
 
@@ -259,7 +295,7 @@ namespace CryMT
 		uint32 index = ~0;
 		T* pObj = push_back_impl(index);
 		::new(pObj) T(rObj);
-		CheckForTombstone(index); // check that pushed object is not a tombstone
+		PostInsertTombstoneCheck(index);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -268,7 +304,7 @@ namespace CryMT
 	{
 		T* pObj = push_back_impl(index);
 		::new(pObj) T(rObj);
-		CheckForTombstone(index); // check that pushed object is not a tombstone
+		PostInsertTombstoneCheck(index);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -278,7 +314,7 @@ namespace CryMT
 		uint32 index = ~0;
 		T* pObj = push_back_impl(index);
 		::new(pObj) T(std::move(rObj));
-		CheckForTombstone(index); // check that pushed object is not a tombstone
+		PostInsertTombstoneCheck(index);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -287,7 +323,7 @@ namespace CryMT
 	{
 		T* pObj = push_back_impl(index);
 		::new(pObj) T(std::move(rObj));
-		CheckForTombstone(index); // check that pushed object is not a tombstone
+		PostInsertTombstoneCheck(index);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -297,8 +333,8 @@ namespace CryMT
 	{
 		uint32 index = ~0;
 		T* pObj = push_back_impl(index);
-		DefaultConstructElements(pObj, 1, std::forward<Args>(args)...);
-		CheckForTombstone(index); // check that pushed object is not a tombstone
+		DefaultConstructElement(pObj, std::forward<Args>(args)...);
+		PostInsertTombstoneCheck(index);
 		return pObj;
 	}
 
@@ -308,8 +344,8 @@ namespace CryMT
 	inline T* CThreadSafePushContainer<T>::push_back_new(uint32& index, Args&&... args)
 	{
 		T* pObj = push_back_impl(index);
-		DefaultConstructElements(pObj, 1, std::forward<Args>(args)...);
-		CheckForTombstone(index); // check that pushed object is not a tombstone
+		DefaultConstructElement(pObj, std::forward<Args>(args)...);
+		PostInsertTombstoneCheck(index);
 		return pObj;
 	}
 
@@ -338,15 +374,20 @@ namespace CryMT
 	}
 
 	template<typename T>
-	void CThreadSafePushContainer<T>::CheckForTombstone(uint32 index) const
+	void CThreadSafePushContainer<T>::PostInsertTombstoneCheck(uint32 index) const
 	{
-		CRY_ASSERT(IsValidEntry(index), "The inserted element contains the container's tombstone value and will therefore be skipped during iteration.");
+		CRY_ASSERT(!IsTombEntry(index), "The inserted element contains the container's tombstone value and will therefore be skipped during iteration.");
 	}
 
 	template<typename T>
-	inline bool CThreadSafePushContainer<T>::IsValidEntry(uint32 index) const
+	inline bool CThreadSafePushContainer<T>::IsTombEntry(uint32 index) const
 	{
-		return *reinterpret_cast<const int32*>(beginPtr() + index) != s_tombstone;
+		if (index < ownCapacity())
+			return *reinterpret_cast<const int32*>(beginPtr() + index) == s_tombstone;
+		else if (m_pFallbackContainer)
+			return m_pFallbackContainer->IsTombEntry(index - ownCapacity());
+		else
+			return false;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -354,12 +395,13 @@ namespace CryMT
 	void CThreadSafePushContainer<T>::clear()
 	{
 		// remove data and reset buffer
-		if (capacity() > 0)
-		{
-			DestroyElements(beginPtr(), capacity());
-			m_pAllocationTail = m_pAllocationBase;
-			// could unmap part of the address space to account for shrinking buffers
-		}
+		DestroyElements(beginPtr(), ownCapacity());
+		m_pAllocationTail = m_pAllocationBase;
+		// could unmap part of the address space to account for shrinking buffers
+
+		// the next container is only a fail-safe and should not be needed regularly
+		SAFE_DELETE(m_pFallbackContainer);
+		
 		// Reset workers
 		memset(m_workers, 0, sizeof(m_workers));
 	}
@@ -384,6 +426,12 @@ namespace CryMT
 	template<class T>
 	size_t CThreadSafePushContainer<T>::capacity() const
 	{
+		return ownCapacity() + (m_pFallbackContainer != nullptr ? m_pFallbackContainer->capacity() : 0);
+	}
+
+	template<class T>
+	size_t CThreadSafePushContainer<T>::ownCapacity() const
+	{
 		return m_pAllocationTail - m_pAllocationBase;
 	}
 
@@ -404,9 +452,10 @@ namespace CryMT
 	template<class T>
 	typename CThreadSafePushContainer<T>::iterator CThreadSafePushContainer<T>::begin() const
 	{
-		auto iter = iterator(beginPtr(), beginPtr(), endPtr());
+		CRY_ASSERT(m_pParentContainer == nullptr, "Fallback containers should not be accessible from the outside");
+		auto iter = iterator(beginPtr(), *this);
 		//Find first valid element
-		if (!empty() && !IsValidEntry(0))
+		if (!empty() && IsTombEntry(0))
 			++iter;
 		return iter;
 	}
@@ -418,7 +467,10 @@ namespace CryMT
 		// Ensure we replicate common iterator behavior
 		// For empty container begin() == end()
 		// For the for-loop iterator, iter == iterEnd
-		return iterator(endPtr(), beginPtr(), endPtr());
+		if (m_pFallbackContainer)
+			return m_pFallbackContainer->end();
+		else
+			return iterator(endPtr(), *this);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -503,10 +555,30 @@ namespace CryMT
 			else
 			{
 				char* const pCurrentMappedEnd = (char*)m_pMappedEnd;
-				if (pCurrentMappedEnd >= (char*)m_pAllocationBase + m_reservedMemorySize)
-					CryFatalError("The container has reached its maximum capacity!");
-
 				const size_t pageGrowth = Align(sizeof(T) * m_numElementsPerStride, GetSystemPageSize());
+
+				if (pCurrentMappedEnd + pageGrowth > (char*)m_pAllocationBase + m_reservedMemorySize)
+				{
+					if (m_pFallbackContainer == nullptr)
+					{
+						AUTO_LOCK(m_nextContainerLock);
+						if (m_pFallbackContainer == nullptr) // might be set while waiting for the lock
+						{
+							if (gEnv && !gEnv->IsEditor()) // don't spam in editor, but should be adapted for game
+							{
+								CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_WARNING,
+									"The ThreadSafePushContainer has surpassed its maximum capacity! This will impact performance!");
+							}
+							m_pFallbackContainer = new CThreadSafePushContainer<T>(this);
+						}
+					}
+					CRY_ASSERT(m_pFallbackContainer != nullptr);
+
+					m_pFallbackContainer->GetNextDataBlock(pWorker);
+					pWorker->m_relativeContainerIndexOffset += ownCapacity();
+					return;
+				}
+
 				MapPages(pCurrentMappedEnd, pageGrowth);
 				// we either update successfully, or someone else has already mapped further
 				CRY_VERIFY(CryInterlockedCompareExchangePointer(&m_pMappedEnd, pCurrentMappedEnd + pageGrowth, pCurrentMappedEnd) >= pCurrentMappedEnd);
@@ -520,6 +592,8 @@ namespace CryMT
 	{
 		pSizer->AddObjectSize(this);
 		pSizer->AddObject(m_pAllocationBase, (char*)m_pMappedEnd - (char*)m_pAllocationBase);
+		if (m_pFallbackContainer != nullptr)
+			pSizer->AddObject(m_pFallbackContainer);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -536,24 +610,22 @@ namespace CryMT
 				}
 			}
 		}
-		memset(pElements, s_tombstone, numElements * sizeof(T));
+		if (numElements)
+			memset(pElements, s_tombstone, numElements * sizeof(T));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	template<class T>
 	template<typename... Args>
-	void CThreadSafePushContainer<T>::DefaultConstructElements(void* pElements, uint32 numElements, Args&&... args)
+	void CThreadSafePushContainer<T>::DefaultConstructElement(void* pElement, Args&&... args)
 	{
 		if (!std::is_pod<T>::value)
 		{
-			for (uint32 i = 0; i < numElements; ++i)
-			{
-				pElements = (::new(pElements) T(std::forward<Args>(args)...)) + 1;
-			}
+			::new(pElement) T(std::forward<Args>(args)...);
 		}
 		else
 		{
-			memset(pElements, 0, numElements * sizeof(T));
+			memset(pElement, 0, sizeof(T));
 		}
 	}
 } // CryMT

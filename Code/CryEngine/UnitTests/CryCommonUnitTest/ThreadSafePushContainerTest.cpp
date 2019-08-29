@@ -304,11 +304,43 @@ TEST(CryThreadSafePushContainerDeathTest, NoMemoryConsumed)
 	ASSERT_DEATH_IF_SUPPORTED(x = container[0], "");
 }
 
+// the maximum capacity can be exceeded, though with a performance penalty
 TEST(CryThreadSafePushContainerDeathTest, MaximumCapacity)
 {
 	CryMT::CThreadSafePushContainer<int64> container(64, 4 << 10);
-	ASSERT_DEATH_IF_SUPPORTED(InsertElements(&container, 0, 1024), "");
+	InsertElements(&container, 0, 1024);
+	EXPECT_EQ(container[1023], 1023);
+	InsertElements(&container, 0, 1024);
+	EXPECT_EQ(container[1023 + 1024], 1023);
+	InsertElements(&container, 0, 1024);
+	EXPECT_EQ(container[1023 + 2 * 1024], 1023);
 }
+
+// checks that iteration across fallback container boundaries works
+TEST(CryThreadSafePushContainerDeathTest, FallbackIteration)
+{
+	CryMT::CThreadSafePushContainer<int64> container(64, 4 << 10);
+	InsertElements(&container, 0, 1024);
+
+	const auto beginIt = container.begin();
+	const auto endIt = container.end();
+
+	int64 expectedValue = 0;
+	for (auto it = beginIt; it != endIt; ++it, ++expectedValue)
+	{
+		EXPECT_EQ(*it, expectedValue);
+	}
+
+	expectedValue = 1024;
+	for (auto it = endIt; it != beginIt;)
+	{
+		--it;
+		--expectedValue;
+		EXPECT_EQ(*it, expectedValue);
+	}
+
+}
+
 
 TEST(CryThreadSafePushContainerDeathTest, TooManyThreads)
 {
