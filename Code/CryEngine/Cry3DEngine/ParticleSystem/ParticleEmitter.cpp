@@ -200,7 +200,7 @@ bool CParticleEmitter::UpdateState()
 	}
 
 	if (m_attributeInstance.WasChanged())
-		SetChanged();
+		SetUnstable();
 
 	if (m_runtimesFor.empty())
 	{
@@ -230,36 +230,36 @@ bool CParticleEmitter::UpdateState()
 
 namespace Bounds
 {
-	float Expansion       = 1.125f;
-	float ShrinkThreshold = 0.125f;
+	float Expansion       = 0.25f;
+	float ShrinkThreshold = 0.25f;
 }
 
 void CParticleEmitter::UpdateBounds()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	const bool allowShrink = ThreadMode() < 3 || !IsStable();
+	const bool allowShrink = ThreadMode() < 3 || m_time < m_timeStable + GetDeltaTime();
 	if (!m_registered || (allowShrink && m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold))
 	{
 		m_reRegister = true;
 		m_nextBounds = m_realBounds;
-	}
-	else if (!m_bounds.ContainsBox(m_realBounds))
-	{
-		m_reRegister = true;
-		m_nextBounds.Add(m_realBounds);
-	}
-
-	if (m_reRegister)
-	{
 		if (!m_nextBounds.IsReset())
 		{
 			// Expand bounds to avoid frequent re-registering
-			Vec3 center = m_nextBounds.GetCenter();
-			Vec3 extent = m_nextBounds.GetSize() * (Bounds::Expansion * 0.5f);
-			m_nextBounds = AABB(center - extent, center + extent);
+			m_nextBounds.Expand(m_nextBounds.GetSize() * (Bounds::Expansion * 0.5f));
 		}
 	}
+	else if (!m_bounds.ContainsBox(m_realBounds))
+	{
+		CRY_ASSERT(m_nextBounds.min == m_bounds.min && m_nextBounds.max == m_bounds.max);
+		m_reRegister = true;
+		m_nextBounds.Add(m_realBounds);
+
+		// Expand bounds to avoid frequent re-registering
+		m_nextBounds.min += (m_nextBounds.min - m_bounds.min) * Bounds::Expansion;
+		m_nextBounds.max += (m_nextBounds.max - m_bounds.max) * Bounds::Expansion;
+	}
+
 	m_realBounds.Reset();
 }
 
@@ -485,12 +485,17 @@ void CParticleEmitter::Restart()
 	Activate(true);
 }
 
-void CParticleEmitter::SetChanged()
+void CParticleEmitter::SetUnstable()
 {
-	// Update stability and death time
+	// Update stability time
 	const STimingParams timings = GetMaxTimings();
 	const float frameTime = gEnv->pTimer->GetFrameTime() * GetTimeScale();
 	SetMax(m_timeStable, m_time + timings.m_stableTime + frameTime);
+	if (m_environFlags & ENV_STATIC_BOUNDS)
+	{
+		for (auto pRuntime : m_runtimes)
+			pRuntime->UpdateStaticBounds();
+	}
 }
 
 void CParticleEmitter::Kill()
@@ -540,7 +545,7 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 		m_visEnviron.Invalidate();
 	}
 
-	SetChanged();
+	SetUnstable();
 }
 
 void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
@@ -551,7 +556,7 @@ void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 		if (!pRuntime->IsChild())
 		{
 			pRuntime->EmitParticle();
-			SetChanged();
+			SetUnstable();
 		}
 	}
 }
@@ -591,7 +596,7 @@ void CParticleEmitter::SetTarget(const ParticleTarget& target)
 	if ((int)target.bPriority >= (int)m_target.bPriority)
 	{
 		m_target = target;
-		SetChanged();
+		SetUnstable();
 	}
 }
 
@@ -624,8 +629,9 @@ void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityCon
 void CParticleEmitter::UpdatePhysEnv()
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
-		m_bounds, m_visEnviron.OriginIndoors(), m_environFlags | ENV_WATER, true, 0);
+	if (CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron,
+		m_bounds, m_visEnviron.OriginIndoors(), m_environFlags | ENV_WATER, true, 0))
+		SetUnstable();
 }
 
 void CParticleEmitter::GetSpawnParams(SpawnParams& spawnParams) const
@@ -638,7 +644,7 @@ void CParticleEmitter::SetEmitGeom(const GeomRef& geom)
 	// If emitter has an OwnerEntity, it will override this GeomRef on the next frame.
 	// So SetOwnerEntity(nullptr) should be called as well.
 	m_emitterGeometry = geom;
-	SetChanged();
+	SetUnstable();
 }
 
 void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
@@ -648,7 +654,7 @@ void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 	bool update = spawnParams.eSpec != m_spawnParams.eSpec;
 	m_spawnParams = spawnParams;
 	m_reRegister = true;
-	SetChanged();
+	SetUnstable();
 	if (update)
 		m_runtimesFor.clear();
 }

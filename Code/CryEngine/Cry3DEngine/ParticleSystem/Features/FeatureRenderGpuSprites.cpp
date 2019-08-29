@@ -56,6 +56,7 @@ void CFeatureRenderGpuSprites::AddToComponent(CParticleComponent* pComponent, SC
 	CParticleRenderBase::AddToComponent(pComponent, pParams);
 	pParams->m_renderObjectFlags |= FOB_POINT_SPRITE;
 	pParams->m_shaderData.m_axisScale = m_axisScale;
+	pParams->m_environFlags |= ENV_STATIC_BOUNDS;
 }
 
 void CFeatureRenderGpuSprites::Serialize(Serialization::IArchive& ar)

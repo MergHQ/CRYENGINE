@@ -120,7 +120,7 @@ public:
 	ColorF                    GetProfilerColor() const     { return m_profilerColor; }
 	uint                      GetParticleSpec() const;
 
-	void                      SetChanged();
+	void                      SetUnstable();
 	bool                      IsStable() const             { return m_time > m_timeStable && !m_bounds.IsReset(); }
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;

@@ -21,6 +21,22 @@ MakeDataType(EEDT_Timings, STimingParams, EDD_Emitter);
 
 extern TDataType<Vec4> ESDT_SpatialExtents;
 
+AABB CBoundsMerger::Update(float curTime)
+{
+	// Cull expired entries
+	auto keep = std::find_if(m_boundsEntries.begin(), m_boundsEntries.end(),
+		[curTime](const Entry& entry) { return entry.deathTime >= curTime; });
+	uint keepIndex = min(uint(keep - m_boundsEntries.begin()), m_boundsEntries.size() - 1);
+	if (keepIndex > 0)
+		m_boundsEntries.erase(0, keepIndex);
+
+	AABB boundsSum(AABB::RESET);
+	for (const auto& entry : m_boundsEntries)
+		boundsSum.Add(entry.bounds);
+
+	return boundsSum;
+}
+
 CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponentRuntime* pParent, CParticleComponent* pComponent)
 	: m_pEmitter(pEmitter)
 	, m_parent(pParent)
@@ -51,7 +67,12 @@ CParticleComponentRuntime::CParticleComponentRuntime(const CParticleComponentRun
 	m_pGpuRuntime = nullptr;
 	if (m_parent)
 	{
-		CParticleComponentRuntime parent(*m_parent, runCount, runTime, runIterations);
+		int parentCount, perFrame;
+		float frameRate = rcp(runTime);
+		m_parent->GetMaxParticleCounts(parentCount, perFrame, frameRate, frameRate);
+		SetMin(parentCount, int_ceil(sqrt(float(runCount))));
+
+		CParticleComponentRuntime parent(*m_parent, parentCount, runTime, 1);
 		m_parent = &parent;
 		RunParticles(runCount, runTime, runIterations);
 	}
@@ -122,42 +143,49 @@ void CParticleComponentRuntime::Clear()
 
 void CParticleComponentRuntime::RunParticles(uint count, float deltaTime, uint iterations)
 {
-	m_deltaTime = deltaTime;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
 	m_isPreRunning = true;
 	
-	UpdateSpawners();
-
-	auto range = FullRange(EDD_Spawner);
-	auto parentIds = IStream(ESDT_ParentId);
-
-	Container().BeginSpawn();
-	THeapArray<SSpawnEntry> entries(MemHeap(), range.size());
-	uint countPerSpawner = (count + range.size() - 1) / range.size();
-	for (auto sid : FullRange(EDD_Spawner))
-	{
-		SSpawnEntry& entry = entries[sid];
-		entry.m_spawnerId = sid;
-		entry.m_parentId = parentIds[sid];
-		entry.m_count = countPerSpawner;
-		entry.m_ageBegin = deltaTime;
-	}
-	AddParticles(entries);
-	InitParticles();
-	Container().EndSpawn();
-
-	CalculateBounds();
-	AABB fullBounds = m_bounds;
+	m_deltaTime = 0;
 	m_pEmitter->UpdatePhysEnv();
 
-	SetMax(iterations, 1u);
-	m_deltaTime = deltaTime / float(iterations);
-	for (uint i = 0; i < iterations; ++i)
+	// Manually spawn and init requested number of particles, at age 0,
+	// so positioning reflects end of frame
+	UpdateSpawners();
+	auto range = FullRange(EDD_Spawner);
+	if (range.size())
 	{
-		UpdateParticles();
+		auto parentIds = IStream(ESDT_ParentId);
+
+		Container().BeginSpawn();
+		THeapArray<SSpawnEntry> entries(MemHeap(), range.size());
+		uint countPerSpawner = (count + range.size() - 1) / range.size();
+		for (auto sid : FullRange(EDD_Spawner))
+		{
+			SSpawnEntry& entry = entries[sid];
+			entry.m_spawnerId = sid;
+			entry.m_parentId = parentIds[sid];
+			entry.m_count = countPerSpawner;
+			entry.m_ageBegin = 0;
+			entry.m_ageIncrement = 0;
+		}
+		AddParticles(entries);
+		InitParticles();
+		Container().EndSpawn();
+
+		// Calculate initial bounds, and merge bounds from each update
 		CalculateBounds();
-		fullBounds.Add(m_bounds);
+
+		SetMax(iterations, 1u);
+		m_deltaTime = deltaTime / float(iterations);
+		for (uint i = 0; i < iterations; ++i)
+		{
+			AgeUpdate();
+			UpdateParticles();
+			CalculateBounds(true);
+		}
 	}
-	m_bounds = fullBounds;
 
 	m_isPreRunning = false;
 	m_deltaTime = -1.0f;
@@ -282,6 +310,22 @@ void CParticleComponentRuntime::EmitParticle()
 	SSpawnEntry spawn = {1, ParentContainer().Size()};
 	AddParticles({&spawn, 1});
 	Container().EndSpawn();
+}
+
+bool CParticleComponentRuntime::HasStaticBounds() const
+{
+	if (m_pGpuRuntime)
+	{
+		static ICVar* pVarGPUBounds = gEnv->pConsole->GetCVar("r_GpuParticlesGpuBoundingBox");
+		return !(pVarGPUBounds && pVarGPUBounds->GetIVal());
+	}
+	return false;
+}
+
+void CParticleComponentRuntime::UpdateStaticBounds()
+{
+	if (HasStaticBounds())
+		m_bounds.Reset();
 }
 
 void CParticleComponentRuntime::UpdateSpawners()
@@ -532,7 +576,6 @@ void CParticleComponentRuntime::InitParticles()
 
 	for (auto particleGroupId : SpawnedRangeV())
 	{
-		// Convert absolute spawned particle age to normal age / life
 		floatv backTime = -normAges.Load(particleGroupId) * lifeTimes.Load(particleGroupId);
 
 		// Set initial position and orientation from parent
@@ -609,7 +652,7 @@ void CParticleComponentRuntime::InitParticles()
 	}
 }
 
-void CParticleComponentRuntime::CalculateBounds()
+void CParticleComponentRuntime::CalculateBounds(bool add)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), *this, EPS_UpdateTime);
@@ -621,12 +664,20 @@ void CParticleComponentRuntime::CalculateBounds()
 	SUpdateRange range = Container().FullRange();
 
 #ifdef CRY_PFX2_USE_SSE
-	const floatv fMin = ToFloatv(std::numeric_limits<float>::max());
-	const floatv fMax = ToFloatv(-std::numeric_limits<float>::max());
-	Vec3v bbMin = Vec3v(fMin, fMin, fMin);
-	Vec3v bbMax = Vec3v(fMax, fMax, fMax);
-
 	// vector part
+	Vec3v bbMin, bbMax;
+	if (add)
+	{
+		bbMin = m_bounds.min;
+		bbMax = m_bounds.max;
+	}
+	else
+	{
+		const floatv fMax = ToFloatv(std::numeric_limits<float>::max());
+		bbMin = Vec3v(+fMax, +fMax, +fMax);
+		bbMax = Vec3v(-fMax, -fMax, -fMax);
+	}
+
 	const floatv scalev = convert<floatv>(sizeScale);
 	const TParticleId lastParticleId = range.m_end;
 	const TParticleId lastParticleGroupId = lastParticleId & ~(CRY_PFX2_GROUP_STRIDE - 1);
@@ -642,10 +693,11 @@ void CParticleComponentRuntime::CalculateBounds()
 
 	range = SUpdateRange(lastParticleGroupId, lastParticleId);
 #else
-	m_bounds.Reset();
+	if (!add)
+		m_bounds.Reset();
 #endif
 
-	// linear part
+	// scalar part
 	for (auto particleId : range)
 	{
 		const float size = sizes.Load(particleId) * sizeScale;
@@ -702,15 +754,23 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	if (!m_pGpuRuntime)
 		return;
 
-	static ICVar* pVarGPUBounds = gEnv->pConsole->GetCVar("r_GpuParticlesGpuBoundingBox");
-	if (pVarGPUBounds && pVarGPUBounds->GetIVal())
+	if (!HasStaticBounds())
 		m_bounds = m_pGpuRuntime->GetBounds();
-	else if (m_bounds.IsReset())
+	else
 	{
-		// Compute bounding box once, by running a small particle set on CPU
-		CParticleComponentRuntime runtimeTemp(*this, 256, GetDynamicData(EEDT_Timings).m_equilibriumTime, 4);
-		m_bounds = runtimeTemp.GetBounds();
-		m_bounds.Expand(m_bounds.GetSize() * 0.125f);
+		float curTime = m_pEmitter->GetTime();
+		if (m_bounds.IsReset())
+		{
+			// Compute updated bounding box, by running a small particle set on CPU
+			float lifeTime = GetDynamicData(EEDT_Timings).m_equilibriumTime;
+			CParticleComponentRuntime runtimeTemp(*this, 256, lifeTime, 4);
+			AABB bounds = runtimeTemp.GetBounds();
+			bounds.Expand(bounds.GetSize() * 0.125f);
+
+			// Merge with previous updates
+			m_boundsMerger.Add(bounds, curTime + lifeTime);
+		}
+		m_bounds = m_boundsMerger.Update(curTime);
 	}
 
 	UpdateSpawners();
@@ -734,8 +794,11 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	params.deltaTime = DeltaTime();
 	params.emitterPosition = m_pEmitter->GetLocation().t;
 	params.emitterOrientation = m_pEmitter->GetLocation().q;
-	params.physAccel = m_pEmitter->GetPhysicsEnv().m_UniformForces.vAccel;
-	params.physWind = m_pEmitter->GetPhysicsEnv().m_UniformForces.vWind;
+
+	SPhysForces forces;
+	m_pEmitter->GetPhysicsEnv().GetForces(forces, m_bounds, ComponentParams().m_environFlags, true);
+	params.physAccel = forces.vAccel;
+	params.physWind = forces.vWind;
 	params.minDrawPixels = GetCVars()->e_ParticlesMinDrawPixels
 		/ (ComponentParams().m_visibility.m_viewDistanceMultiple * m_pEmitter->GetViewDistRatio());
 

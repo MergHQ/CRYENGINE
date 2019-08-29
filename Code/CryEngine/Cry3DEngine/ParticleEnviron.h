@@ -34,9 +34,10 @@ enum EEnvironFlags
 
 	// Visual behavior.
 	ENV_CAST_SHADOWS    = BIT(8),
+	ENV_STATIC_BOUNDS   = BIT(9),
 
 	// Entity connections
-	ENV_TARGET          = BIT(9)
+	ENV_TARGET          = BIT(10),
 };
 
 struct SPhysForces

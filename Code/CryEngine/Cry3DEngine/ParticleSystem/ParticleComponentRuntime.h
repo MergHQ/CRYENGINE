@@ -26,6 +26,26 @@ struct SMaxParticleCounts
 	float  rate = 0;
 };
 
+class CBoundsMerger
+{
+public:
+	void Add(const AABB& bounds, float deathTime)
+	{
+		m_boundsEntries.push_back(Entry{ bounds, deathTime });
+	}
+	AABB Update(float curTime);
+	uint Count() const { return m_boundsEntries.size(); }
+
+private:
+
+	struct Entry
+	{
+		AABB bounds;
+		float deathTime;
+	};
+	TSmallArray<Entry> m_boundsEntries;
+};
+
 class CParticleComponentRuntime : public _i_reference_target_t, public IParticleVertexCreator
 {
 public:
@@ -87,6 +107,8 @@ public:
 	void                      GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	void                      GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const;
 	void                      EmitParticle();
+	bool                      HasStaticBounds() const;
+	void                      UpdateStaticBounds();
 
 	bool                      HasParticles() const;
 	void                      AccumStats(bool updated);
@@ -123,7 +145,7 @@ private:
 	void InitParticles();
 	void AgeUpdate();
 	void UpdateParticles();
-	void CalculateBounds();
+	void CalculateBounds(bool add = false);
 	void DebugStabilityCheck();
 	void UpdateGPURuntime();
 	void RunParticles(uint count, float deltaTime, uint iterations = 1);
@@ -176,6 +198,7 @@ private:
 	SChaosKey mutable                    m_chaos;
 	SChaosKeyV mutable                   m_chaosV;
 
+	CBoundsMerger                        m_boundsMerger;
 	_smart_ptr<gpu_pfx2::IParticleComponentRuntime> m_pGpuRuntime;
 	TSmallArray<SSpawnEntry>             m_GPUSpawnEntries;
 };
