@@ -3141,7 +3141,7 @@ void RegisterBehaviorTreeNodes_Core()
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Parallel, "Flow\\Parallel", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Loop, "Flow\\Loop", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LoopUntilSuccess, "Flow\\Loop Until Success", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State Sachine", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State Machine", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionEvent, "Flow\\State Machine\\Send Transition Event", COLOR_FLOW);
 
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfCondition, "Conditions\\Condition Gate", COLOR_CONDITION);
