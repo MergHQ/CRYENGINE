@@ -162,6 +162,8 @@ int CSoftEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams* params, int id
 		params->mass = 1;
 
 	int res = CPhysicalEntity::AddGeometry(pgeom,params,id,1);
+	if (res<0)
+		return res;
 	WriteLock lock(m_lockUpdate);
 	int i,j,i0,i1,bDegen,iedge,itri,itri0,ivtx,itrinew,nVtxEdges,(*pInfo)[3];
 	float rvtxmass,len[3],vtxmass;
