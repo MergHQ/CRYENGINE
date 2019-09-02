@@ -239,6 +239,19 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 }
 
 //////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	auto const pOldConnection = static_cast<CEventConnection*>(pIConnection);
+	auto const pNewConnection = new CEventConnection(pOldConnection->GetID());
+
+	pNewConnection->SetActionType(pOldConnection->GetActionType());
+	pNewConnection->SetLoopCount(pOldConnection->GetLoopCount());
+	pNewConnection->SetInfiniteLoop(pOldConnection->IsInfiniteLoop());
+
+	return static_cast<IConnection*>(pNewConnection);
+}
+
+//////////////////////////////////////////////////////////////////////////
 IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType)
 {
 	IConnection* pIConnection = nullptr;
@@ -391,7 +404,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -403,7 +416,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 

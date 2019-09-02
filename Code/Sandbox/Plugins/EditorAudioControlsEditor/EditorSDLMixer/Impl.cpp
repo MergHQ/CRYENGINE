@@ -313,6 +313,64 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 }
 
 //////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	IConnection* pNewIConnection = nullptr;
+
+	switch (assetType)
+	{
+	case EAssetType::Trigger:
+		{
+			auto const pOldConnection = static_cast<CEventConnection*>(pIConnection);
+			auto const pNewConnection = new CEventConnection(pOldConnection->GetID());
+
+			pNewConnection->SetActionType(pOldConnection->GetActionType());
+			pNewConnection->SetVolume(pOldConnection->GetVolume());
+			pNewConnection->SetFadeInTime(pOldConnection->GetFadeInTime());
+			pNewConnection->SetFadeOutTime(pOldConnection->GetFadeOutTime());
+			pNewConnection->SetMinAttenuation(pOldConnection->GetMinAttenuation());
+			pNewConnection->SetMaxAttenuation(pOldConnection->GetMaxAttenuation());
+			pNewConnection->SetPanningEnabled(pOldConnection->IsPanningEnabled());
+			pNewConnection->SetAttenuationEnabled(pOldConnection->IsAttenuationEnabled());
+			pNewConnection->SetInfiniteLoop(pOldConnection->IsInfiniteLoop());
+			pNewConnection->SetLoopCount(pOldConnection->GetLoopCount());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EAssetType::Parameter:
+		{
+			auto const pOldConnection = static_cast<CParameterConnection*>(pIConnection);
+			auto const pNewConnection = new CParameterConnection(
+				pOldConnection->GetID(),
+				pOldConnection->IsAdvanced(),
+				pOldConnection->GetMultiplier(),
+				pOldConnection->GetShift());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EAssetType::State:
+		{
+			auto const pOldConnection = static_cast<CStateConnection*>(pIConnection);
+			auto const pNewConnection = new CStateConnection(pOldConnection->GetID(), pOldConnection->GetValue());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+
+	return pNewIConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
 IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType)
 {
 	IConnection* pIConnection = nullptr;
@@ -689,7 +747,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -701,7 +759,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 

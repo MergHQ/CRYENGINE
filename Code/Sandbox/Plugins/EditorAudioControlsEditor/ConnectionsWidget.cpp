@@ -93,6 +93,11 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
+	g_assetsManager.SignalControlsDuplicated.Connect([this]()
+		{
+			SetControl(m_pControl, true, true);
+		}, reinterpret_cast<uintptr_t>(this));
+
 	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			m_pTreeView->selectionModel()->clear();
@@ -108,6 +113,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 CConnectionsWidget::~CConnectionsWidget()
 {
 	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalControlsDuplicated.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pConnectionModel->DisconnectSignals();
@@ -168,16 +174,32 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 			ControlId const itemId = static_cast<ControlId>(selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
 			Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
 
-			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == EItemFlags::None))
+			if (pIItem != nullptr)
 			{
-				pContextMenu->addSeparator();
-				pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
-					{
-						if (g_pIImpl != nullptr)
+				if ((m_pControl->GetFlags() & EAssetFlags::IsDefaultControl) == 0)
+				{
+					string const& itemName = pIItem->GetName();
+					string const& typeName = AssetUtils::GetTypeName(m_pControl->GetType());
+
+					pContextMenu->addSeparator();
+					pContextMenu->addAction(tr("Rename the connected " + typeName + " to \"" + itemName + "\""), [=]()
 						{
-						  g_pIImpl->OnSelectConnectedItem(itemId);
-						}
-					});
+							m_pControl->SetName(itemName);
+						});
+				}
+
+				if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == EItemFlags::None)
+				{
+					pContextMenu->addSeparator();
+					pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
+						{
+							if (g_pIImpl != nullptr)
+							{
+							  g_pIImpl->OnSelectConnectedItem(itemId);
+							}
+						});
+				}
+
 			}
 		}
 
@@ -306,9 +328,9 @@ XmlNodeRef CConnectionsWidget::ConstructTemporaryTriggerConnections(CControl con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::SetControl(CControl* const pControl, bool const restoreSelection)
+void CConnectionsWidget::SetControl(CControl* const pControl, bool const restoreSelection, bool const isForced)
 {
-	if (m_pControl != pControl)
+	if ((m_pControl != pControl) || isForced)
 	{
 		m_pControl = pControl;
 		Reset();

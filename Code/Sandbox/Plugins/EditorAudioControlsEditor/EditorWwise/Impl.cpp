@@ -499,7 +499,6 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 			}
 		default:
 			{
-				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 				break;
 			}
 		}
@@ -510,6 +509,64 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 	}
 
 	return pIConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	IConnection* pNewIConnection = nullptr;
+
+	auto const pItem = static_cast<CItem const*>(GetItem(pIConnection->GetID()));
+
+	switch (pItem->GetType())
+	{
+	case EItemType::Parameter:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter: // Intentional fall-thorugh.
+			case EAssetType::Environment:
+				{
+					auto const pOldConnection = static_cast<CParameterConnection*>(pIConnection);
+					auto const pNewConnection = new CParameterConnection(
+						pOldConnection->GetID(),
+						pOldConnection->IsAdvanced(),
+						pOldConnection->GetMultiplier(),
+						pOldConnection->GetShift());
+
+					pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+					break;
+				}
+			case EAssetType::State:
+				{
+					auto const pOldConnection = static_cast<CParameterToStateConnection*>(pIConnection);
+					auto const pNewConnection = new CParameterToStateConnection(pOldConnection->GetID(), pOldConnection->GetValue());
+
+					pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
+			}
+
+			break;
+		}
+	default:
+		{
+			auto const pOldConnection = static_cast<CGenericConnection*>(pIConnection);
+			auto const pNewConnection = new CGenericConnection(pOldConnection->GetID());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	}
+
+	return pNewIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -652,7 +709,6 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 						}
 					default:
 						{
-							pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 							break;
 						}
 					}
@@ -856,7 +912,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pIConnection->GetID()));
 
@@ -868,7 +924,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pIConnection->GetID()));
 

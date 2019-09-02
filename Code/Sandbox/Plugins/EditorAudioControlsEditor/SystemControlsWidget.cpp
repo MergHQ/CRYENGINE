@@ -453,7 +453,9 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 		GetAssetsFromIndexesSeparated(selection, libraries, folders, controls);
 
-		if (!IsDefaultControlSelected())
+		bool const isDefaultControlSelected = IsDefaultControlSelected();
+
+		if (!isDefaultControlSelected)
 		{
 			if (IsParentFolderAllowed())
 			{
@@ -645,13 +647,22 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			}
 		}
 
-		pContextMenu->addAction(tr("Rename"), [=]()
-			{
-				QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), g_systemNameColumn);
-				m_pTreeView->edit(nameColumnIndex);
-			});
-
 		pContextMenu->addAction(tr("Delete"), [&]() { DeleteSelectedControls(); });
+
+		if (!isDefaultControlSelected)
+		{
+			pContextMenu->addAction(tr("Rename"), [=]()
+				{
+					QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), g_systemNameColumn);
+					m_pTreeView->edit(nameColumnIndex);
+				});
+
+			if (!controls.empty() && libraries.empty() && folders.empty())
+			{
+				pContextMenu->addAction(tr("Duplicate"), [&]() { DuplicateSelectedControls(); });
+			}
+		}
+
 		pContextMenu->addSeparator();
 		pContextMenu->addAction(tr("Expand Selection"), [=]() { m_pTreeView->ExpandSelection(); });
 		pContextMenu->addAction(tr("Collapse Selection"), [=]() { m_pTreeView->CollapseSelection(); });
@@ -693,6 +704,25 @@ void CSystemControlsWidget::OnRenameSelectedControls(string const& name)
 	}
 
 	m_suppressRenaming = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControlsWidget::DuplicateSelectedControls()
+{
+	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	Assets selectedAssets;
+
+	for (auto const& index : selection)
+	{
+		if (index.isValid())
+		{
+			selectedAssets.push_back(CSystemSourceModel::GetAssetFromIndex(index, g_systemNameColumn));
+		}
+	}
+
+	m_isCreatedFromMenu = true;
+	g_assetsManager.DuplicateAssets(selectedAssets);
+	m_isCreatedFromMenu = false;
 }
 
 //////////////////////////////////////////////////////////////////////////

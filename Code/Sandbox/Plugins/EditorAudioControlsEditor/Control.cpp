@@ -185,7 +185,7 @@ void CControl::AddConnection(IConnection* const pIConnection)
 
 	if (pIItem != nullptr)
 	{
-		g_pIImpl->EnableConnection(pIConnection, g_assetsManager.IsLoading());
+		g_pIImpl->EnableConnection(pIConnection);
 		pIConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
 		m_connections.push_back(pIConnection);
 		SignalConnectionAdded();
@@ -206,7 +206,7 @@ void CControl::RemoveConnection(Impl::IItem* const pIItem)
 
 		if (pIConnection->GetID() == id)
 		{
-			g_pIImpl->DisableConnection(pIConnection, g_assetsManager.IsLoading());
+			g_pIImpl->DisableConnection(pIConnection);
 			pIConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 			g_pIImpl->DestructConnection(pIConnection);
 
@@ -225,11 +225,9 @@ void CControl::ClearConnections()
 {
 	if (!m_connections.empty())
 	{
-		bool const isLoading = g_assetsManager.IsLoading();
-
 		for (auto const pIConnection : m_connections)
 		{
-			g_pIImpl->DisableConnection(pIConnection, isLoading);
+			g_pIImpl->DisableConnection(pIConnection);
 			pIConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 			g_pIImpl->DestructConnection(pIConnection);
 

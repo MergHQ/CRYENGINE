@@ -29,7 +29,7 @@ public:
 	explicit CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
-	void SetControl(CControl* const pControl, bool const restoreSelection);
+	void SetControl(CControl* const pControl, bool const restoreSelection, bool const isForced);
 	void Reset();
 	void OnBeforeReload();
 	void OnAfterReload();

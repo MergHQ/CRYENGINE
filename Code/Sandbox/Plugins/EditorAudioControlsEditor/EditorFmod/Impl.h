@@ -36,13 +36,14 @@ public:
 	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
 	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
 	virtual IConnection*   CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
+	virtual IConnection*   DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection) override;
 	virtual IConnection*   CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType) override;
 	virtual XmlNodeRef     CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType, CryAudio::ContextId const contextId) override;
 	virtual XmlNodeRef     SetDataNode(char const* const szTag, CryAudio::ContextId const contextId) override;
 	virtual void           OnBeforeWriteLibrary() override;
 	virtual void           OnAfterWriteLibrary() override;
-	virtual void           EnableConnection(IConnection const* const pIConnection, bool const isLoading) override;
-	virtual void           DisableConnection(IConnection const* const pIConnection, bool const isLoading) override;
+	virtual void           EnableConnection(IConnection const* const pIConnection) override;
+	virtual void           DisableConnection(IConnection const* const pIConnection) override;
 	virtual void           DestructConnection(IConnection const* const pIConnection) override;
 	virtual void           OnBeforeReload() override;
 	virtual void           OnAfterReload() override;

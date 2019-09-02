@@ -619,6 +619,103 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 }
 
 //////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	IConnection* pNewIConnection = nullptr;
+
+	auto const pItem = static_cast<CItem const*>(GetItem(pIConnection->GetID()));
+
+	switch (pItem->GetType())
+	{
+	case EItemType::Cue:
+		{
+			auto const pOldConnection = static_cast<CCueConnection*>(pIConnection);
+			auto const pNewConnection = new CCueConnection(
+				pOldConnection->GetID(),
+				pOldConnection->GetCueSheetName(),
+				pOldConnection->GetActionType());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EItemType::AisacControl: // Intentional fall-through.
+	case EItemType::Category:     // Intentional fall-through.
+	case EItemType::GameVariable:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter: // Intentional fall-through.
+			case EAssetType::Environment:
+				{
+					auto const pOldConnection = static_cast<CParameterConnection*>(pIConnection);
+					auto const pNewConnection = new CParameterConnection(
+						pOldConnection->GetID(),
+						pOldConnection->IsAdvanced(),
+						pOldConnection->GetType(),
+						pOldConnection->GetMinValue(),
+						pOldConnection->GetMaxValue(),
+						pOldConnection->GetMultiplier(),
+						pOldConnection->GetShift());
+
+					pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+					break;
+				}
+			case EAssetType::State:
+				{
+					auto const pOldConnection = static_cast<CParameterToStateConnection*>(pIConnection);
+					auto const pNewConnection = new CParameterToStateConnection(
+						pOldConnection->GetID(),
+						pItem->GetType(),
+						pOldConnection->GetValue());
+
+					pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
+			}
+
+			break;
+		}
+	case EItemType::Snapshot:
+		{
+			auto const pOldConnection = static_cast<CSnapshotConnection*>(pIConnection);
+			auto const pNewConnection = new CSnapshotConnection(
+				pOldConnection->GetID(),
+				pOldConnection->GetActionType(),
+				pOldConnection->GetChangeoverTime());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EItemType::Bus:           // Intentional fall-through.
+	case EItemType::Binary:        // Intentional fall-through.
+	case EItemType::DspBusSetting: // Intentional fall-through.
+	case EItemType::SelectorLabel:
+		{
+			auto const pOldConnection = static_cast<CGenericConnection*>(pIConnection);
+			auto const pNewConnection = new CGenericConnection(pOldConnection->GetID());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+
+	return pNewIConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
 IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType)
 {
 	IConnection* pIConnection = nullptr;
@@ -1102,7 +1199,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -1114,7 +1211,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 

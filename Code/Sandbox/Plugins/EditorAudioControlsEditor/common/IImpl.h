@@ -83,8 +83,14 @@ struct IImpl
 	//! Creates and returns a connection to a middleware control. The connection object is owned by this class.
 	//! \param assetType - The type of the audio system control you are connecting to the middleware control.
 	//! \param pIItem - Middleware control for which to make the connection.
-	// \return A pointer to the newly created connection.
+	//! \return A pointer to the newly created connection.
 	virtual IConnection* CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) = 0;
+
+	//! Creates and returns a connection to a middleware control with the same properties as the given connection.
+	//! \param assetType - The type of the audio system control you are connecting to the middleware control.
+	//! \param pIConnection - Connection to get the properties from.
+	//! \return A pointer to the newly created connection.
+	virtual IConnection* DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection) = 0;
 
 	//! Creates and returns a connection defined in an XML node.
 	//! The format of the XML node should be in sync with the CreateXMLNodeFromConnection function which is in charge of writing the node during serialization.
@@ -116,13 +122,11 @@ struct IImpl
 
 	//! Whenever a connection is added to an audio system control this function should be called to keep the system informed of which connections are being used.
 	//! \param pIConnection - Connection that has been enabled.
-	//! \param isLoading - Is data currently being loaded or not.
-	virtual void EnableConnection(IConnection const* const pIConnection, bool const isLoading) = 0;
+	virtual void EnableConnection(IConnection const* const pIConnection) = 0;
 
 	//! Whenever a connection is removed from an audio system control this function should be called to keep the system informed of which connections are being used.
 	//! \param pIConnection - Connection that has been disabled.
-	//! \param isLoading - Is data currently being loaded or not.
-	virtual void DisableConnection(IConnection const* const pIConnection, bool const isLoading) = 0;
+	virtual void DisableConnection(IConnection const* const pIConnection) = 0;
 
 	//! Free the memory and potentially other resources used by the supplied IConnection
 	//! \param pIConnection - pointer to the connection to be discarded
