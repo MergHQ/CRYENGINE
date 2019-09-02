@@ -13,7 +13,6 @@ set(GCC_COMMON_FLAGS
 
 set(GCC_CPP_COMMON_FLAGS
 	-fno-rtti
-	-std=c++11
 	-Wno-invalid-offsetof
 	-Wno-aligned-new
 	-Wno-conversion-null

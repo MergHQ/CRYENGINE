@@ -62,3 +62,12 @@ if (NOT DEFINED BUILD_PLATFORM)
 	# For now, we expect BUILD_PLATFORM to have been set via a Toolchain file.
 	message(FATAL_ERROR "BUILD_PLATFORM not defined. Please always supply one of the CRYENGINE toolchain files.")
 endif()
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(NOT CYGWIN)
+	set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
