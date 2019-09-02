@@ -111,7 +111,7 @@
                     "optional": true
                 },
                 {
-                    "name": "Oculus Wwise Spatializer 1.39.0",
+                    "name": "Oculus Wwise Spatializer 1.40.0",
                     "description": "A Wwise plugin to let developers add HRTF-based spatialization and room modeling to applications. This is an add-on plugin for the Audiokinetic Wwise toolset that allows monophonic sound sources to be spatialized in 3D relative to the user's head location.",
                     "website": "https://developer.oculus.com/downloads/package/oculus-spatializer-wwise",
                     "optional": true
