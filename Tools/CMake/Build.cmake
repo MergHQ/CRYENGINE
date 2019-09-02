@@ -117,6 +117,7 @@ endif()
 if (OPTION_RC AND EXISTS "${CRYENGINE_DIR}/Code/Tools/RC")
 	include(ExternalProject)
 	ExternalProject_Add(RC
+		CMAKE_ARGS "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}" "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}" "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}" "-DCMAKE_BUILD_TYPE=$<$<CONFIG:Profile>:Release>$<$<NOT:$<CONFIG:Profile>>:$<CONFIG>>"
 		SOURCE_DIR "${CRYENGINE_DIR}/Code/Tools/RC"
 		BUILD_COMMAND "${CMAKE_COMMAND}" --build "." --config $<$<CONFIG:Profile>:Release>$<$<NOT:$<CONFIG:Profile>>:$<CONFIG>>
 		INSTALL_COMMAND echo "Skipping install"

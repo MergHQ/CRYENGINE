@@ -5,7 +5,7 @@ option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin (currently 
 option(PLUGIN_SCHEMATYC_EXPERIMENTAL "Enables compilation of the Experimental Schematyc plugin (Schematyc.dll)" ON)
 
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
-option(OPTION_RC "Include RC in the build" OFF)
+option(OPTION_RC "Include RC in the build" ${WINDOWS})
 
 option(OPTION_DOXYGEN_EXAMPLES "Build Doxygen examples with the engine" OFF)
 
