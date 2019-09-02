@@ -1,8 +1,8 @@
+
 if(DURANGO OR ORBIS OR ANDROID OR LINUX)
+	# WIN32 Should be unset after project() line to work correctly
 	unset(WIN32)
 	unset(WINDOWS)
-elseif(WIN32) # Either Win32 or Win64
-	include("${CMAKE_CURRENT_LIST_DIR}/toolchain/windows/WindowsPC-MSVC.cmake")
 endif()
 
 message(STATUS "CMAKE_SYSTEM = ${CMAKE_SYSTEM}")
@@ -11,10 +11,6 @@ message(STATUS "CMAKE_SYSTEM_VERSION = ${CMAKE_SYSTEM_VERSION}")
 message(STATUS "BUILD_PLATFORM = ${BUILD_PLATFORM}")
 message(STATUS "BUILD_CPU_ARCHITECTURE = ${BUILD_CPU_ARCHITECTURE}")
 message(STATUS "OUTPUT_DIRECTORY_NAME = ${OUTPUT_DIRECTORY_NAME}")
-
-# C/C++ languages required.
-enable_language(C)
-enable_language(CXX)
 
 if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	set(valid_configs Debug Profile Release)
@@ -25,7 +21,7 @@ if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 endif()
 
 # Correct output directory slashes, has to be done after toolchain includes
-if (OUTPUT_DIRECTORY)
+if(OUTPUT_DIRECTORY)
 	string(REPLACE "\\" "/" OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}")
 else()
 	# Note that PROJECT_DIR can be different depending on whether we're building the engine or a standalone game / plugin project
@@ -47,20 +43,11 @@ if(OUTPUT_DIRECTORY_SUFFIX)
 	set(OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}_${OUTPUT_DIRECTORY_SUFFIX}")
 endif()
 
-set(METADATA_PROJECT_NAME "CryEngine" CACHE STRING "Name of the solution project")
-project("${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM}" CXX C)
-
 # Prefix all Visual Studio solution folder names with this string
-set( VS_FOLDER_PREFIX "CRYENGINE/" )
+set(VS_FOLDER_PREFIX "CRYENGINE/")
 
 set(MODULES CACHE INTERNAL "List of engine modules being built" FORCE)
 set(GAME_MODULES CACHE INTERNAL "List of game modules being built" FORCE)
-
-if (DURANGO OR ORBIS OR ANDROID OR LINUX)
-	# WIN32 Should be unset  again after project( line to work correctly
-	unset(WIN32)
-	unset(WINDOWS)
-endif ()
 
 set(game_folder CACHE INTERNAL "Game folder used for resource files on Windows" FORCE)
 
@@ -69,10 +56,10 @@ get_property(global_defines DIRECTORY "${CRYENGINE_DIR}" PROPERTY COMPILE_DEFINI
 get_property(global_includes DIRECTORY "${CRYENGINE_DIR}" PROPERTY INCLUDE_DIRECTORIES)
 get_property(global_links DIRECTORY "${CRYENGINE_DIR}" PROPERTY LINK_DIRECTORIES)
 
-if (OPTION_PROFILE)
-	set_property( DIRECTORY PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Release>:_PROFILE> )
+if(OPTION_PROFILE)
+	set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Release>:_PROFILE>)
 else()
-	set_property( DIRECTORY PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Release>:_RELEASE> )
+	set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Release>:_RELEASE>)
 endif()
 
 if(OPTION_UNITY_BUILD)
@@ -86,17 +73,17 @@ set(WINSDK_SDK_DIR "${SDK_DIR}/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
 
-if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h")
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h")
 	file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "")
 endif ()
 list(APPEND global_defines "CRY_CVAR_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h\"")
 
-if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h")
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h")
 	file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h" "")
 endif ()
 list(APPEND global_defines "CRY_CVAR_WHITELIST_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarWhitelist.h\"")
 
-if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h")
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h")
 	file(WRITE "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h" "")
 endif ()
 list(APPEND global_defines "CRY_ENGINE_DEFINE_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h\"")
@@ -124,23 +111,22 @@ if(MSVC_VERSION AND NOT OPTION_PGO STREQUAL "Off")
 	endif()
 endif()
 
-
-if (OPTION_STATIC_LINKING_WITH_GAME_AS_DLL)
-		MESSAGE(STATUS "Enabling OPTION_STATIC_LINKING because OPTION_STATIC_LINKING_WITH_GAME_AS_DLL was set")
-		set(OPTION_STATIC_LINKING ON CACHE BOOL "Enabling OPTION_STATIC_LINKING because OPTION_STATIC_LINKING_WITH_GAME_AS_DLL was set" FORCE)
+if(OPTION_STATIC_LINKING_WITH_GAME_AS_DLL)
+	MESSAGE(STATUS "Enabling OPTION_STATIC_LINKING because OPTION_STATIC_LINKING_WITH_GAME_AS_DLL was set")
+	set(OPTION_STATIC_LINKING ON CACHE BOOL "Enabling OPTION_STATIC_LINKING because OPTION_STATIC_LINKING_WITH_GAME_AS_DLL was set" FORCE)
 endif()
 
 if(OPTION_STATIC_LINKING)
 	# Enable static libraries
-	MESSAGE(STATUS "Use Static Linking (.lib/.a)" )
+	MESSAGE(STATUS "Use Static Linking (.lib/.a)")
 	set(BUILD_SHARED_LIBS FALSE)
 else()
-	# Enable dynamic librariesboost
-	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)" )
+	# Enable dynamic libraries
+	MESSAGE(STATUS "Use Dynamic Linking (.dll/.so)")
 	set(BUILD_SHARED_LIBS TRUE)
 endif()
 
-if (OUTPUT_DIRECTORY)
+if(OUTPUT_DIRECTORY)
 	if(OPTION_DEDICATED_SERVER)
 		set(OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}_dedicated")
 	endif()
@@ -152,7 +138,7 @@ if (OUTPUT_DIRECTORY)
 
 	# Make sure the output directory exists
 	file(MAKE_DIRECTORY "${OUTPUT_DIRECTORY}")
-endif (OUTPUT_DIRECTORY)
+endif(OUTPUT_DIRECTORY)
 
 include("${TOOLS_CMAKE_DIR}/ConfigureChecks.cmake")
 include("${TOOLS_CMAKE_DIR}/CommonMacros.cmake")
@@ -162,9 +148,9 @@ if(WINDOWS)
 	# Common Libriries linked to all targets
 	set(COMMON_LIBS Ntdll User32 Advapi32 Ntdll Ws2_32)
 
-	if (EXISTS "${SDK_DIR}/GPA" AND OPTION_ENGINE)
-		list(APPEND global_includes "${SDK_DIR}/GPA/include" )
-		list(APPEND global_links "${SDK_DIR}/GPA/lib64" )
+	if(EXISTS "${SDK_DIR}/GPA" AND OPTION_ENGINE)
+		list(APPEND global_includes "${SDK_DIR}/GPA/include")
+		list(APPEND global_links "${SDK_DIR}/GPA/lib64")
 		set(COMMON_LIBS ${COMMON_LIBS} jitprofiling libittnotify)
 	endif()
 else()
@@ -177,23 +163,23 @@ foreach( current_define ${platform_defines} )
 	list(APPEND global_defines "${current_define}")
 endforeach()
 
-if (OPTION_RELEASE_PROFILING)
+if(OPTION_RELEASE_PROFILING)
 	list(APPEND global_defines  "$<$<CONFIG:Release>:PERFORMANCE_BUILD>")
 endif()
-if (OPTION_RELEASE_LOGGING)
+if(OPTION_RELEASE_LOGGING)
 	list(APPEND global_defines  "$<$<CONFIG:Release>:RELEASE_LOGGING>")
 endif()
-if (OPTION_MEMREPLAY_USES_DETOURS)
+if(OPTION_MEMREPLAY_USES_DETOURS)
 	list(APPEND global_defines  MEMREPLAY_USES_DETOURS=1)
 else ()
 	list(APPEND global_defines  MEMREPLAY_USES_DETOURS=0)
 endif ()
 
-if (NOT TARGET WinPixEventRuntime)
+if(NOT TARGET WinPixEventRuntime)
 	include("${TOOLS_CMAKE_DIR}/modules/WinPixEventRuntime.cmake")
 endif()
 
-if (OPTION_ENGINE)
+if(OPTION_ENGINE)
 	if(NOT TARGET SDL2)
 		include("${TOOLS_CMAKE_DIR}/modules/SDL2.cmake")
 	endif()
@@ -226,28 +212,19 @@ set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY COMPILE_DEFINITIONS ${glob
 set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY INCLUDE_DIRECTORIES ${global_includes})
 set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY LINK_DIRECTORIES ${global_links})
 
-if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+if(MSVC_VERSION GREATER 1900) # Visual Studio > 2015
 	set(MSVC_LIB_PREFIX vc140)
-elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+elseif(MSVC_VERSION EQUAL 1900) # Visual Studio 2015
 	set(MSVC_LIB_PREFIX vc140)
-elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
+elseif(MSVC_VERSION EQUAL 1800) # Visual Studio 2013
 	set(MSVC_LIB_PREFIX vc120)
-elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
+elseif(MSVC_VERSION EQUAL 1700) # Visual Studio 2012
 	set(MSVC_LIB_PREFIX "vc110")
 else()
 	set(MSVC_LIB_PREFIX "")
 endif()
 
-#rc
-if (NOT VERSION)
-	if (METADATA_VERSION)
-		set(VERSION ${METADATA_VERSION})
-	else()
-		set(VERSION "1.0.0.0")
-	endif()
-endif()
-set(METADATA_VERSION ${VERSION} CACHE STRING "Version number for executable metadata" FORCE)
-
+# Set the METADATA fields used by `add_metadata` macro from CommonMacros
 if(WINDOWS)
 	if (NOT METADATA_COMPANY)
 		set(METADATA_COMPANY "Crytek GmbH")
