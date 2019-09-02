@@ -35,7 +35,7 @@ public:
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual void             LinkEndPoints() override;
 	virtual const AABB       GetBBox() const override             { return m_WSBBox; }
-	virtual void             SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; m_bNeedToReRegister = true; }
+	virtual void             SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; }
 	virtual void             FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
 	virtual void             OffsetPosition(const Vec3& delta) override;
 
@@ -98,7 +98,6 @@ private:
 	// Flags
 	uint32            m_bModified                 : 1;
 	uint32            m_bRopeCreatedInsideVisArea : 1;
-	uint32            m_bNeedToReRegister         : 1;
 	uint32            m_bStaticPhysics            : 1;
 
 	std::vector<Vec3> m_points;
