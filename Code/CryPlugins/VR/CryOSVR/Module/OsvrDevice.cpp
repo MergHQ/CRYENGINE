@@ -571,9 +571,9 @@ bool Device::InitializeRenderer(void* d3dDevice, void* d3dContext)
 	return bSuccess;
 }
 
-bool Device::PresentTextureSet(int textureSetIndex)
+bool Device::PresentTextureSet(uint64 frameId, int textureSetIndex)
 {
-	this->OnEndFrame();
+	this->OnEndFrame(frameId);
 
 	if (m_renderBufferSets.size() <= textureSetIndex) return false;
 

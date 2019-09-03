@@ -226,7 +226,7 @@ void CView::Update(float frameTime, bool isActive)
 					}
 				}
 			}
-			pHmdDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(q, pos));
+			pHmdDevice->EnableLateCameraInjectionForCurrentFrame(gEnv->pRenderer->GetFrameID(), std::make_pair(q, pos));
 
 			const HmdTrackingState& sensorState = pHmdDevice->GetLocalTrackingState();
 			p = q * sensorState.pose.position;

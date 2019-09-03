@@ -355,7 +355,7 @@ void CD3DOpenVRRenderer::SubmitFrame()
 	}
 
 	// Pass the final images and layer configuration to the OpenVR device
-	m_pOpenVRDevice->SubmitFrame();
+	m_pOpenVRDevice->SubmitFrame(gcpRendD3D->GetRenderFrameID());
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 	gcpRendD3D->m_benchmarkRendererSensor->AfterStereoFrameSubmit();

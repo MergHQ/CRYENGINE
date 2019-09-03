@@ -49,7 +49,7 @@ public:
 
 	// IOpenVRDevice
 	virtual void SubmitOverlay(int id, const RenderLayer::CProperties* pOverlayProperties) override;
-	virtual void SubmitFrame() override;
+	virtual void SubmitFrame(uint64 frameId) override;
 	virtual void OnSetupEyeTargets(ERenderAPI api, ERenderColorSpace colorSpace, void* leftEyeHandle, void* rightEyeHandle) override;
 	// Setup an overlay. Only one overlay can be "highest quality", should be set to the top most overlay which should be used for video/hud.
 	virtual void OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace, void* overlayTextureHandle, const QuatTS &pose, bool absolute, bool highestQuality = false) override;

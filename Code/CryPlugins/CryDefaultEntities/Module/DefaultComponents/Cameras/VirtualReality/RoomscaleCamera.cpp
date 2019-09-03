@@ -56,7 +56,7 @@ namespace Cry
 					if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 					{
 						const auto& worldTranform = m_pEntity->GetWorldTM();
-						pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
+						pDevice->EnableLateCameraInjectionForCurrentFrame(gEnv->pRenderer->GetFrameID(), std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
 
 						const HmdTrackingState& state = pDevice->GetLocalTrackingState();
 						m_camera.SetMatrix(worldTranform * Matrix34::Create(Vec3(1.f), state.pose.orientation, state.pose.position));

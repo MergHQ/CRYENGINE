@@ -144,7 +144,7 @@ void CD3DOsvrRenderer::SubmitFrame()
 	#endif
 
 	// Scene3D layer
-	if (!m_pOsvrDevice->PresentTextureSet(m_currentFrame))
+	if (!m_pOsvrDevice->PresentTextureSet(gcpRendD3D->GetRenderFrameID(), m_currentFrame))
 	{
 		CryLogAlways("[CD3DEOsvrRenderer] failed to present textureset %d!", m_currentFrame);
 	}

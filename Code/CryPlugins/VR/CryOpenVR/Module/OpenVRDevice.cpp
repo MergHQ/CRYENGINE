@@ -780,7 +780,7 @@ void Device::SubmitOverlay(int id, const RenderLayer::CProperties* pOverlayPrope
 }
 
 // -------------------------------------------------------------------------
-void Device::SubmitFrame()
+void Device::SubmitFrame(uint64 frameId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
@@ -820,7 +820,7 @@ void Device::SubmitFrame()
 		m_overlays[id].submitted = false;
 	}
 
-	this->OnEndFrame();
+	this->OnEndFrame(frameId);
 }
 
 // -------------------------------------------------------------------------
@@ -1005,21 +1005,9 @@ void Device::OnPostPresent()
 // -------------------------------------------------------------------------
 stl::optional<Matrix34> Device::RequestAsyncCameraUpdate(uint64_t frameId, const Quat& oq, const Vec3 &op)
 {
-	// Predict time till photons in seconds
-	float secondsSinceLastVsync;
-	m_system->GetTimeSinceLastVsync(&secondsSinceLastVsync, nullptr);
-	float displayFrequency = m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_DisplayFrequency_Float);
-	float frameDuration = 1.f / displayFrequency;
-	float vsyncToPhotons = m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SecondsFromVsyncToPhotons_Float);
-	float timeTillPhotons = frameDuration - secondsSinceLastVsync + vsyncToPhotons;
-
-	const auto trackingOrigin = m_pTrackingOriginCVar->GetIVal() == static_cast<int>(EHmdTrackingOrigin::Standing) ? vr::ETrackingUniverseOrigin::TrackingUniverseStanding : vr::ETrackingUniverseOrigin::TrackingUniverseSeated;
-	vr::TrackedDevicePose_t trackedDevicePoses[vr::k_unMaxTrackedDeviceCount];
-	m_system->GetDeviceToAbsoluteTrackingPose(trackingOrigin, timeTillPhotons, trackedDevicePoses, vr::k_unMaxTrackedDeviceCount);
-
 	for (int i=0;i<vr::k_unMaxTrackedDeviceCount;++i)
 	{
-		const auto& trackedDevicePose = trackedDevicePoses[i];
+		const auto& trackedDevicePose = m_predictedRenderPose[i];
 		if (trackedDevicePose.bPoseIsValid && trackedDevicePose.bDeviceIsConnected)
 		{
 			vr::ETrackedDeviceClass devClass = m_system->GetTrackedDeviceClass(i);

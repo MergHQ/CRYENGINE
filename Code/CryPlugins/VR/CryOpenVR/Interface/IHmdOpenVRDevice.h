@@ -42,7 +42,7 @@ public:
 	virtual void OnSetupOverlay(int id, ERenderAPI api, ERenderColorSpace colorSpace, void* overlayTextureHandle, const QuatTS &pose, bool absolute, bool highestQuality = false) = 0;
 	virtual void OnDeleteOverlay(int id) = 0;
 	virtual void SubmitOverlay(int id, const RenderLayer::CProperties* pOverlayProperties) = 0;
-	virtual void SubmitFrame() = 0;
+	virtual void SubmitFrame(uint64 frameId) = 0;
 	virtual void OnPrepare() = 0;
 	virtual void OnPostPresent() = 0;
 	virtual bool IsActiveOverlay(int id) const = 0;
