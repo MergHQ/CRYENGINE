@@ -706,11 +706,6 @@ void CSystem::ShutDown()
 
 	m_pPlatformOS.reset();
 
-	if (gEnv->pMonoRuntime != nullptr)
-	{
-		gEnv->pMonoRuntime->Shutdown();
-	}
-
 	SAFE_DELETE(m_pUserAnalyticsSystem);
 	if (m_sys_dll_response_system != nullptr)
 	{

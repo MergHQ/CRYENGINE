@@ -24,6 +24,7 @@ struct IManagedPlugin
 	virtual void OnCoreLibrariesDeserialized() = 0;
 	virtual void OnPluginLibrariesDeserialized() = 0;
 	virtual void SetLoadIndex(int order) = 0;
+	virtual void Shutdown() = 0;
 };
 
 struct IMonoListener
