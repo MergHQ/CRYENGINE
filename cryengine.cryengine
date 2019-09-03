@@ -26,6 +26,12 @@
                             "url": "https://download.visualstudio.microsoft.com/download/pr/12390459/045b56eb413191d03850ecc425172a7d/vs_Community.exe",
                             "localdir": "C:/Program Files (x86)/Microsoft Visual Studio/2017",
                             "registryKey": "HKEY_CLASSES_ROOT\\VisualStudio.DTE.15.0"
+                        },
+                        {
+                            "name": "2019",
+                            "url": "https://download.visualstudio.microsoft.com/download/pr/b6a85ca1-3add-4391-9d24-27fea671c700/ea7ec3e24daf9852dabe671a8c8b7131/vs_community.exe",
+                            "localdir": "C:/Program Files (x86)/Microsoft Visual Studio/2019",
+                            "registryKey": "HKEY_CLASSES_ROOT\\VisualStudio.DTE.16.0"
                         }
                     ]
                 },
@@ -37,22 +43,22 @@
                         {
                             "name": "2015 x64",
                             "url": "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe",
-                            "localdir": "C:/Windows/SysWOW64/msvcp140.dll"
+                            "localdir": "C:/Windows/System32/msvcp140.dll"
                         },
                         {
                             "name": "2015 x86",
                             "url": "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x86.exe",
-                            "localdir": "C:/Windows/System32/msvcp140.dll"
+                            "localdir": "C:/Windows/SysWOW64/msvcp140.dll"
                         },
                         {
                             "name": "2013 x64",
                             "url": "http://download.microsoft.com/download/0/5/6/056dcda9-d667-4e27-8001-8a0c6971d6b1/vcredist_x64.exe",
-                            "localdir": "C:/Windows/SysWOW64/msvcp120.dll"
+                            "localdir": "C:/Windows/System32/msvcp120.dll"
                         },
                         {
                             "name": "2013 x86",
                             "url": "http://download.microsoft.com/download/0/5/6/056dcda9-d667-4e27-8001-8a0c6971d6b1/vcredist_x86.exe",
-                            "localdir": "C:/Windows/System32/msvcp120.dll"
+                            "localdir": "C:/Windows/SysWOW64/msvcp120.dll"
                         }
                     ]
                 },
@@ -104,14 +110,14 @@
                     "website": "https://www.audiokinetic.com/download",
                     "optional": true
                 },
-				{
+                {
                     "name": "ADX2 2.19.00",
                     "description": "The ADX2 SDK gives you the power to customize ADX2 to meet your requirements. From the creation of complex sound behaviors to the composition of interactive music, from digital sound processing and mixing to dialogue localization, ADX2 provides all the functions of a full-featured game audio middleware.",
                     "website": "https://www.criware.com/en/products/adx2.html",
                     "optional": true
                 },
                 {
-                    "name": "Oculus Wwise Spatializer 1.39.0",
+                    "name": "Oculus Wwise Spatializer 1.40.0",
                     "description": "A Wwise plugin to let developers add HRTF-based spatialization and room modeling to applications. This is an add-on plugin for the Audiokinetic Wwise toolset that allows monophonic sound sources to be spatialized in 3D relative to the user's head location.",
                     "website": "https://developer.oculus.com/downloads/package/oculus-spatializer-wwise",
                     "optional": true
