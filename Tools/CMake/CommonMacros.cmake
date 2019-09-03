@@ -1295,8 +1295,8 @@ function(add_metadata)
 			"/////////////////////////////////////////////////////////////////////////////\n"
 			"#endif    // not APSTUDIO_INVOKED\n"
 		)
-	target_sources(${THIS_PROJECT} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc")
-	source_group("Resource Files" FILES "${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc")
+		target_sources(${THIS_PROJECT} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc")
+		source_group("Resource Files" FILES "${CMAKE_CURRENT_BINARY_DIR}/${THIS_PROJECT}.autogen.rc")
 	elseif(METADATA_VERSION)
 		string(REPLACE "." ";" VERSION_LIST ${METADATA_VERSION}) 
 		list(GET VERSION_LIST 0 VERSION_MAJOR) 

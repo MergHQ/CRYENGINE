@@ -204,7 +204,7 @@ def generate_csharp_project(
 def generate_cpp_cmakelists(
         project_name, project_file, code_directory, engine_root_directory,
         is_default_project=True):
-    cmakelists_template = Template("cmake_minimum_required (VERSION 3.6.2)\n")
+    cmakelists_template = Template("cmake_minimum_required (VERSION 3.14)\n")
     project_file_name = os.path.basename(project_file)
 
     if is_default_project:
@@ -214,6 +214,7 @@ set(TOOLS_CMAKE_DIR "$${CRYENGINE_DIR}/Tools/CMake")
 set(PROJECT_BUILD 1)
 set(PROJECT_DIR "$${CMAKE_SOURCE_DIR}/../")
 
+include("$${TOOLS_CMAKE_DIR}/InitialSetup.cmake")
 include("$${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 
 add_subdirectory("$${CRYENGINE_DIR}" "$${CMAKE_CURRENT_BINARY_DIR}/CRYENGINE")

@@ -38,9 +38,13 @@ else()
   )
 endif()
 
-set(CLANG_CPP_COMMON_FLAGS
-	-std=c++11
-)
+if(ORBIS)
+	set(CLANG_CPP_COMMON_FLAGS
+		# needed to support C++17 for PS4 due to missing implementations, might be obsolete with later PS4 SDKs
+		-fno-aligned-allocation
+	)
+endif()
+
 string(REPLACE ";" " " CLANG_COMMON_FLAGS     "${CLANG_COMMON_FLAGS}")
 string(REPLACE ";" " " CLANG_CPP_COMMON_FLAGS "${CLANG_CPP_COMMON_FLAGS}")
 

@@ -1,4 +1,3 @@
-include ("${CMAKE_CURRENT_LIST_DIR}/../../CrossPlatformSetup.cmake")
 set(ANDROID TRUE)
 
 # CMake-required settings
