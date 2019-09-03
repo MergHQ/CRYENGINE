@@ -247,7 +247,12 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 
 		if (tabBar()->count() > 1)
 		{
+			// Cache if the menu button is visible. Setting the corner widget will change the parent and in turn
+			// change the menu button's visibility
+			bool isMenuButtonVisible = m_menuButton->isVisible();
 			setCornerWidget(m_menuButton);
+			if (m_menuButton)
+				m_menuButton->setVisible(isMenuButtonVisible);
 		}
 		else if (tabBar()->count() == 1)
 		{
@@ -316,8 +321,23 @@ bool QToolsMenuToolWindowArea::event(QEvent* event)
 std::pair<IPane*, QWidget*> QToolsMenuToolWindowArea::FindIPaneInTabChildren(int tabIndex)
 {
 	std::pair<IPane*, QWidget*> result{ nullptr, nullptr };
+	QWidget* pWidgetAtIndex = widget(tabIndex);
+	QBaseTabPane* pPaneProxy = qobject_cast<QBaseTabPane*>(pWidgetAtIndex);
+	IPane* pPane = qobject_cast<IPane*>(pWidgetAtIndex);
+	if (pPaneProxy)
+	{
+		result.first = pPaneProxy->m_pane;
+		result.second = pPaneProxy;
+		return result;
+	}
+	else if (pPane)
+	{
+		result.first = pPane;
+		result.second = pWidgetAtIndex;
+		return result;
+	}
 
-	for (QObject* object : widget(tabIndex)->children())
+	for (QObject* object : pWidgetAtIndex->children())
 	{
 		QBaseTabPane* pPaneProxy = qobject_cast<QBaseTabPane*>(object);
 		IPane* pPane = qobject_cast<IPane*>(object);
