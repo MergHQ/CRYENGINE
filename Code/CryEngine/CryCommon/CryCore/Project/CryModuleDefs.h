@@ -35,5 +35,6 @@
 #define eCryM_EditorPlugin 28
 #define eCryM_Schematyc2 29
 #define eCryM_UniversalDebugRecordings 30
+#define eCryM_AudioImplPlugin 31
 
-#define eCryM_Num 31
+#define eCryM_Num 32
