@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "SBiquadIIFilterBank.h"
+#include "BiquadIIFilterBank.h"
 #include <AK/SoundEngine/Common/IAkMixerPlugin.h>
 #include <AK/SoundEngine/Common/IAkPluginMemAlloc.h>
 #include <memory>
@@ -34,10 +34,11 @@ struct SAkUserData final
 	explicit SAkUserData()
 		: pVoiceDelayBuffer(nullptr)
 		, voiceDelayPrev(0)
-		, voiceCycleDominantEQ(0)
-		, voiceCycleDominantDelay(0)
-		, lastVolumeDirect(1.0f)
-		, lastVolumeConcealed(1.0f)
+		, voiceCycle(0)
+		, gameAzimuth(0.0f)
+		, gameElevation(0.0f)
+		, quadrant(0)
+		, quadrantFine(0.0f)
 		, inputType(EVoiceType::None)
 		, lastSourceDirection(ESourceDirection::None)
 		, pFilterBankA(nullptr)
@@ -54,11 +55,13 @@ struct SAkUserData final
 	std::unique_ptr<AkAudioBuffer> pVoiceDelayBuffer;
 
 	int                            voiceDelayPrev;
-	int                            voiceCycleDominantEQ;
-	int                            voiceCycleDominantDelay;
+	int                            voiceCycle;
 
-	AkReal32                       lastVolumeDirect;
-	AkReal32                       lastVolumeConcealed;
+	AkReal32                       gameAzimuth;
+	AkReal32                       gameElevation;
+
+	int                            quadrant;
+	float                          quadrantFine;
 
 	EVoiceType                     inputType;
 	ESourceDirection               lastSourceDirection;

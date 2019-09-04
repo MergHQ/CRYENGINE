@@ -2,4 +2,11 @@
 
 #pragma once
 
+#include <CryCore/Project/CryModuleDefs.h>
+#define eCryModule eCryM_AudioImplPlugin
+
+#ifdef _DEBUG
+	#define AK_DISABLE_ASSERTS
+#endif
+
 #define _AFXDLL 1

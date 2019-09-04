@@ -30,6 +30,8 @@ struct SBiquadIIFilterBank final
 	{
 	}
 
+	~SBiquadIIFilterBank() = default;
+
 	BiquadIIFilter filterBand00;
 	BiquadIIFilter filterBand01;
 	BiquadIIFilter filterBand02;

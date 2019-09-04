@@ -32,25 +32,25 @@ public:
 
 	CrySpatialFXAttachmentParams() = default;
 
-	explicit CrySpatialFXAttachmentParams(CrySpatialFXAttachmentParams const& in_rParams);
+	explicit CrySpatialFXAttachmentParams(CrySpatialFXAttachmentParams const& parameters);
 
 	~CrySpatialFXAttachmentParams() = default;
 
 	// Create a duplicate of the parameter node instance in its current state.
-	IAkPluginParam* Clone(AK::IAkPluginMemAlloc* in_pAllocator) override;
+	IAkPluginParam* Clone(AK::IAkPluginMemAlloc* pAllocator) override;
 
 	// Initialize the plug-in parameter node interface.
 	// Initializes the internal parameter structure to default values or with the provided parameter block if it is valid.
-	AKRESULT Init(AK::IAkPluginMemAlloc* in_pAllocator, void const* in_pParamsBlock, AkUInt32 in_ulBlockSize) override;
+	AKRESULT Init(AK::IAkPluginMemAlloc* pAllocator, void const* pParameterBlock, AkUInt32 blockSize) override;
 
 	// Called by the sound engine when a parameter node is terminated.
-	AKRESULT Term(AK::IAkPluginMemAlloc* in_pAllocator) override;
+	AKRESULT Term(AK::IAkPluginMemAlloc* pAllocator) override;
 
 	// Set all plug-in parameters at once using a parameter block.
-	AKRESULT SetParamsBlock(void const* in_pParamsBlock, AkUInt32 in_ulBlockSize) override;
+	AKRESULT SetParamsBlock(void const* pParamsBlock, AkUInt32 blockSize) override;
 
 	// Update a single parameter at a time and perform the necessary actions on the parameter changes.
-	AKRESULT SetParam(AkPluginParamID in_paramID, void const* in_pValue, AkUInt32 in_ulParamSize) override;
+	AKRESULT SetParam(AkPluginParamID parameterId, void const* pValue, AkUInt32 parameterSize) override;
 
 	AK::AkFXParameterChangeHandler<g_numAttachmentParams> m_paramChangeHandler;
 

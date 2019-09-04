@@ -1,16 +1,13 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+
 #include "CrySpatial.h"
 #include "CrySpatialPlugin.h"
 #include "CrySpatialAttachmentPlugin.h"
-#include "CrySpatialConfig.h"
+#include "../SoundEnginePlugin/CrySpatialConfig.h"
 
 #include <AK/Wwise/Utilities.h>
-
-#ifdef _DEBUG
-	#define AK_DISABLE_ASSERTS
-#endif
 #include <AK/Tools/Common/AkAssert.h>
 
 namespace CryAudio
@@ -36,25 +33,23 @@ BOOL CrySpatialApp::InitInstance()
 }
 
 //////////////////////////////////////////////////////////////////////////
-AK::Wwise::IPluginBase* __stdcall AkCreatePlugin(unsigned short in_companyID, unsigned short in_pluginID)
+AK::Wwise::IPluginBase* __stdcall AkCreatePlugin(unsigned short companyID, unsigned short pluginID)
 {
-	if (in_companyID == CrySpatialConfig::CompanyID && in_pluginID == CrySpatialConfig::PluginID)
+	if (companyID == CrySpatialConfig::g_companyID && pluginID == CrySpatialConfig::g_pluginID)
 	{
 		return new CrySpatialPlugin;
 	}
 
-	if (in_companyID == CrySpatialAttachmentConfig::CompanyID && in_pluginID == CrySpatialAttachmentConfig::PluginID)
+	if (companyID == CrySpatialAttachmentConfig::g_companyID && pluginID == CrySpatialAttachmentConfig::g_pluginID)
 	{
 		return new CrySpatialAttachmentPlugin;
 	}
 
 	return nullptr;
 }
-
-}// namespace Plugins
-}// namespace Wwise
-}// namespace Impl
-}// namespace CryAudio
-
+} // namespace Plugins
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio
 DEFINEDUMMYASSERTHOOK;
 DEFINE_PLUGIN_REGISTER_HOOK;

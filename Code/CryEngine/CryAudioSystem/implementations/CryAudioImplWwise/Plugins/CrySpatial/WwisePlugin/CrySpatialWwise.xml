@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 -->
 <!--
 See https://www.audiokinetic.com/library/edge/?source=SDK&id=plugin__xml.html
 for the documentation about the plugin xml format
 -->
 <PluginModule>
-  <MixerPlugin Name="CrySpatial" CompanyID="64" PluginID="1000">
+  <MixerPlugin Name="CrySpatialWwise" CompanyID="137" PluginID="1000">
     <PluginInfo>
       <PlatformSupport>
         <Platform Name="Windows"></Platform>
@@ -15,12 +15,10 @@ for the documentation about the plugin xml format
       </PlatformSupport>
     </PluginInfo>
     <Properties>
-      <!-- Add your property definitions here -->
     </Properties>
     <Attachables>
-      <Attachable Name="AttachableMixerInput" CompanyID="64" PluginID="1001">
+      <Attachable Name="AttachableMixerInput" CompanyID="137" PluginID="1001">
         <Properties>
-          <!-- Add your attachable property definitions here -->
         </Properties>
       </Attachable>
     </Attachables>

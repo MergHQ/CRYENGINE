@@ -6,9 +6,8 @@
 #include "CrySpatialFX.h"
 #include "CrySpatialConfig.h"
 #include "CrySpatialMath.h"
-#include "SAkUserData.h"
+#include "AkUserData.h"
 #include <AK/SoundEngine/Common/IAkPluginMemAlloc.h>
-#include <AK/SoundEngine/Platforms/SSE/AkSimd.h>
 #include <memory>
 #include <algorithm>
 
@@ -20,8 +19,33 @@ namespace Wwise
 {
 namespace Plugins
 {
+AK_IMPLEMENT_PLUGIN_FACTORY(CrySpatialFX, AkPluginTypeMixer, CrySpatialConfig::g_companyID, CrySpatialConfig::g_pluginID)
 
-AK_IMPLEMENT_PLUGIN_FACTORY(CrySpatialFX, AkPluginTypeMixer, CrySpatialConfig::CompanyID, CrySpatialConfig::PluginID)
+//////////////////////////////////////////////////////////////////////////
+AK::IAkPlugin* CreateCrySpatialFX(AK::IAkPluginMemAlloc* pAllocator)
+{
+	return AK_PLUGIN_NEW(pAllocator, CrySpatialFX());
+}
+
+//////////////////////////////////////////////////////////////////////////
+AK::IAkPluginParam* CreateCrySpatialFXParams(AK::IAkPluginMemAlloc* pAllocator)
+{
+	return AK_PLUGIN_NEW(pAllocator, CrySpatialFXParams());
+}
+
+//////////////////////////////////////////////////////////////////////////
+AK::IAkPluginParam* CreateCrySpatialFXAttachmentParams(AK::IAkPluginMemAlloc* pAllocator)
+{
+	return AK_PLUGIN_NEW(pAllocator, CrySpatialFXAttachmentParams());
+}
+
+//////////////////////////////////////////////////////////////////////////
+AK::PluginRegistration CrySpatialFXAttachmentParamsRegistration(
+	AkPluginTypeEffect,
+	CrySpatialAttachmentConfig::g_companyID,
+	CrySpatialAttachmentConfig::g_pluginID,
+	nullptr,
+	CreateCrySpatialFXAttachmentParams);
 
 //////////////////////////////////////////////////////////////////////////
 float CrySpatialFX::DecibelToVolume(float const decibel)
@@ -36,34 +60,34 @@ float CrySpatialFX::VolumeToDecibel(float const volume)
 }
 
 //////////////////////////////////////////////////////////////////////////
-float CrySpatialFX::ComputeFade(float const volumeFactor, float const strength = 1.5f, EFadeType fadeType = EFadeType::FadeinHyperbole)
+float CrySpatialFX::ComputeFade(float const volumeFactor, float const strength = 1.5f, EFadeType const fadeType = EFadeType::FadeinHyperbole)
 {
 	float returnVolume = 0.0f;
 	switch (fadeType)
 	{
 	case EFadeType::FadeinHyperbole:
 		{
-			returnVolume = (powf(/*euler*/ 2.718f, (strength * (volumeFactor - 1))) * volumeFactor);
+			returnVolume = (powf(g_euler, (strength * (volumeFactor - 1.0f))) * volumeFactor);
 			break;
 		}
 	case EFadeType::FadeoutHyperbole:
 		{
-			returnVolume = (powf(/*euler*/ 2.718f, (strength * (-volumeFactor))) * (-volumeFactor + 1));
+			returnVolume = (powf(g_euler, (strength * (-volumeFactor))) * (-volumeFactor + 1.0f));
 			break;
 		}
 	case EFadeType::FadeinLogarithmic:
 		{
-			returnVolume = (powf(/*euler*/ 2.718f, (strength * (-volumeFactor))) * (volumeFactor - 1)) + 1;
+			returnVolume = (powf(g_euler, (strength * (-volumeFactor))) * (volumeFactor - 1.0f)) + 1.0f;
 			break;
 		}
 	case EFadeType::FadeoutLogarithmic:
 		{
-			returnVolume = (powf(/*euler*/ 2.718f, (strength * (volumeFactor - 1))) * (-volumeFactor)) + 1;
+			returnVolume = (powf(g_euler, (strength * (volumeFactor - 1.0f))) * (-volumeFactor)) + 1.0f;
 			break;
 		}
 	default:  // EFadeType::FadeinHyperbole
 		{
-			returnVolume = (powf(/*euler*/ 2.718f, (strength * (volumeFactor - 1))) * volumeFactor);
+			returnVolume = (powf(g_euler, (strength * (volumeFactor - 1.0f))) * volumeFactor);
 			break;
 		}
 	}
@@ -72,66 +96,40 @@ float CrySpatialFX::ComputeFade(float const volumeFactor, float const strength =
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::ComputeQuadrant()
+void CrySpatialFX::ComputeQuadrant(AkReal32 const gameAzimuth, int& outQuadrant, float& outQuadrantFine)
 {
-	float bigAzimuth = 0.0f;
-	auto smallAzimuth = static_cast<float>(fabs(static_cast<AkReal64>(m_gameAzimuth) / g_piHalf));
-	smallAzimuth = modff(smallAzimuth, &bigAzimuth);
+	float quadrant = 0.0f;
+	auto quadrantFine = static_cast<float>(fabs(gameAzimuth / static_cast<AkReal32>(g_piHalf)));
+	quadrantFine = modff(quadrantFine, &quadrant);
 
-	if (m_gameAzimuth < 0.0f)
+	if (gameAzimuth < 0.0f)
 	{
-		bigAzimuth = (bigAzimuth == 0.0f) ? 3.0f : 2.0f;
+		quadrant = (quadrant == 0.0f) ? 3.0f : 2.0f;
 	}
 
-	m_quadrant = static_cast<int>(bigAzimuth);
-	m_quadrantFine = smallAzimuth;
+	outQuadrant = static_cast<int>(quadrant);
+	outQuadrantFine = quadrantFine;
 }
-
-//////////////////////////////////////////////////////////////////////////
-AK::IAkPlugin* CreateCrySpatialFX(AK::IAkPluginMemAlloc* in_pAllocator)
-{
-	return AK_PLUGIN_NEW(in_pAllocator, CrySpatialFX());
-}
-
-//////////////////////////////////////////////////////////////////////////
-AK::IAkPluginParam* CreateCrySpatialFXParams(AK::IAkPluginMemAlloc* in_pAllocator)
-{
-	return AK_PLUGIN_NEW(in_pAllocator, CrySpatialFXParams());
-}
-
-//////////////////////////////////////////////////////////////////////////
-AK::IAkPluginParam* CreateCrySpatialFXAttachmentParams(AK::IAkPluginMemAlloc* in_pAllocator)
-{
-	return AK_PLUGIN_NEW(in_pAllocator, CrySpatialFXAttachmentParams());
-}
-
-//////////////////////////////////////////////////////////////////////////
-AK::PluginRegistration CrySpatialFXAttachmentParamsRegistration(
-	AkPluginTypeEffect,
-	CrySpatialAttachmentConfig::CompanyID,
-	CrySpatialAttachmentConfig::PluginID,
-	nullptr,
-	CreateCrySpatialFXAttachmentParams);
 
 //////////////////////////////////////////////////////////////////////////
 AKRESULT CrySpatialFX::Init(
-	AK::IAkPluginMemAlloc* in_pAllocator,
-	AK::IAkMixerPluginContext* in_pContext,
-	AK::IAkPluginParam* in_pParams,
-	AkAudioFormat& in_rFormat)
+	AK::IAkPluginMemAlloc* pAllocator,
+	AK::IAkMixerPluginContext* pContext,
+	AK::IAkPluginParam* pParams,
+	AkAudioFormat& audioFormat)
 {
-	m_pParams = (CrySpatialFXParams*)in_pParams;
-	m_pAllocator = in_pAllocator;
-	m_pContext = in_pContext;
-	m_numOutputChannels = in_rFormat.GetNumChannels();
-	m_sampleRate = static_cast<float>(in_pContext->GlobalContext()->GetSampleRate()); //!< float for calculations with int
+	m_pParams = (CrySpatialFXParams*)pParams;
+	m_pAllocator = pAllocator;
+	m_pContext = pContext;
+	m_numOutputChannels = audioFormat.GetNumChannels();
+	m_sampleRate = static_cast<float>(pContext->GlobalContext()->GetSampleRate());
 
 	AkAudioSettings settings;
-	in_pContext->GlobalContext()->GetAudioSettings(settings);
+	pContext->GlobalContext()->GetAudioSettings(settings);
 	m_bufferSize = settings.uNumSamplesPerFrame;
 
-	m_pIntermediateBufferDirect = static_cast<AkSampleType*>(AK_PLUGIN_ALLOC(m_pAllocator, sizeof(AkSampleType) * m_bufferSize));
-	AKPLATFORM::AkMemSet(m_pIntermediateBufferDirect, 0, sizeof(AkSampleType) * m_bufferSize);
+	m_pBufferConcealed = static_cast<AkSampleType*>(AK_PLUGIN_ALLOC(m_pAllocator, sizeof(AkSampleType) * m_bufferSize));
+	AKPLATFORM::AkMemSet(m_pBufferConcealed, 0, sizeof(AkSampleType) * m_bufferSize);
 
 	m_pIntermediateBufferConcealed = static_cast<AkSampleType*>(AK_PLUGIN_ALLOC(m_pAllocator, sizeof(AkSampleType) * m_bufferSize));
 	AKPLATFORM::AkMemSet(m_pIntermediateBufferConcealed, 0, sizeof(AkSampleType) * m_bufferSize);
@@ -140,20 +138,20 @@ AKRESULT CrySpatialFX::Init(
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CrySpatialFX::Term(AK::IAkPluginMemAlloc* in_pAllocator)
+AKRESULT CrySpatialFX::Term(AK::IAkPluginMemAlloc* pAllocator)
 {
+	AK_PLUGIN_FREE(m_pAllocator, m_pBufferConcealed);
 	AK_PLUGIN_FREE(m_pAllocator, m_pIntermediateBufferConcealed);
-	AK_PLUGIN_FREE(m_pAllocator, m_pIntermediateBufferDirect);
 
-	for (SAkUserData* const pVar : m_activeUserData)
+	for (SAkUserData* const pUserData : m_activeUserData)
 	{
-		AK_PLUGIN_FREE(m_pAllocator, pVar->pVoiceDelayBuffer->GetChannel(0));
-		delete pVar;
+		AK_PLUGIN_FREE(m_pAllocator, pUserData->pVoiceDelayBuffer->GetChannel(0));
+		delete pUserData;
 	}
 
 	m_activeUserData.clear();
 
-	AK_PLUGIN_DELETE(in_pAllocator, this);
+	AK_PLUGIN_DELETE(pAllocator, this);
 
 	return AK_Success;
 }
@@ -165,82 +163,82 @@ AKRESULT CrySpatialFX::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CrySpatialFX::GetPluginInfo(AkPluginInfo& out_rPluginInfo)
+AKRESULT CrySpatialFX::GetPluginInfo(AkPluginInfo& outPluginInfo)
 {
-	out_rPluginInfo.eType = AkPluginTypeMixer;
-	out_rPluginInfo.bIsInPlace = true;
-	out_rPluginInfo.uBuildVersion = AK_WWISESDK_VERSION_COMBINED;
+	outPluginInfo.eType = AkPluginTypeMixer;
+	outPluginInfo.bIsInPlace = true;
+	outPluginInfo.uBuildVersion = AK_WWISESDK_VERSION_COMBINED;
 	return AK_Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::OnInputConnected(AK::IAkMixerInputContext* in_pInput)
+void CrySpatialFX::OnInputConnected(AK::IAkMixerInputContext* pInput)
 {
-	SAkUserData* userData = new SAkUserData();
+	SAkUserData* pUserData = new SAkUserData();
 
 	// DelayBuffer Allocation
-	AkChannelConfig cfg;
-	cfg.SetStandard(AK_SPEAKER_SETUP_MONO);
+	AkChannelConfig channelConfiguration;
+	channelConfiguration.SetStandard(AK_SPEAKER_SETUP_MONO);
 
 	{
 		std::unique_ptr<AkAudioBuffer> pDelayBuffer = std::make_unique<AkAudioBuffer>();
 		m_pMemAlloc = (AkSampleType*)(AK_PLUGIN_ALLOC(m_pAllocator, sizeof(AkSampleType) * m_delayBufferSize));
-		pDelayBuffer->AttachContiguousDeinterleavedData(m_pMemAlloc, m_delayBufferSize, 0, cfg);
+		pDelayBuffer->AttachContiguousDeinterleavedData(m_pMemAlloc, m_delayBufferSize, 0, channelConfiguration);
 		pDelayBuffer->ZeroPadToMaxFrames();
 		pDelayBuffer->uValidFrames = pDelayBuffer->MaxFrames();
-		userData->pVoiceDelayBuffer = std::move(pDelayBuffer);
+		pUserData->pVoiceDelayBuffer = std::move(pDelayBuffer);
 	}
 
 	// Setup FilterBanks
 	{
 		float const sampleRate = m_sampleRate;
-		userData->pFilterBankA = new SBiquadIIFilterBank(sampleRate);
-		userData->pFilterBankB = new SBiquadIIFilterBank(sampleRate);
+		pUserData->pFilterBankA = new SBiquadIIFilterBank(sampleRate);
+		pUserData->pFilterBankB = new SBiquadIIFilterBank(sampleRate);
 	}
 
 	AkEmitterListenerPair emitterListener;
 
-	if (in_pInput->HasListenerRelativeRouting())
+	if (pInput->HasListenerRelativeRouting())
 	{
 		// Set Azimuth and Elevation
-		in_pInput->Get3DPosition(0, emitterListener);
-		m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, m_gameAzimuth, m_gameElevation);
+		pInput->Get3DPosition(0, emitterListener);
+		m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, pUserData->gameAzimuth, pUserData->gameElevation);
 
-		userData->lastSourceDirection = (m_gameAzimuth > 0) ? ESourceDirection::Right : ESourceDirection::Left;
-		userData->inputType = EVoiceType::IsSpatialized;
+		pUserData->lastSourceDirection = (pUserData->gameAzimuth > 0) ? ESourceDirection::Right : ESourceDirection::Left;
+		pUserData->inputType = EVoiceType::IsSpatialized;
 	}
 	else
 	{
-		userData->inputType = EVoiceType::NotSpatialized;
+		pUserData->inputType = EVoiceType::NotSpatialized;
 	}
 
-	in_pInput->SetUserData(userData);
-	m_activeUserData.push_back(userData);
+	pInput->SetUserData(pUserData);
+	m_activeUserData.push_back(pUserData);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::OnInputDisconnected(AK::IAkMixerInputContext* in_pInput)
+void CrySpatialFX::OnInputDisconnected(AK::IAkMixerInputContext* pInput)
 {
-	SAkUserData* const userData = static_cast<SAkUserData*>(in_pInput->GetUserData());
-	AK_PLUGIN_FREE(m_pAllocator, userData->pVoiceDelayBuffer->GetChannel(0));
+	SAkUserData* const pUserData = static_cast<SAkUserData*>(pInput->GetUserData());
+	AK_PLUGIN_FREE(m_pAllocator, pUserData->pVoiceDelayBuffer->GetChannel(0));
 	m_activeUserData.erase(
-		std::remove_if(m_activeUserData.begin(), m_activeUserData.end(), [userData](SAkUserData* const element) { return element == userData; }),
+		std::remove_if(m_activeUserData.begin(), m_activeUserData.end(), [pUserData](SAkUserData* const element) { return element == pUserData; }),
 		m_activeUserData.end());
 
-	delete userData;
+	delete pUserData;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CrySpatialFX::ConsumeInput(
-	AK::IAkMixerInputContext* in_pInputContext,
-	AkRamp in_baseVolume,
-	AkRamp in_emitListVolume,
-	AkAudioBuffer* io_pInputBuffer,
-	AkAudioBuffer* io_pMixBuffer)
+	AK::IAkMixerInputContext* pInputContext,
+	AkRamp baseVolume,
+	AkRamp emitterListenerVolume,
+	AkAudioBuffer* pInputBuffer,
+	AkAudioBuffer* pMixBuffer)
 {
-	SAkUserData const* const userData = static_cast<SAkUserData const*>(in_pInputContext->GetUserData());
+	SAkUserData const* const pUserData = static_cast<SAkUserData const*>(pInputContext->GetUserData());
 
-	switch (userData->inputType)
+	switch (pUserData->inputType)
 	{
 	case EVoiceType::IsSpatialized:
 		{
@@ -248,34 +246,34 @@ void CrySpatialFX::ConsumeInput(
 			{
 			case 2:
 				{
-					HRTF_MonoToStereo(
-						in_pInputContext,
-						in_baseVolume,
-						in_emitListVolume,
-						io_pInputBuffer,
-						io_pMixBuffer);
+					HrtfMonoToBinaural(
+						pInputContext,
+						baseVolume,
+						emitterListenerVolume,
+						pInputBuffer,
+						pMixBuffer);
 
 					break;
 				}
 			case 6:
 				{
-					HRTF_MonoTo5_1(
-						in_pInputContext,
-						in_baseVolume,
-						in_emitListVolume,
-						io_pInputBuffer,
-						io_pMixBuffer);
+					HrtfMonoTo5_1(
+						pInputContext,
+						baseVolume,
+						emitterListenerVolume,
+						pInputBuffer,
+						pMixBuffer);
 
 					break;
 				}
 			case 8:
 				{
-					HRTF_MonoTo7_1(
-						in_pInputContext,
-						in_baseVolume,
-						in_emitListVolume,
-						io_pInputBuffer,
-						io_pMixBuffer);
+					HrtfMonoTo7_1(
+						pInputContext,
+						baseVolume,
+						emitterListenerVolume,
+						pInputBuffer,
+						pMixBuffer);
 
 					break;
 				}
@@ -289,12 +287,12 @@ void CrySpatialFX::ConsumeInput(
 		}
 	case EVoiceType::NotSpatialized:
 		{
-			NonHRTF_StereoToStereo(
-				in_pInputContext,
-				in_baseVolume,
-				in_emitListVolume,
-				io_pInputBuffer,
-				io_pMixBuffer);
+			NonHrtfStereoToStereo(
+				pInputContext,
+				baseVolume,
+				emitterListenerVolume,
+				pInputBuffer,
+				pMixBuffer);
 
 			break;
 		}
@@ -306,18 +304,18 @@ void CrySpatialFX::ConsumeInput(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::OnMixDone(AkAudioBuffer* io_pMixBuffer)
+void CrySpatialFX::OnMixDone(AkAudioBuffer* pMixBuffer)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::OnEffectsProcessed(AkAudioBuffer* io_pMixBuffer)
+void CrySpatialFX::OnEffectsProcessed(AkAudioBuffer* pMixBuffer)
 {
 	// Execute DSP after insert effects have been processed here
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::OnFrameEnd(AkAudioBuffer* io_pMixBuffer, AK::IAkMetering* in_pMetering)
+void CrySpatialFX::OnFrameEnd(AkAudioBuffer* pMixBuffer, AK::IAkMetering* pMetering)
 {
 	// Execute DSP after metering has been processed here
 }
@@ -335,7 +333,7 @@ void CrySpatialFX::FillDelayBuffer(AkSampleType* pInChannelDelayBuffer, AkSample
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::HRTF_MonoToStereo(
+void CrySpatialFX::HrtfMonoToBinaural(
 	AK::IAkMixerInputContext* const pInputContext,
 	AkRamp const baseVolume,
 	AkRamp const busVolume,
@@ -343,100 +341,74 @@ void CrySpatialFX::HRTF_MonoToStereo(
 	AkAudioBuffer* pMixBuffer)
 {
 	pInputBuffer->ZeroPadToMaxFrames();
-	AkRamp const loudnessMatch(DecibelToVolume(-3.0f), DecibelToVolume(-3.0f));
 
-	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	SAkUserData* const pUserData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	AkReal32& gameAzimuth = pUserData->gameAzimuth;
+	AkReal32& gameElevation = pUserData->gameElevation;
 
 	int const inputValidFrames = pInputBuffer->uValidFrames;
-	int const cycleProxy = userData->voiceCycleDominantEQ;
+	int const cycleProxy = pUserData->voiceCycle;
 
 	// Set Azimuth and Elevation
 	AkEmitterListenerPair emitterListener;
 	pInputContext->Get3DPosition(0, emitterListener);
-	m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, m_gameAzimuth, m_gameElevation);
+	m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, gameAzimuth, gameElevation);
 
 	// Clamp Azimuth and Elevation in case data from game is faulty
-	if (m_gameAzimuth > g_pi)
+	if (gameAzimuth > g_pi)
 	{
-		m_gameAzimuth = g_pi;
+		gameAzimuth = g_pi;
 	}
 
-	if (m_gameAzimuth < (-g_pi))
+	if (gameAzimuth < (-g_pi))
 	{
-		m_gameAzimuth = (-g_pi);
+		gameAzimuth = (-g_pi);
 	}
 
-	if (m_gameElevation > 1.0f)
+	if (gameElevation > g_piHalf)
 	{
-		m_gameElevation = 1.0f;
+		gameElevation = g_piHalf;
 	}
 
-	if (m_gameElevation < -1.0f)
+	if (gameElevation < -g_piHalf)
 	{
-		m_gameElevation = -1.0f;
+		gameElevation = -g_piHalf;
 	}
 
-	ComputeQuadrant();
+	ComputeQuadrant(gameAzimuth, pUserData->quadrant, pUserData->quadrantFine);
 
-	ESourceDirection const sourceDirection = (m_gameAzimuth > 0) ? ESourceDirection::Right : ESourceDirection::Left;
+	ESourceDirection const sourceDirection = (gameAzimuth > 0) ? ESourceDirection::Right : ESourceDirection::Left;
 
-	float compensationalFilterVolume = 1.0f;
-	EQInputBuffer(pInputContext, pInputBuffer, compensationalFilterVolume);
+	FilterBuffers(pInputContext, pInputBuffer, m_pIntermediateBufferConcealed, sourceDirection);
 
-	userData->voiceCycleDominantEQ = (userData->voiceCycleDominantEQ == 0) ? 2 : (userData->voiceCycleDominantEQ == 1) ? 2 : 1;
+	pUserData->voiceCycle = (pUserData->voiceCycle == 0) ? 2 : (pUserData->voiceCycle == 1) ? 2 : 1;
 
 	// Compute Delay, Volume difference & EQ Gain for delayed Channel
 	int delayCurrent = 0;
-	AkReal32 volumeFactor = 0.0f;
-	float sideEQGain = 0.0f;
-	ComputeDelayChannelData(volumeFactor, delayCurrent, sideEQGain);
-
-	// Fade strength to be relative to correlation through delay
-	m_bufferFadeStrength = (abs(userData->voiceDelayPrev - delayCurrent) / m_maxDelay) * 1.0f /*This is intentional for tweaking*/;
+	ComputeDelayChannelData(gameElevation, pUserData->quadrant, pUserData->quadrantFine, delayCurrent);
 
 	{
-		// Construct internal Buffers
-		AkSampleType* pInChannelDirect = pInputBuffer->GetChannel(0);
-		AkSampleType* pDelChannelDirect = userData->pVoiceDelayBuffer->GetChannel(0);
-		AkSampleType* pOutChannelDirect = m_pIntermediateBufferDirect;
+		// Fade strength to be relative to correlation through delay
+		m_bufferFadeStrength = static_cast<float>(abs(pUserData->voiceDelayPrev - delayCurrent)) / static_cast<float>(m_maxDelay);
 
-		FillIntermediateBufferDirect(
-			pInChannelDirect,
+		AkSampleType* pDelChannelDirect = pUserData->pVoiceDelayBuffer->GetChannel(0);
+
+		DelayAndFadeBuffers(
+			m_pIntermediateBufferConcealed,
+			m_pBufferConcealed,
+			pInputBuffer->GetChannel(0),
 			pDelChannelDirect,
-			pOutChannelDirect,
-			userData,
-			m_bufferSize,
-			sourceDirection);
-
-		AkSampleType* pInChannelConcealed = pInputBuffer->GetChannel(0);
-		AkSampleType* pDelChannelConcealed = userData->pVoiceDelayBuffer->GetChannel(0);
-		AkSampleType* pOutChannelConcealed = m_pIntermediateBufferConcealed;
-
-		FillIntermediateBufferConcealed(
-			pInChannelConcealed,
-			pDelChannelConcealed,
-			pOutChannelConcealed,
-			userData,
+			pUserData,
 			delayCurrent,
 			m_bufferSize,
 			sourceDirection);
 
-		AkSampleType* pInChannelDelayBuffer = pInputBuffer->GetChannel(0);
-		AkSampleType* pOutChannelDelayBuffer = userData->pVoiceDelayBuffer->GetChannel(0);
-		FillDelayBuffer(pInChannelDelayBuffer, pOutChannelDelayBuffer, delayCurrent);
-
-		userData->pVoiceDelayBuffer->uValidFrames = (delayCurrent == 0) ? 0 : delayCurrent;
+		pUserData->pVoiceDelayBuffer->uValidFrames = (delayCurrent == 0) ? 0 : delayCurrent;
 	}
 
-	EQConcealedChannel(pInputContext, cycleProxy, inputValidFrames, sourceDirection);
-	EQDirectChannel(pInputContext, cycleProxy, inputValidFrames, sourceDirection);
-
 	// Calculate Volume for Left and Right Channel
-	AkRamp localbaseVolume = baseVolume * busVolume;
-	AkRamp const compensationalFilterVolumeRamp(compensationalFilterVolume, compensationalFilterVolume);
-
-	localbaseVolume *= loudnessMatch;
-	// localbaseVolume *= compensationalFilterVolumeRamp;
+	AkRamp const loudnessMatch(DecibelToVolume(-3.0f), DecibelToVolume(-3.0f));
+	AkRamp const localbaseVolume = baseVolume * busVolume * loudnessMatch;
 
 	// Mix into OutBuffer
 	int channelNoDelay;
@@ -463,35 +435,36 @@ void CrySpatialFX::HRTF_MonoToStereo(
 	}
 
 	m_pContext->GlobalContext()->MixChannel(
-		m_pIntermediateBufferDirect,
+		pInputBuffer->GetChannel(0),
 		pMixBuffer->GetChannel(channelNoDelay),
 		localbaseVolume.fPrev,
 		localbaseVolume.fNext,
 		inputValidFrames);
 
 	m_pContext->GlobalContext()->MixChannel(
-		m_pIntermediateBufferConcealed,
+		m_pBufferConcealed,
 		pMixBuffer->GetChannel(channelDelay),
 		localbaseVolume.fPrev,
 		localbaseVolume.fNext,
 		inputValidFrames);
 
 	pMixBuffer->uValidFrames = inputValidFrames;
-
-	// Write Data
-	userData->voiceDelayPrev = delayCurrent;
-	userData->lastSourceDirection = sourceDirection;
+	pUserData->voiceDelayPrev = delayCurrent;
+	pUserData->lastSourceDirection = sourceDirection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::HRTF_MonoTo5_1(
+void CrySpatialFX::HrtfMonoTo5_1(
 	AK::IAkMixerInputContext* const pInputContext,
 	AkRamp const baseVolume,
 	AkRamp const busVolume,
 	AkAudioBuffer* pInputBuffer,
 	AkAudioBuffer* pMixBuffer)
 {
-	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	SAkUserData* const pUserData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	AkReal32& gameAzimuth = pUserData->gameAzimuth;
+	AkReal32& gameElevation = pUserData->gameElevation;
+
 	pInputBuffer->ZeroPadToMaxFrames();
 
 	AkRamp const localbaseVolume = baseVolume * busVolume;
@@ -503,41 +476,43 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 	// Set Azimuth and Elevation
 	AkEmitterListenerPair emitterListener;
 	pInputContext->Get3DPosition(0, emitterListener);
-	m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, m_gameAzimuth, m_gameElevation);
+	m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, gameAzimuth, gameElevation);
 
 	// Clamp azimuth and elevation in case data from game is faulty
-	if (m_gameAzimuth > g_pi)
+	if (gameAzimuth > g_pi)
 	{
-		m_gameAzimuth = g_pi;
+		gameAzimuth = g_pi;
 	}
 
-	if (m_gameAzimuth < (-g_pi))
+	if (gameAzimuth < (-g_pi))
 	{
-		m_gameAzimuth = (-g_pi);
+		gameAzimuth = (-g_pi);
 	}
 
-	if (m_gameElevation > 1.0f)
+	if (gameElevation > g_piHalf)
 	{
-		m_gameElevation = 1.0f;
+		gameElevation = g_piHalf;
 	}
 
-	if (m_gameElevation < -1.0f)
+	if (gameElevation < -g_piHalf)
 	{
-		m_gameElevation = -1.0f;
+		gameElevation = -g_piHalf;
 	}
 
-	ComputeQuadrant();
+	int& quadrant = pUserData->quadrant;
+	float& quadrantFine = pUserData->quadrantFine;
+	ComputeQuadrant(gameAzimuth, quadrant, quadrantFine);
 
 	float filterVolume = 0.0f;
 	int filterFrequency = 800;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 2:   // fall through
 	case 1:
 		{
-			filterVolume = (m_quadrantFine * (-5.0f));
-			filterFrequency -= static_cast<int>(m_quadrantFine * 200);
+			filterVolume = (quadrantFine * (-5.0f));
+			filterFrequency -= static_cast<int>(quadrantFine * 200);
 			break;
 		}
 	default:
@@ -548,26 +523,26 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 
 	// Filter Sources behind Listener
 	{
-		BiquadIIFilter* pFilterDominant = &userData->pFilterBankB->filterBand11; // FilterDominant
-		BiquadIIFilter* pFilterResidual = &userData->pFilterBankA->filterBand11; // FilterResidual
+		BiquadIIFilter* pFilterDominant = &pUserData->pFilterBankB->filterBand11; // FilterDominant
+		BiquadIIFilter* pFilterResidual = &pUserData->pFilterBankA->filterBand11; // FilterResidual
 
-		switch (userData->voiceCycleDominantDelay)
+		switch (pUserData->voiceCycle)
 		{
 		case 0:
 			{
-				pFilterDominant = &userData->pFilterBankA->filterBand11;
+				pFilterDominant = &pUserData->pFilterBankA->filterBand11;
 				break;
 			}
 		case 1:
 			{
-				pFilterDominant = &userData->pFilterBankA->filterBand11;
-				pFilterResidual = &userData->pFilterBankB->filterBand11;
+				pFilterDominant = &pUserData->pFilterBankA->filterBand11;
+				pFilterResidual = &pUserData->pFilterBankB->filterBand11;
 				break;
 			}
 		case 2:
 			{
-				pFilterDominant = &userData->pFilterBankB->filterBand11;
-				pFilterResidual = &userData->pFilterBankA->filterBand11;
+				pFilterDominant = &pUserData->pFilterBankB->filterBand11;
+				pFilterResidual = &pUserData->pFilterBankA->filterBand11;
 				break;
 			}
 		default:
@@ -581,7 +556,7 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 
 		int const inputValidFrames = pInputBuffer->uValidFrames;
 
-		switch (userData->voiceCycleDominantDelay)
+		switch (pUserData->voiceCycle)
 		{
 		case 0:
 			{
@@ -599,7 +574,7 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 					++pChannelInPlace;
 				}
 
-				userData->voiceCycleDominantDelay = 2;
+				pUserData->voiceCycle = 2;
 				break;
 			}
 		case 1:   // Fall through
@@ -625,7 +600,7 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 					++pChannelInPlace;
 				}
 
-				userData->voiceCycleDominantDelay = (userData->voiceCycleDominantDelay == 2) ? 1 : 2;
+				pUserData->voiceCycle = (pUserData->voiceCycle == 2) ? 1 : 2;
 				break;
 			}
 		default:
@@ -648,14 +623,17 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::HRTF_MonoTo7_1(
+void CrySpatialFX::HrtfMonoTo7_1(
 	AK::IAkMixerInputContext* const pInputContext,
 	AkRamp const baseVolume,
 	AkRamp const busVolume,
 	AkAudioBuffer* pInputBuffer,
 	AkAudioBuffer* pMixBuffer)
 {
-	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	SAkUserData* const pUserData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	AkReal32& gameAzimuth = pUserData->gameAzimuth;
+	AkReal32& gameElevation = pUserData->gameElevation;
+
 	pInputBuffer->ZeroPadToMaxFrames();
 
 	AkRamp const localbaseVolume = baseVolume * busVolume;
@@ -667,42 +645,44 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 	// Set Azimuth and Elevation
 	AkEmitterListenerPair emitterListener;
 	pInputContext->Get3DPosition(0, emitterListener);
-	m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, m_gameAzimuth, m_gameElevation);
+	m_pContext->GlobalContext()->ComputeSphericalCoordinates(emitterListener, gameAzimuth, gameElevation);
 
 	// Clamp azimuth and elevation in case data from game is faulty
-	if (m_gameAzimuth > g_pi)
+	if (gameAzimuth > g_pi)
 	{
-		m_gameAzimuth = g_pi;
+		gameAzimuth = g_pi;
 	}
 
-	if (m_gameAzimuth < (-g_pi))
+	if (gameAzimuth < (-g_pi))
 	{
-		m_gameAzimuth = (-g_pi);
+		gameAzimuth = (-g_pi);
 	}
 
-	if (m_gameElevation > 1.0f)
+	if (gameElevation > g_piHalf)
 	{
-		m_gameElevation = 1.0f;
+		gameElevation = g_piHalf;
 	}
 
-	if (m_gameElevation < -1.0f)
+	if (gameElevation < -g_piHalf)
 	{
-		m_gameElevation = -1.0f;
+		gameElevation = -g_piHalf;
 	}
 
-	ComputeQuadrant();
+	int& quadrant = pUserData->quadrant;
+	float& quadrantFine = pUserData->quadrantFine;
+	ComputeQuadrant(pUserData->gameAzimuth, quadrant, quadrantFine);
 
 	// filter sources behind Listener
 	float filterVolume = 0.0f;
 	int filterFrequency = 800;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 2:   // fall through
 	case 1:
 		{
-			filterVolume = (m_quadrantFine * (-5.0f));
-			filterFrequency -= static_cast<int>(m_quadrantFine * 200);
+			filterVolume = (quadrantFine * (-5.0f));
+			filterFrequency -= static_cast<int>(quadrantFine * 200);
 			break;
 		}
 	default:
@@ -712,26 +692,26 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 	}
 
 	{
-		BiquadIIFilter* pFilterDominant = &userData->pFilterBankB->filterBand11; // FilterDominant
-		BiquadIIFilter* pFilterResidual = &userData->pFilterBankA->filterBand11; // FilterResidual
+		BiquadIIFilter* pFilterDominant = &pUserData->pFilterBankB->filterBand11; // FilterDominant
+		BiquadIIFilter* pFilterResidual = &pUserData->pFilterBankA->filterBand11; // FilterResidual
 
-		switch (userData->voiceCycleDominantDelay)
+		switch (pUserData->voiceCycle)
 		{
 		case 0:
 			{
-				pFilterDominant = &userData->pFilterBankA->filterBand11;
+				pFilterDominant = &pUserData->pFilterBankA->filterBand11;
 				break;
 			}
 		case 1:
 			{
-				pFilterDominant = &userData->pFilterBankA->filterBand11;
-				pFilterResidual = &userData->pFilterBankB->filterBand11;
+				pFilterDominant = &pUserData->pFilterBankA->filterBand11;
+				pFilterResidual = &pUserData->pFilterBankB->filterBand11;
 				break;
 			}
 		case 2:
 			{
-				pFilterDominant = &userData->pFilterBankB->filterBand11;
-				pFilterResidual = &userData->pFilterBankA->filterBand11;
+				pFilterDominant = &pUserData->pFilterBankB->filterBand11;
+				pFilterResidual = &pUserData->pFilterBankA->filterBand11;
 				break;
 			}
 		default:
@@ -746,7 +726,7 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 
 		int inputValidFrames = pInputBuffer->uValidFrames;
 
-		switch (userData->voiceCycleDominantDelay)
+		switch (pUserData->voiceCycle)
 		{
 		case 0:
 			{
@@ -764,7 +744,7 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 					++pChannelInPlace;
 				}
 
-				userData->voiceCycleDominantDelay = 2;
+				pUserData->voiceCycle = 2;
 				break;
 			}
 		case 1:   // Fall through
@@ -789,7 +769,7 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 					++pChannelInPlace;
 				}
 
-				userData->voiceCycleDominantDelay = (userData->voiceCycleDominantDelay == 2) ? 1 : 2;
+				pUserData->voiceCycle = (pUserData->voiceCycle == 2) ? 1 : 2;
 				break;
 			}
 		default:
@@ -812,7 +792,7 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::NonHRTF_StereoToStereo(
+void CrySpatialFX::NonHrtfStereoToStereo(
 	AK::IAkMixerInputContext* pInputContext,
 	AkRamp const baseVolume,
 	AkRamp const busVolume,
@@ -839,293 +819,180 @@ void CrySpatialFX::NonHRTF_StereoToStereo(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::ComputeDelayChannelData(
-	AkReal32& out_volumeNormalized,
-	int& out_delay,
-	float& out_eqGain)
+void CrySpatialFX::ComputeDelayChannelData(AkReal32 const gameElevation, int const quadrant, float const quadrantFine, int& outDelay)
 {
-	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
+	auto const elevationFactor = static_cast<float>(fabs(gameElevation) / static_cast<AkReal32>(g_piHalf));
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0 : 1 - (elevationFactor / 0.85f);
 
-	if ((m_quadrant == 0) || (m_quadrant == 3)) // azimuth 0 to (Pi/2)
+	if ((quadrant == 0) || (quadrant == 3)) // azimuth 0 to (Pi/2)
 	{
-		out_delay =
+		outDelay =
 			static_cast<int>(
-				(g_maxDelay * ComputeFade(m_quadrantFine, 2.4f, EFadeType::FadeinLogarithmic))
+				(g_maxDelay * ComputeFade(quadrantFine, 2.4f, EFadeType::FadeinLogarithmic))
 				* ComputeFade(elevationFactorInversedClamp, 3.6f, EFadeType::FadeinLogarithmic));
-
-		out_volumeNormalized = static_cast<AkReal32>(1.0f - (m_quadrantFine * elevationFactorInversedClamp));
 	}
 	else    // azimuth (Pi/2) to (Pi)
 	{
-		out_delay =
+		outDelay =
 			static_cast<int>(
-				(g_maxDelay * ComputeFade(m_quadrantFine, 2.4f, EFadeType::FadeoutLogarithmic))
+				(g_maxDelay * ComputeFade(quadrantFine, 2.4f, EFadeType::FadeoutLogarithmic))
 				* ComputeFade(elevationFactorInversedClamp, 3.6f, EFadeType::FadeinLogarithmic));
-
-		out_volumeNormalized = static_cast<AkReal32>(1.0f - ((1.0f - m_quadrantFine) * elevationFactorInversedClamp));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::FillIntermediateBufferDirect(
-	AkSampleType* pInChannel,
-	AkSampleType* pDelChannel,
-	AkSampleType* pOutChannel,
-	SAkUserData* const userData,
-	int const maxFrames,
+void CrySpatialFX::FilterBuffers(
+	AK::IAkMixerInputContext* const pInputContext,
+	AkAudioBuffer* const pInputBuffer,
+	AkSampleType* pIntermediateBufferConcealed,
 	ESourceDirection const sourceDirection)
 {
-	if (sourceDirection == userData->lastSourceDirection) // L/R didn't switch. Write InBuffer -> IntermediateDirectBuffer
-	{
-		memcpy(pOutChannel, pInChannel, sizeof(AkSampleType) * maxFrames);
-	}
-	else
-	{
-		AkSampleType* pInProxy = pInChannel;
-		int const voiceDelayPrevious = userData->voiceDelayPrev;
-
-		float const fadeFactor = 1.0f / g_smallFadeLength;
-
-		for (int i = 0; i < voiceDelayPrevious; ++i)
-		{
-			*pOutChannel =
-				((*pDelChannel * ComputeFade((i * fadeFactor), m_bufferFadeStrength, EFadeType::FadeoutLogarithmic))
-				 + (*pInChannel * ComputeFade((i * fadeFactor), m_bufferFadeStrength, EFadeType::FadeinLogarithmic)));
-
-			++pOutChannel;
-			++pDelChannel;
-			++pInChannel;
-		}
-
-		for (int i = voiceDelayPrevious; i < g_smallFadeLengthInteger; ++i)
-		{
-			*pOutChannel =
-				((*pInProxy * ComputeFade((i * fadeFactor), m_bufferFadeStrength, EFadeType::FadeoutLogarithmic))
-				 + (*pInChannel * ComputeFade((i * fadeFactor), m_bufferFadeStrength, EFadeType::FadeinLogarithmic)));
-
-			++pOutChannel;
-			++pInProxy;
-			++pInChannel;
-		}
-
-		int const cycles = (maxFrames - g_smallFadeLengthInteger);
-
-		memcpy(pOutChannel, pInChannel, sizeof(AkSampleType) * cycles);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::FillIntermediateBufferConcealed(
-	AkSampleType* pInChannel,
-	AkSampleType* pDelChannel,
-	AkSampleType* pOutChannel,
-	SAkUserData* userData,
-	int const delayCurrent,
-	int const maxFrames,
-	ESourceDirection const sourceDirection)
-{
-	int outSampleOffset = 0;                                                                                 // needed to compensate delay changes since the last Engine tick
-	int const delayPrev = (sourceDirection == userData->lastSourceDirection) ? userData->voiceDelayPrev : 0; // If we switch L/R then prev delay is 0
-	AkSampleType* pInProxy = pInChannel;
-
-	for (int i = 0; i < delayPrev; ++i)   // Write Delay from last cycle
-	{
-		*pOutChannel = *pDelChannel;
-		++pOutChannel;
-		++pDelChannel;
-	}
-
-	// Cross fade over 100 samples
-	if (delayPrev != delayCurrent)
-	{
-		if (delayPrev < delayCurrent)
-		{
-			AkSampleType* pInProxy = pInChannel;
-			int const sampleGap = delayCurrent - delayPrev;
-
-			for (int i = 0; i < sampleGap; ++i)
-			{
-				*pOutChannel = *pInProxy;
-				++pOutChannel;
-				++pInProxy;
-			}
-
-			float const fadeFactor = 1.0f / g_smallFadeLength;
-
-			for (int i = 1; i <= g_smallFadeLengthInteger; ++i)
-			{
-				float const fadeValue = i * fadeFactor;
-
-				*pOutChannel =
-					((*pInProxy * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeoutLogarithmic)) +
-					 (*pInChannel * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeinLogarithmic)));
-
-				++pOutChannel;
-				++pInProxy;
-				++pInChannel;
-			}
-
-			outSampleOffset = g_smallFadeLengthInteger + sampleGap;
-		}
-		else    // delay gets smaller
-		{
-			int const samplesToDrop = delayPrev - delayCurrent;
-			AkSampleType* pInProxy = pInChannel;
-			pInChannel += samplesToDrop;
-
-			float const fadeFactor = 1.0f / g_smallFadeLength;
-
-			for (int i = 1; i <= g_smallFadeLength; ++i)
-			{
-				float const fadeValue = i * fadeFactor;
-
-				*pOutChannel =
-					(*pInProxy * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeoutLogarithmic)) +
-					(*pInChannel * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeinLogarithmic));
-
-				++pOutChannel;
-				++pInProxy;
-				++pInChannel;
-			}
-
-			outSampleOffset = g_smallFadeLengthInteger;
-		}
-	}
-
-	// Write from current inputBuffer
-	int const cycles = (maxFrames - (delayPrev + outSampleOffset));
-
-	memcpy(pOutChannel, pInChannel, sizeof(AkSampleType) * cycles);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::EQInputBuffer(
-	AK::IAkMixerInputContext* pInputContext,
-	AkAudioBuffer* pInputBuffer,
-	float& out_compensationalVolume)
-{
-	out_compensationalVolume = 1.0f;
-	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	SAkUserData* const pUserData = static_cast<SAkUserData*>(pInputContext->GetUserData());
+	float const gameElevation = pUserData->gameElevation;
 	int const inputValidFrames = pInputBuffer->uValidFrames;
 
-	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
+	float const elevationFactor = (fabs(gameElevation) / static_cast<float>(g_piHalf));
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
 	BiquadIIFilter
-	* filterDominant0,
-	* filterDominant1,
-	* filterDominant2,
-	* filterDominant3,
-	* filterDominant4,
-	* filterDominant5,
-	* filterDominant6,
-	* filterDominant7,
-	* filterDominant8,
+	* filterDominant00,
+	* filterDominant01,
+	* filterDominant02,
+	* filterDominant03,
+	* filterDominant04,
+	* filterDominant05,
+	* filterDominant06,
+	* filterDominant07,
+	* filterDominant08,
+	* filterDominant09,
+	* filterDominant10,
+	* filterDominant11,
 
-	* filterResidual0,
-	* filterResidual1,
-	* filterResidual2,
-	* filterResidual3,
-	* filterResidual4,
-	* filterResidual5,
-	* filterResidual6,
-	* filterResidual7,
-	* filterResidual8;
+	* filterResidual00,
+	* filterResidual01,
+	* filterResidual02,
+	* filterResidual03,
+	* filterResidual04,
+	* filterResidual05,
+	* filterResidual06,
+	* filterResidual07,
+	* filterResidual08,
+	* filterResidual09,
+	* filterResidual10,
+	* filterResidual11;
 
 	// Dominant || Residual
-	switch (userData->voiceCycleDominantEQ)
+	switch (pUserData->voiceCycle)
 	{
 	case 0:
 		{
-			filterDominant0 = &userData->pFilterBankA->filterBand00;
-			filterDominant1 = &userData->pFilterBankA->filterBand01;
-			filterDominant2 = &userData->pFilterBankA->filterBand02;
-			filterDominant3 = &userData->pFilterBankA->filterBand03;
-			filterDominant4 = &userData->pFilterBankA->filterBand04;
-			filterDominant5 = &userData->pFilterBankA->filterBand05;
-			filterDominant6 = &userData->pFilterBankA->filterBand06;
-			filterDominant7 = &userData->pFilterBankA->filterBand07;
-			filterDominant8 = &userData->pFilterBankA->filterBand08;
+			filterDominant00 = &pUserData->pFilterBankA->filterBand00;
+			filterDominant01 = &pUserData->pFilterBankA->filterBand01;
+			filterDominant02 = &pUserData->pFilterBankA->filterBand02;
+			filterDominant03 = &pUserData->pFilterBankA->filterBand03;
+			filterDominant04 = &pUserData->pFilterBankA->filterBand04;
+			filterDominant05 = &pUserData->pFilterBankA->filterBand05;
+			filterDominant06 = &pUserData->pFilterBankA->filterBand06;
+			filterDominant07 = &pUserData->pFilterBankA->filterBand07;
+			filterDominant08 = &pUserData->pFilterBankA->filterBand08;
+			filterDominant09 = &pUserData->pFilterBankA->filterBand09;
+			filterDominant10 = &pUserData->pFilterBankA->filterBand10;
+			filterDominant11 = &pUserData->pFilterBankA->filterBand11;
 
 			break;
 		}
 	case 1:
 		{
-			filterDominant0 = &userData->pFilterBankA->filterBand00;
-			filterDominant1 = &userData->pFilterBankA->filterBand01;
-			filterDominant2 = &userData->pFilterBankA->filterBand02;
-			filterDominant3 = &userData->pFilterBankA->filterBand03;
-			filterDominant4 = &userData->pFilterBankA->filterBand04;
-			filterDominant5 = &userData->pFilterBankA->filterBand05;
-			filterDominant6 = &userData->pFilterBankA->filterBand06;
-			filterDominant7 = &userData->pFilterBankA->filterBand07;
-			filterDominant8 = &userData->pFilterBankA->filterBand08;
+			filterDominant00 = &pUserData->pFilterBankA->filterBand00;
+			filterDominant01 = &pUserData->pFilterBankA->filterBand01;
+			filterDominant02 = &pUserData->pFilterBankA->filterBand02;
+			filterDominant03 = &pUserData->pFilterBankA->filterBand03;
+			filterDominant04 = &pUserData->pFilterBankA->filterBand04;
+			filterDominant05 = &pUserData->pFilterBankA->filterBand05;
+			filterDominant06 = &pUserData->pFilterBankA->filterBand06;
+			filterDominant07 = &pUserData->pFilterBankA->filterBand07;
+			filterDominant08 = &pUserData->pFilterBankA->filterBand08;
+			filterDominant09 = &pUserData->pFilterBankA->filterBand09;
+			filterDominant10 = &pUserData->pFilterBankA->filterBand10;
+			filterDominant11 = &pUserData->pFilterBankA->filterBand11;
 
-			filterResidual0 = &userData->pFilterBankB->filterBand00;
-			filterResidual1 = &userData->pFilterBankB->filterBand01;
-			filterResidual2 = &userData->pFilterBankB->filterBand02;
-			filterResidual3 = &userData->pFilterBankB->filterBand03;
-			filterResidual4 = &userData->pFilterBankB->filterBand04;
-			filterResidual5 = &userData->pFilterBankB->filterBand05;
-			filterResidual6 = &userData->pFilterBankB->filterBand06;
-			filterResidual7 = &userData->pFilterBankB->filterBand07;
-			filterResidual8 = &userData->pFilterBankB->filterBand08;
+			filterResidual00 = &pUserData->pFilterBankB->filterBand00;
+			filterResidual01 = &pUserData->pFilterBankB->filterBand01;
+			filterResidual02 = &pUserData->pFilterBankB->filterBand02;
+			filterResidual03 = &pUserData->pFilterBankB->filterBand03;
+			filterResidual04 = &pUserData->pFilterBankB->filterBand04;
+			filterResidual05 = &pUserData->pFilterBankB->filterBand05;
+			filterResidual06 = &pUserData->pFilterBankB->filterBand06;
+			filterResidual07 = &pUserData->pFilterBankB->filterBand07;
+			filterResidual08 = &pUserData->pFilterBankB->filterBand08;
+			filterResidual09 = &pUserData->pFilterBankB->filterBand09;
+			filterResidual10 = &pUserData->pFilterBankB->filterBand10;
+			filterResidual11 = &pUserData->pFilterBankB->filterBand11;
 
 			break;
 		}
 	case 2:
 		{
-			filterResidual0 = &userData->pFilterBankA->filterBand00;
-			filterResidual1 = &userData->pFilterBankA->filterBand01;
-			filterResidual2 = &userData->pFilterBankA->filterBand02;
-			filterResidual3 = &userData->pFilterBankA->filterBand03;
-			filterResidual4 = &userData->pFilterBankA->filterBand04;
-			filterResidual5 = &userData->pFilterBankA->filterBand05;
-			filterResidual6 = &userData->pFilterBankA->filterBand06;
-			filterResidual7 = &userData->pFilterBankA->filterBand07;
-			filterResidual8 = &userData->pFilterBankA->filterBand08;
+			filterResidual00 = &pUserData->pFilterBankA->filterBand00;
+			filterResidual01 = &pUserData->pFilterBankA->filterBand01;
+			filterResidual02 = &pUserData->pFilterBankA->filterBand02;
+			filterResidual03 = &pUserData->pFilterBankA->filterBand03;
+			filterResidual04 = &pUserData->pFilterBankA->filterBand04;
+			filterResidual05 = &pUserData->pFilterBankA->filterBand05;
+			filterResidual06 = &pUserData->pFilterBankA->filterBand06;
+			filterResidual07 = &pUserData->pFilterBankA->filterBand07;
+			filterResidual08 = &pUserData->pFilterBankA->filterBand08;
+			filterDominant09 = &pUserData->pFilterBankB->filterBand09;
+			filterDominant10 = &pUserData->pFilterBankB->filterBand10;
+			filterDominant11 = &pUserData->pFilterBankB->filterBand11;
 
-			filterDominant0 = &userData->pFilterBankB->filterBand00;
-			filterDominant1 = &userData->pFilterBankB->filterBand01;
-			filterDominant2 = &userData->pFilterBankB->filterBand02;
-			filterDominant3 = &userData->pFilterBankB->filterBand03;
-			filterDominant4 = &userData->pFilterBankB->filterBand04;
-			filterDominant5 = &userData->pFilterBankB->filterBand05;
-			filterDominant6 = &userData->pFilterBankB->filterBand06;
-			filterDominant7 = &userData->pFilterBankB->filterBand07;
-			filterDominant8 = &userData->pFilterBankB->filterBand08;
+			filterDominant00 = &pUserData->pFilterBankB->filterBand00;
+			filterDominant01 = &pUserData->pFilterBankB->filterBand01;
+			filterDominant02 = &pUserData->pFilterBankB->filterBand02;
+			filterDominant03 = &pUserData->pFilterBankB->filterBand03;
+			filterDominant04 = &pUserData->pFilterBankB->filterBand04;
+			filterDominant05 = &pUserData->pFilterBankB->filterBand05;
+			filterDominant06 = &pUserData->pFilterBankB->filterBand06;
+			filterDominant07 = &pUserData->pFilterBankB->filterBand07;
+			filterDominant08 = &pUserData->pFilterBankB->filterBand08;
+			filterResidual09 = &pUserData->pFilterBankA->filterBand09;
+			filterResidual10 = &pUserData->pFilterBankA->filterBand10;
+			filterResidual11 = &pUserData->pFilterBankA->filterBand11;
 
 			break;
 		}
 	default:
 		{
+
 			break;
 		}
 	}
+
+	// AZIMUTH COMMON FILTERS
+	//
+	int const quadrant = pUserData->quadrant;
+	float const quadrantFine = pUserData->quadrantFine;
 
 	// BAND00 500Hz
 	int band00Frequency;
 	float band00Quality = 3.0f;
 	float band00Gain;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // Fall through
 	case 3:
 		{
-			band00Frequency = 500 + static_cast<int>(100.0f * ComputeFade(m_quadrantFine, 1.5f, EFadeType::FadeinHyperbole));
-			band00Gain = (2.0f - (2.0f * m_quadrantFine)) * elevationFactorInversedClamp;
-			out_compensationalVolume *= DecibelToVolume(1.0f - m_quadrantFine);
+			band00Frequency = 500 + static_cast<int>(400.0f * ComputeFade(quadrantFine, 1.47f, EFadeType::FadeinHyperbole));
+			band00Gain = (2.0f - 1.0f * quadrantFine) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band00Frequency = 600 + static_cast<int>(650.0f * ComputeFade(m_quadrantFine, 0.6f, EFadeType::FadeinLogarithmic));
-			band00Quality = 3.0f - (0.8f * ComputeFade(m_quadrantFine, 1.7f, EFadeType::FadeinLogarithmic));
-			band00Gain = ((6.5f * ComputeFade(m_quadrantFine, 0.6f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
-			out_compensationalVolume *= DecibelToVolume(2.0f * m_quadrantFine);
+			band00Frequency = 900 + static_cast<int>(400.0f * ComputeFade(quadrantFine, 0.6f, EFadeType::FadeinLogarithmic));
+			band00Quality = 3.0f - (0.8f * ComputeFade(quadrantFine, 1.7f, EFadeType::FadeinLogarithmic));
+			band00Gain = (1.0f + (5.0f * ComputeFade(quadrantFine, 0.53f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1134,29 +1001,29 @@ void CrySpatialFX::EQInputBuffer(
 		}
 	}
 
-	filterDominant0->ComputeCoefficients(band00Frequency, band00Quality, band00Gain);
+	filterDominant00->ComputeCoefficients(band00Frequency, band00Quality, band00Gain);
 
 	// BAND01 1000Hz
 	int band01Frequency;
 	float band01Quality;
 	float band01Gain;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // Fall through
 	case 3:
 		{
-			band01Frequency = (1000 + static_cast<int>(1000.0f * ComputeFade(m_quadrantFine, 0.9f, EFadeType::FadeinHyperbole)));
-			band01Quality = 3.5f + (1.5f * ComputeFade(m_quadrantFine, 1.0f, EFadeType::FadeinHyperbole));
-			band01Gain = (-6.0f + (-2.0f * m_quadrantFine)) * elevationFactorInversedClamp;
+			band01Frequency = (1000 + static_cast<int>(1000.0f * ComputeFade(quadrantFine, 0.87f, EFadeType::FadeinHyperbole)));
+			band01Quality = 3.5f + (1.0f * ComputeFade(quadrantFine, 1.0f, EFadeType::FadeinHyperbole));
+			band01Gain = (-6.0f + (1.0f * quadrantFine)) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band01Frequency = (2000 + static_cast<int>(1500.0f * ComputeFade(m_quadrantFine, 1.4f, EFadeType::FadeinLogarithmic)));
-			band01Quality = 5.0f + (3.2f * m_quadrantFine);
-			band01Gain = (-8.0f + (-4.0f * ComputeFade(m_quadrantFine, 1.5f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
+			band01Frequency = (2000 + static_cast<int>(1500.0f * ComputeFade(quadrantFine, 1.39f, EFadeType::FadeinLogarithmic)));
+			band01Quality = 4.5f + (1.5f * ComputeFade(quadrantFine, 0.55f, EFadeType::FadeinLogarithmic));
+			band01Gain = (-5.0f + (2.0f * ComputeFade(quadrantFine, 2.29f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1165,29 +1032,29 @@ void CrySpatialFX::EQInputBuffer(
 		}
 	}
 
-	filterDominant1->ComputeCoefficients(band01Frequency, band01Quality, band01Gain);
+	filterDominant01->ComputeCoefficients(band01Frequency, band01Quality, band01Gain);
 
 	// BAND02 3000 Hz
 	int band02Frequency;
 	float band02Quality;
 	float band02Gain;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // Fall through
 	case 3:
 		{
-			band02Frequency = 2750 + static_cast<int>(3750.0f * m_quadrantFine);
-			band02Quality = 1.3f + (-1.1f * m_quadrantFine);
-			band02Gain = 5.0f - (3.0f * m_quadrantFine);
+			band02Frequency = 3100 + static_cast<int>(3400.0f * ComputeFade(quadrantFine, 2.32f, EFadeType::FadeinHyperbole));
+			band02Quality = 1.3f + (-1.2f * ComputeFade(quadrantFine, 1.64f, EFadeType::FadeinHyperbole));
+			band02Gain = (6.0f - (3.0f * quadrantFine)) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band02Frequency = 6500 + static_cast<int>(4300.0f * m_quadrantFine);
-			band02Quality = 0.2f + (1.0f * ComputeFade(m_quadrantFine, 1.5, EFadeType::FadeinHyperbole));
-			band02Gain = 2.0f - (2.0f * m_quadrantFine);
+			band02Frequency = 6500 + static_cast<int>(4300.0f * ComputeFade(quadrantFine, 1.06f, EFadeType::FadeinLogarithmic));
+			band02Quality = 0.1f + (1.2f * ComputeFade(quadrantFine, 1.83f, EFadeType::FadeinLogarithmic));
+			band02Gain = 3.0f * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1196,29 +1063,29 @@ void CrySpatialFX::EQInputBuffer(
 		}
 	}
 
-	filterDominant2->ComputeCoefficients(band02Frequency, band02Quality, band02Gain);
+	filterDominant02->ComputeCoefficients(band02Frequency, band02Quality, band02Gain);
 
 	// BAND03
 	int band03Frequency;
 	float band03Quality;
 	float band03Gain;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // Fall through
 	case 3:
 		{
-			band03Frequency = 8300 - static_cast<int>(2300.0f * m_quadrantFine);
-			band03Quality = 10.0f - (3.0f * m_quadrantFine);
-			band03Gain = (-10.0f + (1.5f * m_quadrantFine)) * elevationFactorInversedClamp;
+			band03Frequency = 8300 - static_cast<int>(2300.0f * quadrantFine);
+			band03Quality = 10.0f - (3.0f * quadrantFine);
+			band03Gain = ((-6.0f) * quadrantFine) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band03Frequency = 6000 - static_cast<int>(3000.0f * m_quadrantFine);
-			band03Quality = 7.0f - (4.0f * ComputeFade(m_quadrantFine, 1.1f, EFadeType::FadeinLogarithmic));
-			band03Gain = (-8.5f + (-3.5f * ComputeFade(m_quadrantFine, 1.5f, EFadeType::FadeinHyperbole))) * elevationFactorInversedClamp;
+			band03Frequency = 6000 - static_cast<int>(2250.0f * quadrantFine);
+			band03Quality = 7.0f - (2.5f * ComputeFade(quadrantFine, 0.77f, EFadeType::FadeinLogarithmic));
+			band03Gain = (-6.0f + (3.0f * quadrantFine)) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1227,29 +1094,29 @@ void CrySpatialFX::EQInputBuffer(
 		}
 	}
 
-	filterDominant3->ComputeCoefficients(band03Frequency, band03Quality, band03Gain);
+	filterDominant03->ComputeCoefficients(band03Frequency, band03Quality, band03Gain);
 
 	// BAND04
 	int band04Frequency;
 	float band04Gain;
 	float band04Quality;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // Fall through
 	case 3:
 		{
-			band04Frequency = 10650 - static_cast<int>(1650.0f * ComputeFade(m_quadrantFine, 2.3f, EFadeType::FadeinHyperbole));
-			band04Quality = (7.7f + (2.3f * m_quadrantFine));
-			band04Gain = (-15.0f + (5.0f * ComputeFade(m_quadrantFine, 1.4f, EFadeType::FadeinHyperbole))) * elevationFactorInversedClamp;
+			band04Frequency = 10650 - static_cast<int>(1650.0f * ComputeFade(quadrantFine, 2.3f, EFadeType::FadeinHyperbole));
+			band04Quality = (7.7f + (2.3f * quadrantFine));
+			band04Gain = (-8.0f * quadrantFine) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band04Frequency = 9000 - static_cast<int>(1500.0f * ComputeFade(m_quadrantFine, 2.2f, EFadeType::FadeinLogarithmic));
-			band04Quality = (10.0f - (2.1f * ComputeFade(m_quadrantFine, 1.6f, EFadeType::FadeinLogarithmic)));
-			band04Gain = (-10.0f + (5.0f * m_quadrantFine)) * elevationFactorInversedClamp;
+			band04Frequency = 9000 - static_cast<int>(1500.0f * ComputeFade(quadrantFine, 2.24f, EFadeType::FadeinLogarithmic));
+			band04Quality = (10.0f - (2.1f * ComputeFade(quadrantFine, 1.64f, EFadeType::FadeinLogarithmic)));
+			band04Gain = (-8.0f * ComputeFade(quadrantFine, 1.87f, EFadeType::FadeoutHyperbole)) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1258,29 +1125,29 @@ void CrySpatialFX::EQInputBuffer(
 		}
 	}
 
-	filterDominant4->ComputeCoefficients(band04Frequency, band04Quality, band04Gain);
+	filterDominant04->ComputeCoefficients(band04Frequency, band04Quality, band04Gain);
 
 	// BAND05
 	int band05Frequency;
 	float band05Gain;
 	float band05Quality;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // fall through
 	case 3:
 		{
-			band05Frequency = 12850 - static_cast<int>(3850.0f * m_quadrantFine);
-			band05Quality = 10.0f - (5.0f * m_quadrantFine);
-			band05Gain = (-7.5f + (9.5f * ComputeFade(m_quadrantFine, 1.0f, EFadeType::FadeoutLogarithmic))) * elevationFactorInversedClamp;
+			band05Frequency = 12850 - static_cast<int>(3850.0f * quadrantFine);
+			band05Quality = 10.0f - (5.0f * quadrantFine);
+			band05Gain = (-1.0f * quadrantFine) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band05Frequency = 9000 + static_cast<int>(3000.0f * ComputeFade(m_quadrantFine, 1.2f, EFadeType::FadeinLogarithmic));
-			band05Quality = 5.0f - (4.1f * m_quadrantFine);
-			band05Gain = (2.0f + (1.0f * ComputeFade(m_quadrantFine, 1.3f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
+			band05Frequency = 9000 + static_cast<int>(3000.0f * ComputeFade(quadrantFine, 1.17f, EFadeType::FadeinLogarithmic));
+			band05Quality = 5.0f - (4.1f * ComputeFade(quadrantFine, 1.64f, EFadeType::FadeinLogarithmic));
+			band05Gain = (-1.0f + (3.0f * ComputeFade(quadrantFine, 1.35f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1289,8 +1156,10 @@ void CrySpatialFX::EQInputBuffer(
 		}
 	}
 
-	filterDominant5->ComputeCoefficients(band05Frequency, band05Quality, band05Gain);
+	filterDominant05->ComputeCoefficients(band05Frequency, band05Quality, band05Gain);
 
+	// ELEVATION
+	//
 	int band06Frequency;
 	float band06Quality;
 	float band06Gain;
@@ -1303,142 +1172,59 @@ void CrySpatialFX::EQInputBuffer(
 	float band08Quality;
 	float band08Gain;
 
-	if (m_gameElevation > 0)
+	if (gameElevation > 0)
 	{
-		auto const elevation = static_cast<float>(fabs(m_gameElevation));
+		band06Frequency = 6000 - static_cast<int>(3700.0f * ComputeFade(elevationFactor, 0.9f, EFadeType::FadeinLogarithmic));
+		band07Frequency = 6000 + static_cast<int>(3100.0f * ComputeFade(elevationFactor, 0.4f, EFadeType::FadeinLogarithmic));
+		band08Frequency = 4000 + static_cast<int>(8000.0f * ComputeFade(elevationFactor, 1.0f, EFadeType::FadeinLogarithmic));
 
-		band06Frequency = 6000 - static_cast<int>(3700.0f * ComputeFade(elevation, 0.9f, EFadeType::FadeinLogarithmic));
-		band07Frequency = 6000 + static_cast<int>(3100.0f * ComputeFade(elevation, 0.4f, EFadeType::FadeinLogarithmic));
-		band08Frequency = 4000 + static_cast<int>(8000.0f * ComputeFade(elevation, 1.0f, EFadeType::FadeinLogarithmic));
+		band06Quality = 3.0f + (7.0f * ComputeFade(elevationFactor, 0.8f, EFadeType::FadeinLogarithmic));
+		band07Quality = 4.5f + (5.5f * ComputeFade(elevationFactor, 2.7f, EFadeType::FadeinHyperbole));
+		band08Quality = 4.5f + (5.5f * ComputeFade(elevationFactor, 1.7f, EFadeType::FadeinLogarithmic));
 
-		band06Quality = 3.0f + (7.0f * ComputeFade(elevation, 0.8f, EFadeType::FadeinLogarithmic));
-		band07Quality = 4.5f + (5.5f * ComputeFade(elevation, 2.7f, EFadeType::FadeinHyperbole));
-		band08Quality = 4.5f + (5.5f * ComputeFade(elevation, 1.7f, EFadeType::FadeinLogarithmic));
-		;
-
-		band06Gain = -15.0f * ComputeFade(elevation, 0.8f, EFadeType::FadeinLogarithmic);
-		band07Gain = 6.0f * ComputeFade(elevation, 1.7f, EFadeType::FadeinLogarithmic);
-		band08Gain = -15.0f * ComputeFade(elevation, 2.5f, EFadeType::FadeinLogarithmic);
+		band06Gain = -15.0f * ComputeFade(elevationFactor, 0.8f, EFadeType::FadeinLogarithmic);
+		band07Gain = 6.0f * ComputeFade(elevationFactor, 1.7f, EFadeType::FadeinLogarithmic);
+		band08Gain = -15.0f * ComputeFade(elevationFactor, 2.5f, EFadeType::FadeinLogarithmic);
 	}
 	else
 	{
-		auto const elevation = static_cast<float>(fabs(m_gameElevation));
+		band06Frequency = 6000 + static_cast<int>(4700.0f * elevationFactor);
+		band07Frequency = 6000 - static_cast<int>(900.0f * elevationFactor);
+		band08Frequency = 4000 - static_cast<int>(800.0f * elevationFactor);
 
-		band06Frequency = 6000 + static_cast<int>(4700.0f * elevation);
-		band07Frequency = 6000 - static_cast<int>(900.0f * elevation);
-		band08Frequency = 4000 - static_cast<int>(800.0f * elevation);
+		band06Quality = 3.0f + (4.7f * elevationFactor);
+		band07Quality = 4.5f - (1.2f * elevationFactor);
+		band08Quality = 4.5f + (5.5f * elevationFactor);
 
-		band06Quality = 3.0f + (4.7f * elevation);
-		band07Quality = 4.5f - (1.2f * elevation);
-		band08Quality = 4.5f + (5.5f * elevation);
-
-		band06Gain = -10.0f * elevation;
-		band07Gain = -14.0f * ComputeFade(elevation, 1.5f, EFadeType::FadeinLogarithmic);
-		band08Gain = -8.0f * ComputeFade(elevation, 1.0f, EFadeType::FadeinLogarithmic);
+		band06Gain = -10.0f * elevationFactor;
+		band07Gain = -14.0f * ComputeFade(elevationFactor, 1.5f, EFadeType::FadeinLogarithmic);
+		band08Gain = -8.0f * ComputeFade(elevationFactor, 1.0f, EFadeType::FadeinLogarithmic);
 	}
 
-	filterDominant6->ComputeCoefficients(band06Frequency, band06Quality, band06Gain);
-	filterDominant7->ComputeCoefficients(band07Frequency, band07Quality, band07Gain);
-	filterDominant8->ComputeCoefficients(band08Frequency, band08Quality, band08Gain);
+	filterDominant06->ComputeCoefficients(band06Frequency, band06Quality, band06Gain);
+	filterDominant07->ComputeCoefficients(band07Frequency, band07Quality, band07Gain);
+	filterDominant08->ComputeCoefficients(band08Frequency, band08Quality, band08Gain);
 
-	AkSampleType* pChannel = pInputBuffer->GetChannel(0);
+	// AZIMUTH SPECIFIC
+	// 09 Direct, 10 Concealed, 11 Concealed
+	int band09Frequency;
+	float band09Quality = 1.0f;
+	float band09Gain;
 
-	switch (userData->voiceCycleDominantEQ)
+	switch (quadrant)
 	{
-	case 0:
+	case 0:   // Fall through
+	case 3:
 		{
-			float const fadeFactor = 1 / g_bigFadeLength;
-
-			for (int i = 0; i < g_bigFadeLengthInteger; ++i)
-			{
-				float sampleFiltered =
-					filterDominant8->ProcessSample(
-						filterDominant7->ProcessSample(
-							filterDominant6->ProcessSample(
-								filterDominant5->ProcessSample(
-									filterDominant4->ProcessSample(
-										filterDominant3->ProcessSample(
-											filterDominant2->ProcessSample(
-												filterDominant1->ProcessSample(
-													filterDominant0->ProcessSample(*pChannel)))))))));
-
-				*pChannel = sampleFiltered * (i * fadeFactor);
-				++pChannel;
-			}
-
-			int const cyclesRemaining = inputValidFrames - g_bigFadeLengthInteger;
-
-			for (int i = 0; i < cyclesRemaining; ++i)
-			{
-				*pChannel =
-					filterDominant8->ProcessSample(
-						filterDominant7->ProcessSample(
-							filterDominant6->ProcessSample(
-								filterDominant5->ProcessSample(
-									filterDominant4->ProcessSample(
-										filterDominant3->ProcessSample(
-											filterDominant2->ProcessSample(
-												filterDominant1->ProcessSample(
-													filterDominant0->ProcessSample(*pChannel)))))))));
-				++pChannel;
-			}
+			band09Frequency = 9000 - static_cast<int>(7700.0f * ComputeFade(quadrantFine, 3.11f, EFadeType::FadeinLogarithmic));
+			band09Gain = (6.0f * ComputeFade(quadrantFine, 1.67f, EFadeType::FadeinLogarithmic)) * elevationFactorInversedClamp;
 			break;
 		}
-	case 1:   // fall through
+	case 1:   // Fall through
 	case 2:
 		{
-			float const fadeFactor = 1 / g_bigFadeLength;
-
-			for (int i = 0; i < g_bigFadeLengthInteger; ++i) // Blend
-			{
-				float newFilter =
-					filterDominant8->ProcessSample(
-						filterDominant7->ProcessSample(
-							filterDominant6->ProcessSample(
-								filterDominant5->ProcessSample(
-									filterDominant4->ProcessSample(
-										filterDominant3->ProcessSample(
-											filterDominant2->ProcessSample(
-												filterDominant1->ProcessSample(
-													filterDominant0->ProcessSample(*pChannel)))))))));
-
-				float oldFilter =
-					filterResidual8->ProcessSample(
-						filterResidual7->ProcessSample(
-							filterResidual6->ProcessSample(
-								filterResidual5->ProcessSample(
-									filterResidual4->ProcessSample(
-										filterResidual3->ProcessSample(
-											filterResidual2->ProcessSample(
-												filterResidual1->ProcessSample(
-													filterResidual0->ProcessSample(*pChannel)))))))));
-
-				float fadeValue = i * fadeFactor;
-
-				*pChannel =
-					(newFilter * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))
-					+ (oldFilter * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic));
-
-				++pChannel;
-			}
-
-			int const cyclesRemaining = inputValidFrames - g_bigFadeLengthInteger;
-
-			for (int i = 0; i < cyclesRemaining; ++i) // Write Rest with new Filters
-			{
-				*pChannel =
-					filterDominant8->ProcessSample(
-						filterDominant7->ProcessSample(
-							filterDominant6->ProcessSample(
-								filterDominant5->ProcessSample(
-									filterDominant4->ProcessSample(
-										filterDominant3->ProcessSample(
-											filterDominant2->ProcessSample(
-												filterDominant1->ProcessSample(
-													filterDominant0->ProcessSample(*pChannel)))))))));
-
-				++pChannel;
-			}
+			band09Frequency = 1300 + static_cast<int>(4200.0f * ComputeFade(quadrantFine, 0.67f, EFadeType::FadeinHyperbole));
+			band09Gain = (6.0f * ComputeFade(quadrantFine, 1.06f, EFadeType::FadeoutLogarithmic)) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1446,57 +1232,8 @@ void CrySpatialFX::EQInputBuffer(
 			break;
 		}
 	}
-}
 
-//////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::EQConcealedChannel(
-	AK::IAkMixerInputContext* const pInputContext,
-	int const cycleProxy,
-	int const inputValidFrames,
-	ESourceDirection sourceDirection)
-{
-	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
-
-	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
-	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
-
-	BiquadIIFilter* filterDominant11 = &userData->pFilterBankA->filterBand11;
-	BiquadIIFilter* filterResidual11 = &userData->pFilterBankB->filterBand11;
-	BiquadIIFilter* filterDominant10 = &userData->pFilterBankA->filterBand10;
-	BiquadIIFilter* filterResidual10 = &userData->pFilterBankB->filterBand10;
-	BiquadIIFilter* filterResidual09;
-
-	switch (cycleProxy)
-	{
-	case 0:
-		{
-			filterDominant11 = &userData->pFilterBankA->filterBand11;
-			filterDominant10 = &userData->pFilterBankA->filterBand10;
-			break;
-		}
-	case 1:
-		{
-			filterDominant11 = &userData->pFilterBankA->filterBand11;
-			filterDominant10 = &userData->pFilterBankA->filterBand10;
-			filterResidual11 = &userData->pFilterBankB->filterBand11;
-			filterResidual10 = &userData->pFilterBankB->filterBand10;
-			filterResidual09 = &userData->pFilterBankB->filterBand09;
-			break;
-		}
-	case 2:
-		{
-			filterDominant11 = &userData->pFilterBankB->filterBand11;
-			filterDominant10 = &userData->pFilterBankB->filterBand10;
-			filterResidual11 = &userData->pFilterBankA->filterBand11;
-			filterResidual10 = &userData->pFilterBankA->filterBand10;
-			filterResidual09 = &userData->pFilterBankA->filterBand09;
-			break;
-		}
-	default:
-		{
-			break;
-		}
-	}
+	filterDominant09->ComputeCoefficients(band09Frequency, band09Quality, band09Gain);
 
 	int band10Frequency = 1000;
 	float band10Quality;
@@ -1506,27 +1243,27 @@ void CrySpatialFX::EQConcealedChannel(
 	float band11Quality = 1.0f;
 	float band11Gain;
 
-	switch (m_quadrant)
+	switch (quadrant)
 	{
 	case 0:   // Fall through
 	case 3:
 		{
-			band10Quality = 0.8f + (1.2f * m_quadrantFine);
-			band10Gain = (4.0f * ComputeFade(m_quadrantFine, 3.2f, EFadeType::FadeinHyperbole)) * elevationFactorInversedClamp;
+			band10Quality = 0.8f + (1.2f * quadrantFine);
+			band10Gain = (4.0f * ComputeFade(quadrantFine, 3.32f, EFadeType::FadeinHyperbole)) * elevationFactorInversedClamp;
 
-			band11Frequency = 9000 - static_cast<int>(6000.0f * m_quadrantFine);
-			band11Gain = (6.0f + (-18.0f * ComputeFade(m_quadrantFine, 0.7f, EFadeType::FadeinHyperbole))) * elevationFactorInversedClamp;
+			band11Frequency = 9000 - static_cast<int>(6000.0f * quadrantFine);
+			band11Gain = (-13.0f * ComputeFade(quadrantFine, 0.64f, EFadeType::FadeinHyperbole)) * elevationFactorInversedClamp;
 			break;
 		}
 	case 1:   // Fall through
 	case 2:
 		{
-			band10Frequency += static_cast<int>(1000.0f * m_quadrantFine);
-			band10Quality = 2.0f - (1.7f * ComputeFade(m_quadrantFine, 1.6f, EFadeType::FadeinHyperbole));
-			band10Gain = (4.0f + (-4.0f * ComputeFade(m_quadrantFine, 3.4f, EFadeType::FadeinHyperbole))) * elevationFactorInversedClamp;
+			band10Frequency += static_cast<int>(1000.0f * quadrantFine);
+			band10Quality = 2.0f - (1.7f * ComputeFade(quadrantFine, 1.64f, EFadeType::FadeinHyperbole));
+			band10Gain = (4.0f * ComputeFade(quadrantFine, 3.4f, EFadeType::FadeoutLogarithmic)) * elevationFactorInversedClamp;
 
-			band11Frequency = 3000 + static_cast<int>(5000.0f * ComputeFade(m_quadrantFine, 1.1f, EFadeType::FadeinLogarithmic));
-			band11Gain = (-12.0f * ComputeFade(m_quadrantFine, 2.4f, EFadeType::FadeoutLogarithmic)) * elevationFactorInversedClamp;
+			band11Frequency = 3000 + static_cast<int>(5000.0f * ComputeFade(quadrantFine, 1.1f, EFadeType::FadeinLogarithmic));
+			band11Gain = (-13.0f * ComputeFade(quadrantFine, 2.4f, EFadeType::FadeoutLogarithmic)) * elevationFactorInversedClamp;
 			break;
 		}
 	default:
@@ -1538,90 +1275,193 @@ void CrySpatialFX::EQConcealedChannel(
 	filterDominant10->ComputeCoefficients(band10Frequency, band10Quality, band10Gain);
 	filterDominant11->ComputeCoefficients(band11Frequency, band11Quality, band11Gain);
 
-	AkSampleType* pChannelInPlace = m_pIntermediateBufferConcealed;
+	AkSampleType* pChannel = pInputBuffer->GetChannel(0);
 
-	switch (cycleProxy)
+	switch (pUserData->voiceCycle)
 	{
 	case 0:
 		{
 			float const fadeFactor = 1.0f / g_bigFadeLength;
 
-			for (int i = 1; i <= g_bigFadeLengthInteger; ++i) // fade in first cycle
+			for (int i = 0; i < g_bigFadeLengthInteger; ++i)
 			{
-				float const filteredSample =
-					filterDominant11->ProcessSample(
-						filterDominant10->ProcessSample(*pChannelInPlace));
+				float const sampleFiltered =
+					filterDominant08->ProcessSample(
+						filterDominant07->ProcessSample(
+							filterDominant06->ProcessSample(
+								filterDominant05->ProcessSample(
+									filterDominant04->ProcessSample(
+										filterDominant03->ProcessSample(
+											filterDominant02->ProcessSample(
+												filterDominant01->ProcessSample(
+													filterDominant00->ProcessSample(*pChannel)))))))));
 
-				*pChannelInPlace = filteredSample * ComputeFade((i * fadeFactor), 1.0f);
-				++pChannelInPlace;
+				*pChannel = filterDominant09->ProcessSample(sampleFiltered) * (i * fadeFactor);
+				++pChannel;
+
+				*pIntermediateBufferConcealed = filterDominant10->ProcessSample(filterDominant11->ProcessSample(sampleFiltered)) * (i * fadeFactor);
+				++pIntermediateBufferConcealed;
 			}
 
-			for (int i = g_bigFadeLengthInteger; i < inputValidFrames; ++i)
-			{
-				*pChannelInPlace =
-					filterDominant11->ProcessSample(
-						filterDominant10->ProcessSample(*pChannelInPlace));
+			int const cyclesRemaining = inputValidFrames - g_bigFadeLengthInteger;
 
-				++pChannelInPlace;
+			for (int i = 0; i < cyclesRemaining; ++i)
+			{
+				float const sampleFiltered =
+					filterDominant08->ProcessSample(
+						filterDominant07->ProcessSample(
+							filterDominant06->ProcessSample(
+								filterDominant05->ProcessSample(
+									filterDominant04->ProcessSample(
+										filterDominant03->ProcessSample(
+											filterDominant02->ProcessSample(
+												filterDominant01->ProcessSample(
+													filterDominant00->ProcessSample(*pChannel)))))))));
+
+				*pChannel = filterDominant09->ProcessSample(sampleFiltered);
+				++pChannel;
+
+				*pIntermediateBufferConcealed = filterDominant10->ProcessSample(filterDominant11->ProcessSample(sampleFiltered));
+				++pIntermediateBufferConcealed;
 			}
 
 			break;
 		}
-	case 1:   // Fall through
+	case 1:   // fall through
 	case 2:
 		{
 			float const fadeFactor = 1.0f / g_bigFadeLength;
 
-			if (userData->lastSourceDirection == sourceDirection)
+			if (pUserData->lastSourceDirection == sourceDirection)
 			{
-				for (int i = 1; i <= g_bigFadeLengthInteger; ++i)     // Blend
-				{
-					float const filteredSampleDominant =
-						filterDominant11->ProcessSample(
-							filterDominant10->ProcessSample(*pChannelInPlace));
 
-					float const filteredSampleResidual =
-						filterResidual11->ProcessSample(
-							filterResidual10->ProcessSample(*pChannelInPlace));
+				for (int i = 0; i < g_bigFadeLengthInteger; ++i) // Blend
+				{
+					float const newFilter =
+						filterDominant08->ProcessSample(
+							filterDominant07->ProcessSample(
+								filterDominant06->ProcessSample(
+									filterDominant05->ProcessSample(
+										filterDominant04->ProcessSample(
+											filterDominant03->ProcessSample(
+												filterDominant02->ProcessSample(
+													filterDominant01->ProcessSample(
+														filterDominant00->ProcessSample(*pChannel)))))))));
+
+					float const oldFilter =
+						filterResidual08->ProcessSample(
+							filterResidual07->ProcessSample(
+								filterResidual06->ProcessSample(
+									filterResidual05->ProcessSample(
+										filterResidual04->ProcessSample(
+											filterResidual03->ProcessSample(
+												filterResidual02->ProcessSample(
+													filterResidual01->ProcessSample(
+														filterResidual00->ProcessSample(*pChannel)))))))));
 
 					float const fadeValue = i * fadeFactor;
 
-					*pChannelInPlace =
-						((filteredSampleResidual * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic))
-						 + (filteredSampleDominant * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic)));  // Linear Fade because correlation is 1
+					*pChannel =
+						(filterDominant09->ProcessSample(newFilter) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))
+						+ (filterResidual09->ProcessSample(oldFilter) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic));
 
-					++pChannelInPlace;
+					++pChannel;
+
+					*pIntermediateBufferConcealed =
+						(filterDominant10->ProcessSample(
+							 filterDominant11->ProcessSample(newFilter)) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))
+						+ (filterResidual10->ProcessSample(
+								 filterResidual11->ProcessSample(oldFilter)) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic));
+
+					++pIntermediateBufferConcealed;
+				}
+
+				int const cyclesRemaining = inputValidFrames - g_bigFadeLengthInteger;
+
+				for (int i = 0; i < cyclesRemaining; ++i) // Write Rest with new Filters
+				{
+					float const sampleFiltered =
+						filterDominant08->ProcessSample(
+							filterDominant07->ProcessSample(
+								filterDominant06->ProcessSample(
+									filterDominant05->ProcessSample(
+										filterDominant04->ProcessSample(
+											filterDominant03->ProcessSample(
+												filterDominant02->ProcessSample(
+													filterDominant01->ProcessSample(
+														filterDominant00->ProcessSample(*pChannel)))))))));
+
+					*pChannel = filterDominant09->ProcessSample(sampleFiltered);
+					++pChannel;
+
+					*pIntermediateBufferConcealed = filterDominant10->ProcessSample(filterDominant11->ProcessSample(sampleFiltered));
+					++pIntermediateBufferConcealed;
 				}
 			}
 			else
 			{
-
-				for (int i = 1; i <= g_bigFadeLengthInteger; ++i)     // Blend
+				for (int i = 0; i < g_bigFadeLengthInteger; ++i) // Blend
 				{
-					float const filteredSampleDominant =
-						filterDominant11->ProcessSample(
-							filterDominant10->ProcessSample(*pChannelInPlace));
+					float const newFilter =
+						filterDominant08->ProcessSample(
+							filterDominant07->ProcessSample(
+								filterDominant06->ProcessSample(
+									filterDominant05->ProcessSample(
+										filterDominant04->ProcessSample(
+											filterDominant03->ProcessSample(
+												filterDominant02->ProcessSample(
+													filterDominant01->ProcessSample(
+														filterDominant00->ProcessSample(*pChannel)))))))));
 
-					float const filteredSampleResidual =
-						filterResidual09->ProcessSample(*pChannelInPlace);
+					float const oldFilter =
+						filterResidual08->ProcessSample(
+							filterResidual07->ProcessSample(
+								filterResidual06->ProcessSample(
+									filterResidual05->ProcessSample(
+										filterResidual04->ProcessSample(
+											filterResidual03->ProcessSample(
+												filterResidual02->ProcessSample(
+													filterResidual01->ProcessSample(
+														filterResidual00->ProcessSample(*pChannel)))))))));
 
 					float const fadeValue = i * fadeFactor;
 
-					*pChannelInPlace =
-						((filteredSampleResidual * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic))
-						 + (filteredSampleDominant * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic)));  // Linear Fade because correlation is 1
+					*pChannel =
+						(filterDominant09->ProcessSample(newFilter) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))
+						+ (filterResidual10->ProcessSample(
+								 filterResidual11->ProcessSample(oldFilter)) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic));
 
-					++pChannelInPlace;
+					++pChannel;
+
+					*pIntermediateBufferConcealed =
+						(filterDominant10->ProcessSample(
+							 filterDominant11->ProcessSample(newFilter)) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))
+						+ (filterResidual09->ProcessSample(oldFilter) * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic));
+
+					++pIntermediateBufferConcealed;
 				}
-			}
 
-			for (int i = g_bigFadeLengthInteger; i < inputValidFrames; ++i)     // Write Rest with new Filters
-			{
-				*pChannelInPlace =
-					filterDominant11->ProcessSample(
-						filterDominant10->ProcessSample(*pChannelInPlace));
+				int const cyclesRemaining = inputValidFrames - g_bigFadeLengthInteger;
 
-				++pChannelInPlace;
+				for (int i = 0; i < cyclesRemaining; ++i) // Write Rest with new Filters
+				{
+					float const sampleFiltered =
+						filterDominant08->ProcessSample(
+							filterDominant07->ProcessSample(
+								filterDominant06->ProcessSample(
+									filterDominant05->ProcessSample(
+										filterDominant04->ProcessSample(
+											filterDominant03->ProcessSample(
+												filterDominant02->ProcessSample(
+													filterDominant01->ProcessSample(
+														filterDominant00->ProcessSample(*pChannel)))))))));
+
+					*pChannel = filterDominant09->ProcessSample(sampleFiltered);
+					++pChannel;
+
+					*pIntermediateBufferConcealed = filterDominant10->ProcessSample(filterDominant11->ProcessSample(sampleFiltered));
+					++pIntermediateBufferConcealed;
+				}
 			}
 
 			break;
@@ -1631,164 +1471,122 @@ void CrySpatialFX::EQConcealedChannel(
 			break;
 		}
 	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySpatialFX::EQDirectChannel(
-	AK::IAkMixerInputContext* const pInputContext,
-	int const cycleProxy,
-	int const inputValidFrames,
-	ESourceDirection sourceDirection)
+void CrySpatialFX::DelayAndFadeBuffers(
+	AkSampleType* pInChannelConcealed,
+	AkSampleType* pOutChannelConcealed,
+	AkSampleType* pChannelDirect,
+	AkSampleType* pDelBuffer,
+	SAkUserData* const pUserData,
+	int const delayCurrent,
+	int const maxFrames,
+	ESourceDirection const sourceDirection)
 {
-	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
-
-	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
-	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
-
-	BiquadIIFilter* filterDominant09 = &userData->pFilterBankA->filterBand09; // FilterDominant
-	BiquadIIFilter* filterResidual09 = &userData->pFilterBankB->filterBand09; // FilterResidual
-	BiquadIIFilter* filterResidual10 = &userData->pFilterBankB->filterBand09; // FilterResidual
-	BiquadIIFilter* filterResidual11 = &userData->pFilterBankB->filterBand09; // FilterResidual
-
-	switch (cycleProxy)
+	// Delay Concealed Buffer
 	{
-	case 0:
+		int outSampleOffset = 0;                                                                                   // needed to compensate delay changes since the last Engine tick
+		int const delayPrev = (sourceDirection == pUserData->lastSourceDirection) ? pUserData->voiceDelayPrev : 0; // If we switch L/R then prev delay is 0
+		AkSampleType* pInChannelConcealedProxy = pInChannelConcealed;
+		AkSampleType* pOutChannelConcealedProxy = pOutChannelConcealed + delayPrev;
+
+		memcpy(pOutChannelConcealed, pDelBuffer, sizeof(AkSampleType) * delayPrev);
+
+		// Cross fade
+		if (delayPrev != delayCurrent)
 		{
-			filterDominant09 = &userData->pFilterBankA->filterBand09;
-			break;
+			if (delayPrev < delayCurrent)
+			{
+				AkSampleType* pInChannelConcealedOffsetProxy = pInChannelConcealed;
+				int const sampleGap = delayCurrent - delayPrev;
+
+				for (int i = 0; i < sampleGap; ++i)
+				{
+					*pOutChannelConcealedProxy = *pInChannelConcealedOffsetProxy;
+					++pOutChannelConcealedProxy;
+					++pInChannelConcealedOffsetProxy;
+				}
+
+				float const fadeFactor = 1.0f / g_smallFadeLength;
+
+				for (int i = 1; i <= g_smallFadeLengthInteger; ++i)
+				{
+					float const fadeValue = i * fadeFactor;
+
+					*pOutChannelConcealedProxy =
+						((*pInChannelConcealedOffsetProxy * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeoutLogarithmic)) +
+						 (*pInChannelConcealedProxy * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeinLogarithmic)));
+
+					++pOutChannelConcealedProxy;
+					++pInChannelConcealedProxy;
+					++pInChannelConcealedOffsetProxy;
+				}
+
+				outSampleOffset = g_smallFadeLengthInteger + sampleGap;
+			}
+			else    // delay gets smaller
+			{
+				int const samplesToDrop = delayPrev - delayCurrent;
+				AkSampleType* pInChannelConcealedOffsetProxy = pInChannelConcealed;
+				pInChannelConcealedProxy += samplesToDrop;
+
+				float const fadeFactor = 1.0f / g_smallFadeLength;
+
+				for (int i = 1; i <= g_smallFadeLength; ++i)
+				{
+					float const fadeValue = i * fadeFactor;
+
+					*pOutChannelConcealedProxy =
+						(*pInChannelConcealedOffsetProxy * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeoutLogarithmic)) +
+						(*pInChannelConcealedProxy * ComputeFade(fadeValue, m_bufferFadeStrength, EFadeType::FadeinLogarithmic));
+
+					++pOutChannelConcealedProxy;
+					++pInChannelConcealedOffsetProxy;
+					++pInChannelConcealedProxy;
+				}
+
+				outSampleOffset = g_smallFadeLengthInteger;
+			}
 		}
-	case 1:
+
+		// Write from current inputBuffer
+		int const cycles = (maxFrames - (delayPrev + outSampleOffset));
+
+		memcpy(pOutChannelConcealedProxy, pInChannelConcealedProxy, sizeof(AkSampleType) * cycles);
+	}
+
+	// DirectChannel Fades with Delayed signal
+	if (sourceDirection != pUserData->lastSourceDirection)
+	{
+		AkSampleType* pChannelDirectProxy = pChannelDirect;
+		AkSampleType* pDelChannelProxy = pOutChannelConcealed;
+
+		float const fadeFactor = 1.0f / g_smallFadeLength;
+
+		for (int i = 0; i < g_smallFadeLengthInteger; ++i)
 		{
-			filterDominant09 = &userData->pFilterBankA->filterBand09;
-			filterResidual09 = &userData->pFilterBankB->filterBand09;
-			filterResidual10 = &userData->pFilterBankB->filterBand10;
-			filterResidual11 = &userData->pFilterBankB->filterBand11;
-			break;
-		}
-	case 2:
-		{
-			filterDominant09 = &userData->pFilterBankB->filterBand09;
-			filterResidual09 = &userData->pFilterBankA->filterBand09;
-			filterResidual10 = &userData->pFilterBankA->filterBand10;
-			filterResidual11 = &userData->pFilterBankA->filterBand11;
-			break;
-		}
-	default:
-		{
-			break;
+			*pChannelDirectProxy =
+				(*pChannelDirectProxy * ComputeFade((i * fadeFactor), m_bufferFadeStrength, EFadeType::FadeinLogarithmic))
+				+ ((*pDelChannelProxy * ComputeFade((i * fadeFactor), m_bufferFadeStrength, EFadeType::FadeoutLogarithmic)));
+
+			++pChannelDirectProxy;
+			++pDelChannelProxy;
 		}
 	}
 
-	int band09Frequency;
-	float band09Quality = 1.0f;
-	float band09Gain;
-
-	switch (m_quadrant)
+	// Write new Delay Buffer
+	if (delayCurrent > 0)
 	{
-	case 0:   // Fall through
-	case 3:
-		{
-			band09Frequency = 9000 - static_cast<int>(7700.0f * ComputeFade(m_quadrantFine, 3.1f, EFadeType::FadeinLogarithmic));
-			band09Gain = (6.0f + (2.0f * ComputeFade(m_quadrantFine, 1.6f, EFadeType::FadeinLogarithmic))) * elevationFactorInversedClamp;
-			break;
-		}
-	case 1:   // Fall through
-	case 2:
-		{
-			band09Frequency = 1300 + static_cast<int>(4200.0f * ComputeFade(m_quadrantFine, 0.7f, EFadeType::FadeinHyperbole));
-			band09Gain = (8.0f * ComputeFade(m_quadrantFine, 1.1f, EFadeType::FadeoutLogarithmic)) * elevationFactorInversedClamp;
-			break;
-		}
-	default:
-		{
-			break;
-		}
-	}
+		int const offset = maxFrames - delayCurrent;
+		pInChannelConcealed += offset;
 
-	filterDominant09->ComputeCoefficients(band09Frequency, band09Quality, band09Gain);
-
-	float* pChannelInPlace = m_pIntermediateBufferDirect;
-
-	switch (cycleProxy)
-	{
-	case 0:
-		{
-			float const fadeFactor = 1.0f / g_bigFadeLength;
-
-			for (int i = 1; i <= g_bigFadeLengthInteger; ++i) // fade in first cycle
-			{
-				float const filteredSample = filterDominant09->ProcessSample(*pChannelInPlace);
-
-				float const fadeValue = i * fadeFactor;
-
-				*pChannelInPlace = filteredSample * ComputeFade(fadeValue, 1.0f);
-				++pChannelInPlace;
-			}
-
-			for (int i = g_bigFadeLengthInteger; i < inputValidFrames; ++i)
-			{
-				*pChannelInPlace = filterDominant09->ProcessSample(*pChannelInPlace);
-
-				++pChannelInPlace;
-			}
-
-			break;
-		}
-	case 1:   // Fall through
-	case 2:
-		{
-			float const fadeFactor = 1.0f / g_bigFadeLength;
-
-			if (userData->lastSourceDirection == sourceDirection)
-			{
-				for (int i = 1; i <= g_bigFadeLengthInteger; ++i)   // Blend
-				{
-					float const filteredSampleDominant = filterDominant09->ProcessSample(*pChannelInPlace);
-					float const filteredSampleResidual = filterResidual09->ProcessSample(*pChannelInPlace);
-
-					float const fadeValue = i * fadeFactor;
-
-					*pChannelInPlace =
-						((filteredSampleResidual * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic))
-						 + (filteredSampleDominant * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))); // Linear Fade because correlation is 1
-					++pChannelInPlace;
-				}
-			}
-			else
-			{
-				for (int i = 1; i <= g_bigFadeLengthInteger; ++i)   // Blend
-				{
-					float const filteredSampleDominant = filterDominant09->ProcessSample(*pChannelInPlace);
-					float const filteredSampleResidual =
-						filterResidual10->ProcessSample(
-							filterResidual11->ProcessSample(*pChannelInPlace));
-
-					float const fadeValue = i * fadeFactor;
-
-					*pChannelInPlace =
-						((filteredSampleResidual * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeoutLogarithmic))
-						 + (filteredSampleDominant * ComputeFade(fadeValue, g_linearFadeStrength, EFadeType::FadeinLogarithmic))); // Linear Fade because correlation is 1
-					++pChannelInPlace;
-				}
-			}
-
-			for (int i = g_bigFadeLengthInteger; i < inputValidFrames; ++i)   // Write Rest with new Filters
-			{
-				*pChannelInPlace = filterDominant09->ProcessSample(*pChannelInPlace);
-
-				++pChannelInPlace;
-			}
-
-			break;
-		}
-	default:
-		{
-			break;
-		}
+		memcpy(pDelBuffer, pInChannelConcealed, sizeof(AkSampleType) * delayCurrent);
 	}
 }
 
-}// namespace Plugins
-}// namespace Wwise
-}// namespace Impl
-}// namespace CryAudio
+} // namespace Plugins
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio
