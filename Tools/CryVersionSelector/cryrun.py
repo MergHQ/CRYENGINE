@@ -303,7 +303,7 @@ def generate_project_solution(project_path, cmakelists_dir, open_cmake=False):
 
         # Visual Studio 16 2019
         {
-            'title': 'Visual Studio 2019',
+            'title': 'Visual Studio 2019 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 16 2019',
             'cmake_builddir': 'solutions/win64',
@@ -366,7 +366,19 @@ def generate_engine_solution(engine_path):
                 'reg_key': winreg.HKEY_CLASSES_ROOT,
                 'key_path': r'\VisualStudio.DTE.15.0'
             }
-        }
+        },
+
+        # Visual Studio 16 2019
+        {
+            'title': 'Visual Studio 2019 Win64',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 16 2019',
+            'cmake_builddir': 'solutions/win64',
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.16.0'
+            }
+        },
     ]
 
     # Run the GUI to select a config for CMake.
