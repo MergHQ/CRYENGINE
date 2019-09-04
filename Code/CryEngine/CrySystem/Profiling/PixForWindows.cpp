@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "PixForWindows.h"
 
+#if WIN_PIX_AVAILABLE
+
 #include <CryThreading/IThreadManager.h>
 #include <CryString/StringUtils.h>
 
@@ -45,3 +47,5 @@ void CPixForWindows::EndFrame()
 {
 	PIXEndEvent();
 }
+
+#endif
