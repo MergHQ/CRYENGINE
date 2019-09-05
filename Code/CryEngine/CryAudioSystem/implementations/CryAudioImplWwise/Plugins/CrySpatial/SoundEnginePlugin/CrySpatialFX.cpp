@@ -851,7 +851,7 @@ void CrySpatialFX::FilterBuffers(
 	float const gameElevation = pUserData->gameElevation;
 	int const inputValidFrames = pInputBuffer->uValidFrames;
 
-	float const elevationFactor = (fabs(gameElevation) / static_cast<float>(g_piHalf));
+	float const elevationFactor = (fabsf(gameElevation) / static_cast<float>(g_piHalf));
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
 	BiquadIIFilter
