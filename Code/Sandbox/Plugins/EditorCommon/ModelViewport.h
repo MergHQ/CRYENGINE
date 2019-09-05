@@ -13,7 +13,6 @@
 struct IPhysicalEntity;
 struct ISkeletonAnim;
 class CAnimationSet;
-namespace CryAudio { struct IListener; }
 
 /////////////////////////////////////////////////////////////////////////////
 // CModelViewport window
@@ -153,8 +152,6 @@ protected:
 	f32                         m_LightRotationRadian;
 
 	_smart_ptr<IEditorMaterial> m_pCurrentMaterial;
-
-	CryAudio::IListener*        m_pIAudioListener;
 
 	//---------------------------------------------------
 	//---    debug options                            ---
