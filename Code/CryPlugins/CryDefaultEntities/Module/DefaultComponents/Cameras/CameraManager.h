@@ -23,11 +23,6 @@ public:
 		if (pComponent->GetEntity()->GetSimulationMode() == EEntitySimulationMode::Preview)
 			return;
 
-		if (m_pActive)
-		{
-			m_pActive->DisableAudioListener();
-		}
-
 		m_pActive = pComponent;
 
 		for (const ICameraComponent* component : m_Cameras)

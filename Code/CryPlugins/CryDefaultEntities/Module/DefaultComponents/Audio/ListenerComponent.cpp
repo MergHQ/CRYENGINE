@@ -14,10 +14,10 @@ namespace DefaultComponents
 void CListenerComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CListenerComponent::SetActive, "1ECF05D6-7E0B-4954-AC2B-087488E42F2B"_cry_guid, "SetActive");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CListenerComponent::SetUpdatePosition, "7EA9C2D4-1C50-4485-9136-625DAE4ADFC6"_cry_guid, "UpdatePosition");
 		pFunction->SetDescription("Enables/Disables the component.");
 		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		pFunction->BindInput(1, 'val', "Activate");
+		pFunction->BindInput(1, 'val', "Enable");
 		componentScope.Register(pFunction);
 	}
 }
@@ -25,16 +25,13 @@ void CListenerComponent::Register(Schematyc::CEnvRegistrationScope& componentSco
 //////////////////////////////////////////////////////////////////////////
 void CListenerComponent::Initialize()
 {
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	m_previousListenerId = m_listenerHelper.m_id;
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+
 	if (m_pIListener == nullptr)
 	{
-		Matrix34 const tm = GetWorldTransformMatrix();
-		CRY_ASSERT(tm.IsValid(), "Invalid Matrix34 during CListenerComponent::Initialize");
-		m_previousTransformation = tm;
-
-		SetName("Listener");
-		CryFixedStringT<CryAudio::MaxObjectNameLength> name;
-		name.Format("audio_listener_%s_%d", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
-		m_pIListener = gEnv->pAudioSystem->CreateListener(m_previousTransformation, name.c_str());
+		m_pIListener = gEnv->pAudioSystem->GetListener(m_listenerHelper.m_id);
 
 		if (m_pIListener != nullptr)
 		{
@@ -47,19 +44,14 @@ void CListenerComponent::Initialize()
 //////////////////////////////////////////////////////////////////////////
 void CListenerComponent::OnShutDown()
 {
-	if (m_pIListener != nullptr)
-	{
-		gEnv->pEntitySystem->GetAreaManager()->ExitAllAreas(GetEntityId());
-		gEnv->pAudioSystem->ReleaseListener(m_pIListener);
-		m_pIListener = nullptr;
-	}
+	m_pIListener = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 Cry::Entity::EventFlags CListenerComponent::GetEventMask() const
 {
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	return ENTITY_EVENT_XFORM | ENTITY_EVENT_SET_NAME;
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 #else
 	return ENTITY_EVENT_XFORM;
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
@@ -68,29 +60,47 @@ Cry::Entity::EventFlags CListenerComponent::GetEventMask() const
 //////////////////////////////////////////////////////////////////////////
 void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 {
-	if (m_bActive && m_pIListener != nullptr)
+	if (m_pIListener != nullptr)
 	{
 		switch (event.event)
 		{
 		case ENTITY_EVENT_XFORM:
 			{
-				int const flags = static_cast<int>(event.nParam[0]);
-
-				if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) != 0)
+				if (m_listenerHelper.m_updatePosition)
 				{
-					OnTransformChanged();
+					int const flags = static_cast<int>(event.nParam[0]);
 
+					if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) != 0)
+					{
+						OnTransformChanged();
+					}
 				}
 
 				break;
 			}
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-		case ENTITY_EVENT_SET_NAME:
-			CryFixedStringT<CryAudio::MaxObjectNameLength> name;
-			name.Format("audio_listener_%s_%d", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
-			m_pIListener->SetName(name.c_str());
-			break;
+		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+			{
+				if (m_previousListenerId != m_listenerHelper.m_id)
+				{
+					m_pIListener = gEnv->pAudioSystem->GetListener(m_listenerHelper.m_id);
+					m_previousListenerId = m_listenerHelper.m_id;
+
+					if (m_listenerHelper.m_updatePosition)
+					{
+						// Force transformation update for newly selected listener.
+						m_previousTransformation = GetWorldTransformMatrix();
+						m_pIListener->SetTransformation(m_previousTransformation);
+					}
+				}
+
+				break;
+			}
 #endif      // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+		default:
+			{
+				break;
+			}
 		}
 	}
 }
@@ -105,9 +115,6 @@ void CListenerComponent::OnTransformChanged()
 	{
 		m_previousTransformation = tm;
 		m_pIListener->SetTransformation(m_previousTransformation);
-
-		// Add entity to the AreaManager for raising audio relevant events.
-		gEnv->pEntitySystem->GetAreaManager()->MarkEntityForUpdate(m_pEntity->GetId());
 	}
 }
 } // namespace DefaultComponents

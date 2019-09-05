@@ -37,10 +37,6 @@ namespace Cry
 			{
 				m_pCameraManager->AddCamera(this);
 
-				m_pAudioListener = m_pEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
-				CRY_ASSERT(m_pAudioListener != nullptr);
-				m_pAudioListener->SetComponentFlags(m_pAudioListener->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
-
 				if (m_bActivateOnCreate)
 				{
 					Activate();
