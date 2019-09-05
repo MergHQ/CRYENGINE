@@ -1,7 +1,7 @@
 
 #options
 
-option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin (currently Schematyc2.dll)" ON)
+option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin (currently Schematyc2.dll)" OFF)
 option(PLUGIN_SCHEMATYC_EXPERIMENTAL "Enables compilation of the Experimental Schematyc plugin (Schematyc.dll)" ON)
 
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
