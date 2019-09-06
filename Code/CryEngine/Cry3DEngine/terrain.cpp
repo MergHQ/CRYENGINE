@@ -504,29 +504,6 @@ int CTerrain::GetTerrainNodesAmount()
 	return (int)amount;
 }
 
-void CTerrain::IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const SRenderingPassInfo& passInfo)
-{
-	if (GetParentNode())
-	{
-		float fHalfGSMBoxSize = 0.5f / (pFrustum->fFrustrumSize * Get3DEngine()->m_fGsmRange);
-
-		if (pFrustum->pLightOwner == Get3DEngine()->GetSunEntity())
-		{
-			// move near plane closer to the light source, this will include all casters located between player and sun, shadow-gen shader is also modified to render casters outside of near plane
-			ShadowMapFrustum tmpFrustum = *pFrustum;
-			CCamera& cam0 = tmpFrustum.FrustumPlanes[0];
-			cam0.SetFrustum(cam0.GetViewSurfaceX(), cam0.GetViewSurfaceZ(), cam0.GetFov(), 1.f, cam0.GetFarPlane());
-			CCamera& cam1 = tmpFrustum.FrustumPlanes[1];
-			cam1.SetFrustum(cam1.GetViewSurfaceX(), cam1.GetViewSurfaceZ(), cam1.GetFov(), 1.f, cam1.GetFarPlane());
-			GetParentNode()->IntersectWithShadowFrustum(false, plstResult, &tmpFrustum, fHalfGSMBoxSize, passInfo);
-		}
-		else
-		{
-			GetParentNode()->IntersectWithShadowFrustum(false, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);
-		}
-	}
-}
-
 void CTerrain::IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult)
 {
 	if (GetParentNode())

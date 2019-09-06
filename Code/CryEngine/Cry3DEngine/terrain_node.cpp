@@ -1113,23 +1113,6 @@ void CTerrainNode::UpdateDetailLayersInfo(bool bRecursive)
 	m_bProcObjectsReady = false;
 }
 
-void CTerrainNode::IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo)
-{
-	if (bAllIn || (pFrustum && pFrustum->IntersectAABB(GetBBox(), &bAllIn)))
-	{
-		float fSectorSize = GetBBox().max.x - GetBBox().min.x;
-		if (m_pChilds && (fSectorSize * GetCVars()->e_TerrainMeshInstancingShadowLodRatio > fHalfGSMBoxSize || (m_nTreeLevel > GetCVars()->e_TerrainMeshInstancingMinLod && pFrustum->IsCached())))
-		{
-			for (int i = 0; i < 4; i++)
-				m_pChilds[i].IntersectWithShadowFrustum(bAllIn, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);
-		}
-		else
-		{
-			plstResult->Add(this);
-		}
-	}
-}
-
 void CTerrainNode::IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult)
 {
 	if (aabbBox.IsIntersectBox(GetBBox()))

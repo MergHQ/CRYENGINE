@@ -390,7 +390,6 @@ public:
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);
 	void          RemoveProcObjects(bool bRecursive = false);
-	void          IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo);
 	void          IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult);
 	CTerrainNode* FindMinNodeContainingBox(const AABB& aabbBox);
 	bool          RenderSector(const SRenderingPassInfo& passInfo); // returns true only if the sector rendermesh is valid and does not need to be updated

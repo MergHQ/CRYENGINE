@@ -602,7 +602,14 @@ public:
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void   InvalidatePermanentRenderObject() { if (m_pTempData) m_pTempData->invalidRenderObjects = m_pTempData->hasValidRenderObjects.load(); }
+	ILINE void InvalidatePermanentRenderObject()
+	{
+		if (m_pTempData)
+		{
+			m_pTempData->invalidRenderObjects = m_pTempData->hasValidRenderObjects.load();
+			m_manipulationFrame = -1;
+		}
+	}
 
 	void MarkAsUncompiled() const;
 	IOctreeNode* GetParent() const;

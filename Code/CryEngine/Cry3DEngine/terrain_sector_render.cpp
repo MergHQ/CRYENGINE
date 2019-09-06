@@ -393,17 +393,16 @@ void CTerrainNode::SetupTexGenParams(SSurfaceType* pSurfaceType, float* pOutPara
 
 void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 {
-	const auto pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
-	if (!pTempData)
-	{
-		CRY_ASSERT(false);
-		return;
-	}
-
 	// Use mesh instancing for distant low-lod sectors and during shadow map generation
 	if (passInfo.IsShadowPass() || (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod))
 	{
 		SetupTexturing(false, passInfo);
+
+		const auto pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
+		if (!CRY_VERIFY(pTempData != nullptr))
+		{
+			return;
+		}
 
 		IRenderMesh* pRenderMesh = GetSharedRenderMesh();
 
@@ -432,6 +431,12 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 			pRenderMesh->AddRenderElements(GetTerrain()->m_pTerrainEf, pTerrainRenderObject, passInfo, EFSLIST_GENERAL, 1);
 		}
 
+		return;
+	}
+
+	const auto pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
+	if (!CRY_VERIFY(pTempData != nullptr))
+	{
 		return;
 	}
 
@@ -828,7 +833,6 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 		return;
 
 	InvalidatePermanentRenderObject();
-	m_manipulationFrame = -1;
 
 	_smart_ptr<IRenderMesh>& pRenderMesh = pLeafData->m_pRenderMesh;
 	UpdateRenderMesh(&m_pUpdateTerrainTempData->m_StripsInfo);
