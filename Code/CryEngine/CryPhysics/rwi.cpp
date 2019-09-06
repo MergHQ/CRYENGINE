@@ -531,9 +531,10 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 			m_rwiQueue[m_rwiQueueHead].iCaller |= 1<<16;
 		}
 		m_rwiQueue[m_rwiQueueHead].nMaxHits = rp.nMaxHits;
-		m_rwiQueue[m_rwiQueueHead].nSkipEnts = min((int)(sizeof(m_rwiQueue[0].idSkipEnts)/sizeof(m_rwiQueue[0].idSkipEnts[0])),rp.nSkipEnts);
+		m_rwiQueue[m_rwiQueueHead].nSkipEnts = rp.nSkipEnts;
+		int *idSkipEnts = rp.nSkipEnts>CRY_ARRAY_COUNT(m_rwiQueue[0].idSkipEnts) ? (int*)(m_rwiQueue[m_rwiQueueHead].pSkipEnts = new IPhysicalEntity*[rp.nSkipEnts]) : m_rwiQueue[m_rwiQueueHead].idSkipEnts;
 		for(i=0;i<m_rwiQueue[m_rwiQueueHead].nSkipEnts;i++)
-			m_rwiQueue[m_rwiQueueHead].idSkipEnts[i] = rp.pSkipEnts[i] ? GetPhysicalEntityId(rp.pSkipEnts[i]):-3;
+			idSkipEnts[i] = rp.pSkipEnts[i] ? GetPhysicalEntityId(rp.pSkipEnts[i]):-3;
 		m_rwiQueueSz++;
 		return 1;
 	} 
@@ -738,7 +739,7 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 int CPhysicalWorld::TracePendingRays(int bDoTracing)
 {	
 	int i,nChex=0;
-	IPhysicalEntity* pSkipEnts[8] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+	IPhysicalEntity* *pSkipEnts, *skipEntsBuf[8] = {};
 	int iCaller = get_iCaller();
 	WriteLock lockg(m_lockTPR);
 
@@ -760,10 +761,14 @@ int CPhysicalWorld::TracePendingRays(int bDoTracing)
 			}
 			eprr.pForeignData = curreq.pForeignData;
 			eprr.iForeignData = curreq.iForeignData;
-			for(i=0; i<curreq.nSkipEnts; i++)
-				pSkipEnts[i] = GetPhysicalEntityById(curreq.idSkipEnts[i]);
+			pSkipEnts = skipEntsBuf;
+			int *idSkipEnts = curreq.nSkipEnts>CRY_ARRAY_COUNT(curreq.idSkipEnts) ? (int*)(pSkipEnts=curreq.pSkipEnts) : curreq.idSkipEnts;
+			for(i=curreq.nSkipEnts-1; i>=0; i--)
+				pSkipEnts[i] = GetPhysicalEntityById(idSkipEnts[i]);
 			curreq.pSkipEnts = pSkipEnts;
 			eprr.nHits = bDoTracing ? RayWorldIntersection(curreq, "RayWorldIntersection(Queued)", iCaller) : 0;
+			if (pSkipEnts!=skipEntsBuf)
+				delete[] pSkipEnts;
 			eprr.bHitsFromPool = curreq.iCaller>>16;
 			eprr.nMaxHits = curreq.nMaxHits;
 			eprr.pHits = curreq.hits;
@@ -787,8 +792,10 @@ int CPhysicalWorld::TracePendingRays(int bDoTracing)
 			}
 			eppr.pForeignData = curreq.pForeignData;
 			eppr.iForeignData = curreq.iForeignData;
+			pSkipEnts = skipEntsBuf;
+			int *idSkipEnts = curreq.nSkipEnts>CRY_ARRAY_COUNT(curreq.idSkipEnts) ? (int*)(pSkipEnts=curreq.pSkipEnts) : curreq.idSkipEnts;
 			for(i=0; i<curreq.nSkipEnts; i++)
-				pSkipEnts[i] = GetPhysicalEntityById(curreq.idSkipEnts[i]);
+				pSkipEnts[i] = GetPhysicalEntityById(idSkipEnts[i]);
 			eppr.OnEvent = curreq.OnEvent;
 			curreq.pprim = (primitive*)curreq.primbuf;
 			curreq.pSkipEnts = pSkipEnts;
@@ -801,6 +808,8 @@ int CPhysicalWorld::TracePendingRays(int bDoTracing)
 				if (!(eppr.pEntity = GetPhysicalEntityById(pcontact->iPrim[0])))
 					eppr.pEntity = &g_StaticPhysicalEntity;
 			}
+			if (pSkipEnts!=skipEntsBuf)
+				delete[] pSkipEnts;
 			OnEvent(0,&eppr);
 		} while(true);
 	}

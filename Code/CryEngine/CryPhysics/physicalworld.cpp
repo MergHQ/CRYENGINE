@@ -4316,9 +4316,10 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 		m_pwiQueue[m_pwiQueueHead].pForeignData = pp.pForeignData;
 		m_pwiQueue[m_pwiQueueHead].iForeignData = pp.iForeignData;
 		m_pwiQueue[m_pwiQueueHead].OnEvent = pp.OnEvent;
-		m_pwiQueue[m_pwiQueueHead].nSkipEnts = min((int)(sizeof(m_pwiQueue[0].idSkipEnts)/sizeof(m_pwiQueue[0].idSkipEnts[0])),pp.nSkipEnts);
+		m_pwiQueue[m_pwiQueueHead].nSkipEnts = pp.nSkipEnts;
+		int *idSkipEnts = pp.nSkipEnts>CRY_ARRAY_COUNT(m_pwiQueue[0].idSkipEnts) ? (int*)(m_pwiQueue[m_pwiQueueHead].pSkipEnts = new IPhysicalEntity*[pp.nSkipEnts]) : m_pwiQueue[m_pwiQueueHead].idSkipEnts;
 		for(i=0;i<m_pwiQueue[m_pwiQueueHead].nSkipEnts;i++)
-			m_pwiQueue[m_pwiQueueHead].idSkipEnts[i] = pp.pSkipEnts[i] ? GetPhysicalEntityId(pp.pSkipEnts[i]):-3;
+			idSkipEnts[i] = pp.pSkipEnts[i] ? GetPhysicalEntityId(pp.pSkipEnts[i]):-3;
 		m_pwiQueueSz++;
 		return 1;
 	}
