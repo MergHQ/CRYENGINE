@@ -148,10 +148,10 @@ QSize CEditorContent::GetMinimumSizeForOrientation(Qt::Orientation orientation) 
 		// Add content min size
 		result += contentMinSize;
 
-		// Take the area layout minimum sizes into account. We just need to expand the already provided minimum size
-		// with values of min size of layouts holding toolbars. These match the minimum size of the full collection of toolbars
-		result.expandedTo(QSize(pTopArea->layout()->minimumSize().width(), pLeftArea->layout()->minimumSize().height()));
-		result.expandedTo(QSize(pBottomArea->layout()->minimumSize().width(), pRightArea->layout()->minimumSize().height()));
+		// Take the area layout size hints into account. Expand the current result with the toolbar area layout's size hint.
+		// We use size hint rather than minimum size since toolbar area item's size policy is set to preferred.
+		result = result.expandedTo(QSize(pTopArea->layout()->sizeHint().height(), pLeftArea->layout()->sizeHint().width()));
+		result = result.expandedTo(QSize(pBottomArea->layout()->sizeHint().height(), pRightArea->layout()->sizeHint().width()));
 	}
 	else
 	{
@@ -167,8 +167,8 @@ QSize CEditorContent::GetMinimumSizeForOrientation(Qt::Orientation orientation) 
 		// Add flipped content min size
 		result += QSize(contentMinSize.height(), contentMinSize.width());
 
-		result.expandedTo(QSize(pLeftArea->layout()->minimumSize().width(), pTopArea->layout()->minimumSize().height()));
-		result.expandedTo(QSize(pRightArea->layout()->minimumSize().width(), pBottomArea->layout()->minimumSize().height()));
+		result = result.expandedTo(QSize(pLeftArea->layout()->sizeHint().height(), pTopArea->layout()->sizeHint().width()));
+		result = result.expandedTo(QSize(pRightArea->layout()->sizeHint().height(), pBottomArea->layout()->sizeHint().width()));
 	}
 
 	return result;
