@@ -87,7 +87,7 @@ private:
 	bool InitializeLibrary();
 	bool AllocateVoicePool();
 	bool CreateDbas();
-	bool RegisterAcf();
+	void RegisterAcf();
 	void UnregisterAcf();
 	void InitializeFileSystem();
 

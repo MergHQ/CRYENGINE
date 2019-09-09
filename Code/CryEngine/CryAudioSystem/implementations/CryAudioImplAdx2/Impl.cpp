@@ -400,8 +400,9 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 
 	InitializeFileSystem();
 
-	if (InitializeLibrary() && AllocateVoicePool() && CreateDbas() && RegisterAcf())
+	if (InitializeLibrary() && AllocateVoicePool() && CreateDbas())
 	{
+		RegisterAcf();
 		SetListenerConfig();
 		SetPlayerConfig();
 		Set3dSourceConfig();
@@ -1517,9 +1518,8 @@ bool CImpl::CreateDbas()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CImpl::RegisterAcf()
+void CImpl::RegisterAcf()
 {
-	bool acfRegistered = false;
 	bool acfExists = false;
 
 	CryFixedStringT<MaxFilePathLength> acfPath;
@@ -1563,8 +1563,6 @@ bool CImpl::RegisterAcf()
 
 		if (criAtomExAcf_GetAcfInfo(&acfInfo) == CRI_TRUE)
 		{
-			acfRegistered = true;
-
 			g_absoluteVelocityAisacId = criAtomExAcf_GetAisacControlIdByName(g_szAbsoluteVelocityAisacName);
 			g_occlusionAisacId = criAtomExAcf_GetAisacControlIdByName(g_szOcclusionAisacName);
 
@@ -1585,8 +1583,6 @@ bool CImpl::RegisterAcf()
 		Cry::Audio::Log(ELogType::Error, "ACF not found.");
 	}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
-
-	return acfRegistered;
 }
 
 //////////////////////////////////////////////////////////////////////////
