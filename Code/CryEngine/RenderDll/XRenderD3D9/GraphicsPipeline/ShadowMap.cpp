@@ -219,6 +219,11 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 			{
 				CryLog("Allocating shadow map cache %d x %d: %.2f MB", nResolutions[i], nResolutions[i], sqr(nResolutions[i]) * CTexture::BitsPerPixel(texFormat) / (1024.f * 1024.f * 8.f));
 				pTx->CreateDepthStencil(texFormat, Clr_FarPlane);
+
+				// This is a new texture and the contents are not representing previous data
+				// TODO: consider transferring the data from the old surface
+				// TODO: we would have to call gEnv->p3DEngine->ResetTemporalCaches(); to recover the lost data by re-rendering
+				pTx->SetDiscarded(true);
 			}
 		}
 	}
@@ -620,6 +625,10 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 					(pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmCached && !pFrustum->bIncrementalUpdate) ||
 					(pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && pFrustum->ShouldUpdate(side));
 
+				// Keep track if we do or don't want the existing contents in the depth-map in the future
+				if (pFrustum->IsCached() && !pFrustum->bIncrementalUpdate)
+					curPass.m_pDepthTarget->SetDiscarded(true);
+
 				curPass.SetLabel(curPass.m_ProfileLabel);
 				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
 
@@ -822,7 +831,9 @@ _smart_ptr<CTexture> CShadowMapStage::PrepareOutputsForFrustumWithCaching(const 
 			pDepthTarget = heightMapAO->GetHeightMapAODepthTex(0);
 		}
 
-		clearMode = frustum.bIncrementalUpdate ? CShadowMapPass::eClearMode_None : CShadowMapPass::eClearMode_Fill;
+		// Cover the case, that when a full update was requested and no objects are rendered into it, the depth-map doesn't contain previous data	
+		const bool bPreviousContents = frustum.bIncrementalUpdate && !pDepthTarget->IsDiscarded();
+		clearMode = bPreviousContents ? CShadowMapPass::eClearMode_None : CShadowMapPass::eClearMode_Fill;
 	}
 	else if (frustum.m_eFrustumType == ShadowMapFrustum::eFrustumType::e_GsmDynamicDistance)
 	{
@@ -1075,7 +1086,8 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 	CRY_ASSERT(pDst->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance);
 	CRY_ASSERT(pSrc->nShadowMapLod == pDst->nShadowMapLod);
 
-	const bool bEmptySrcFrustum = !pSrc->ShouldSample();
+	// Cover the case, that when a full update was requested and no objects are rendered into it, the depth-map doesn't contain previous data
+	const bool bEmptySrcFrustum = !pSrc->ShouldSample() || pSrc->pDepthTex->IsDiscarded();
 	const auto& renderItems = reinterpret_cast<CRenderView*>(targetPass.m_pFrustumToRender->pShadowsView.get())->GetRenderItems(ERenderListID(0));
 	const auto& depthTarget = targetPass.GetPassDesc().GetDepthTarget();
 
@@ -1211,6 +1223,7 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 				const auto& depthTarget = curPass.GetPassDesc().GetDepthTarget();
 
 				CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
+				depthTarget.pTexture->SetDiscarded(false);
 
 				for (const auto& colorTarget : curPass.GetPassDesc().GetRenderTargets())
 				{

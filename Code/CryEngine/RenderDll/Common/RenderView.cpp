@@ -1867,7 +1867,7 @@ void CRenderView::CompileModifiedRenderObjects()
 	int numTempObjects = 0;
 #endif
 
-	auto* pShadowStage = m_pGraphicsPipeline->GetStage<CShadowMapStage>();
+	auto* pShadowStage = IsShadowGenView() ? m_pGraphicsPipeline->GetStage<CShadowMapStage>() : nullptr;
 
 	for (const auto& compilationData : m_permanentRenderObjectsToCompile)
 	{
@@ -1884,24 +1884,24 @@ void CRenderView::CompileModifiedRenderObjects()
 			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Object is failing too many times!!!");
 
 		if (pRenderObject->IsCompiledForPass(passType) && recompilationFlags == eObjCompilationOption_None)
-				continue;
+			continue;
 
 		WriteLock lock(pRenderObject->m_accessLock); // Block on write access to the render object (e.g. pri.m_pCompiledObject, pRenderObject->SetCompiledForPass())
 
 		// Do compilation on the chain of the compiled objects
 		bool bAllCompiled = true;
+		bool bAllShadowRenderable = true;
 
 		// compile items
 		const auto& items = pRenderObject->m_permanentRenderItems[passType];
-
-		bool allCachedShadowPsosAreValid = true;
 		for (int i = 0, num = items.size(); i < num; i++)
 		{
 			auto& pri = items[i];
 			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(recompilationFlags, instanceInfo, pri.m_ObjFlags, pri.m_ElmFlags, pri.m_aabb, this))
 				bAllCompiled = false;
 
-			allCachedShadowPsosAreValid &= pShadowStage->CanRenderCachedShadows(pri.m_pCompiledObject);
+			if (pShadowStage)
+				bAllShadowRenderable &= pShadowStage->CanRenderCachedShadows(pri.m_pCompiledObject);
 		}
 
 		pRenderObject->SetCompiledForPass(passType, bAllCompiled);
@@ -1909,12 +1909,12 @@ void CRenderView::CompileModifiedRenderObjects()
 		if (!bAllCompiled)
 		{
 			pRenderObject->IncrementFailedCompilationCount(passType);
-		}
 
-		if (!allCachedShadowPsosAreValid && IsShadowGenView())
-		{
-			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-			ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
+			if (!bAllShadowRenderable)
+			{
+				// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
+				ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
+			}
 		}
 	}
 	m_permanentRenderObjectsToCompile.clear();
@@ -1925,10 +1925,14 @@ void CRenderView::CompileModifiedRenderObjects()
 #if defined(ENABLE_PROFILING_CODE)
 		++numTempObjects;
 #endif
-		t.pObject->Compile(eObjCompilationOption_All, t.pObject->m_pRO->GetInstanceInfo(), t.objFlags, t.elmFlags, t.localAABB, this);
-		const bool cachedShadowPsosAreValid = pShadowStage->CanRenderCachedShadows(t.pObject);
 
-		if (!cachedShadowPsosAreValid && IsShadowGenView())
+		t.pObject->Compile(eObjCompilationOption_All, t.pObject->m_pRO->GetInstanceInfo(), t.objFlags, t.elmFlags, t.localAABB, this);
+
+		bool bAllShadowRenderable = true;
+		if (pShadowStage)
+			bAllShadowRenderable &= pShadowStage->CanRenderCachedShadows(t.pObject);
+
+		if (!bAllShadowRenderable)
 		{
 			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
 			ShadowMapFrustum::ForceMarkNodeAsUncached(t.pObject->m_pRO->m_pRenderNode);
