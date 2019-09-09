@@ -95,14 +95,14 @@ public:
 #if defined(DEDICATED_SERVER)
 	virtual void SetDataProbeString(const char* pDataProbeString) override
 	{
-		CRY_ASSERT(m_dataProbeString->IsEmpty());
+		CRY_ASSERT(m_dataProbeString.IsEmpty());
 		m_dataProbeString = pDataProbeString;
 	}
 #endif
 	virtual const char* GetDataProbeString() const override
 	{
 #if defined(DEDICATED_SERVER)
-		return m_dataProbeString;
+		return m_dataProbeString.c_str();
 #else
 		return GetOwnDataProbeString();
 #endif

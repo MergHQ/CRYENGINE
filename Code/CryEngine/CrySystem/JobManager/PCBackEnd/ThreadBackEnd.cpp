@@ -136,7 +136,7 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	const bool hasJobSlot = m_JobQueue.GetJobSlot(jobSlot, nJobPriority, bWaitForFreeJobSlot);
 	JobManager::SInfoBlock* pFallbackInfoBlock = hasJobSlot ? nullptr : new JobManager::SInfoBlock();	
 
-#if !defined(_RELEASE)
+#if !defined(_RELEASE) || defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	pJobManager->IncreaseRunJobs();
 #endif
 
