@@ -227,6 +227,8 @@ void QToolsMenuToolWindowArea::OnCurrentChanged(int index)
 	{
 		customTabFrame->m_pLayout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
 	}
+
+	UpdateMenuButtonVisibility();
 }
 
 void QToolsMenuToolWindowArea::adjustDragVisuals()
@@ -247,12 +249,7 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 
 		if (tabBar()->count() > 1)
 		{
-			// Cache if the menu button is visible. Setting the corner widget will change the parent and in turn
-			// change the menu button's visibility
-			bool isMenuButtonVisible = m_menuButton->isVisible();
 			setCornerWidget(m_menuButton);
-			if (m_menuButton)
-				m_menuButton->setVisible(isMenuButtonVisible);
 		}
 		else if (tabBar()->count() == 1)
 		{
@@ -275,6 +272,7 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 			}
 		}
 
+		UpdateMenuButtonVisibility();
 	}
 
 	QToolWindowArea::adjustDragVisuals();
@@ -367,7 +365,6 @@ QWidget* QToolsMenuToolWindowArea::SetupMenu(int currentIndex)
 	QWidget* ownerWidget = foundParents.second;
 	IPane* pane = foundParents.first;
 
-	m_menuButton->setVisible(false);
 	setCornerWidget(0);
 
 	QWidget* focusTarget = ownerWidget;
@@ -405,13 +402,24 @@ QWidget* QToolsMenuToolWindowArea::SetupMenu(int currentIndex)
 
 	}
 
-	if (menuToAttach)
-	{
-		m_menuButton->setMenu(menuToAttach);
-		m_menuButton->setVisible(true);
-	}
+	m_menuButton->setMenu(menuToAttach);
 
 	return focusTarget;
+}
+
+void QToolsMenuToolWindowArea::UpdateMenuButtonVisibility()
+{
+	if (!m_menuButton)
+		return;
+
+	if (m_menuButton->menu())
+	{
+		m_menuButton->setVisible(true);
+	}
+	else
+	{
+		m_menuButton->setVisible(false);
+	}
 }
 
 QMenu* QToolsMenuToolWindowArea::CreateDefaultMenu()

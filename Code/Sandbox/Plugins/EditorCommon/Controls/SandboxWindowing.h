@@ -158,6 +158,10 @@ private:
 	//Return the widget that should be the window's focus proxy (this is needed for editor commands to work properly)
 	QWidget* SetupMenu(int currentIndex);
 
+	// Request to update menu button visibility. If the current panel has a menu it will be visible, otherwise it will
+	// remain hidden
+	void     UpdateMenuButtonVisibility();
+
 	QMenu*   CreateDefaultMenu();
 
 	QToolButton* m_menuButton;
