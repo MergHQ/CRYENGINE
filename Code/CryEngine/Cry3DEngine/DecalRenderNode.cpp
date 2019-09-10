@@ -562,6 +562,7 @@ void CDecalRenderNode::SetMatrix(const Matrix34& mat)
 		return;
 
 	m_pos = translation;
+	m_Matrix.SetTranslation(translation);
 
 	if (m_decalProperties.m_projectionType == SDecalProperties::ePlanar)
 		m_WSBBox.SetTransformedAABB(m_Matrix, AABB(-Vec3(1, 1, 0.5f), Vec3(1, 1, 0.5f)));
