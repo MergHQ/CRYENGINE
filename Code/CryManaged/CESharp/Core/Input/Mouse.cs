@@ -516,5 +516,11 @@ namespace CryEngine
 		{
 			_mouseListener = new DeferredMouseListener(this);
 		}
+
+		public static void RemoveListener()
+		{
+			Mouse.Instance._mouseListener.Dispose();
+			Mouse.Instance._mouseListener = null;
+		}
 	}
 }

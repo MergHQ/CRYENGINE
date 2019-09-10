@@ -553,7 +553,6 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 		}
 		break;
 	case ESYSTEM_EVENT_FAST_SHUTDOWN:
-	case ESYSTEM_EVENT_FULL_SHUTDOWN:
 		{
 			Shutdown();
 		}

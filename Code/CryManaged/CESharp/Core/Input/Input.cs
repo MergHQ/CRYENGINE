@@ -91,7 +91,7 @@ namespace CryEngine
 			_listener.OnInputReceived += OnInput;
 		}
 
-		private static void RemoveListener()
+		public static void RemoveListener()
 		{
 			_listener?.Dispose();
 			_listener = null;

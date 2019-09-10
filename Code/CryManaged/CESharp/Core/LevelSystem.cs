@@ -120,7 +120,7 @@ namespace CryEngine
 			isListening = true;
 		}
 
-		private void RemoveListener()
+		public void RemoveListener()
 		{
 			if (isListening == false)
 			{

@@ -43,7 +43,7 @@ namespace CryEngine
 			NativeAudioSystem.AddAudioRequestListener(fnPtr);
 		}
 
-		private static void RemoveListener()
+		public static void RemoveListener()
 		{
 			if(_requestListener == null)
 			{
