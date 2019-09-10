@@ -81,7 +81,7 @@ int custom_rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
 	LTC_ARGCHK(key    != NULL);
 
 	/* valid padding? */
-	if ((padding != LTC_LTC_PKCS_1_V1_5) && (padding != LTC_LTC_PKCS_1_OAEP))
+	if ((padding != LTC_PKCS_1_V1_5) && (padding != LTC_PKCS_1_OAEP))
 	{
 			return CRYPT_PK_INVALID_PADDING;
 	}
@@ -92,7 +92,7 @@ int custom_rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* valid hash? */
 		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
@@ -112,7 +112,7 @@ int custom_rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
 		return CRYPT_BUFFER_OVERFLOW;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* OAEP pad the key */
 		x = *outlen;
@@ -125,7 +125,7 @@ int custom_rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
 	{
 		/* LTC_PKCS #1 v1.5 pad the key */
 		x = *outlen;
-		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_LTC_PKCS_1_EME, modulus_bitlen, prng, prng_idx, out, &x)) != CRYPT_OK)
+		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_PKCS_1_EME, modulus_bitlen, prng, prng_idx, out, &x)) != CRYPT_OK)
 		{
 				return err;
 		}
@@ -156,12 +156,12 @@ int custom_rsa_decrypt_key_ex(const unsigned char *in,       unsigned long  inle
 
 	/* valid padding? */
 
-	if ((padding != LTC_LTC_PKCS_1_V1_5) && (padding != LTC_LTC_PKCS_1_OAEP))
+	if ((padding != LTC_PKCS_1_V1_5) && (padding != LTC_PKCS_1_OAEP))
 	{
 			return CRYPT_PK_INVALID_PADDING;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* valid hash ? */
 		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
@@ -195,7 +195,7 @@ int custom_rsa_decrypt_key_ex(const unsigned char *in,       unsigned long  inle
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* now OAEP decode the packet */
 		err = pkcs_1_oaep_decode(tmp, x, lparam, lparamlen, modulus_bitlen, hash_idx, out, outlen, stat);
@@ -203,7 +203,7 @@ int custom_rsa_decrypt_key_ex(const unsigned char *in,       unsigned long  inle
 	else
 	{
 		/* now LTC_PKCS #1 v1.5 depad the packet */
-		err = pkcs_1_v1_5_decode(tmp, x, LTC_LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
+		err = pkcs_1_v1_5_decode(tmp, x, LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
 	}
 
 	XFREE(tmp);
@@ -439,7 +439,7 @@ bool ReadEncryptionHeader(FILE * pSourceArchive,
 		unsigned char decryptBuffer[ZipFile::RSA_KEY_MESSAGE_LENGTH] = { 0 };
 		unsigned long len = ZipFile::RSA_KEY_MESSAGE_LENGTH;
 		int stat = 0;
-		int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.keys_table[i], len, decryptBuffer, &len, NULL, 0, sha256, LTC_LTC_PKCS_1_OAEP, &stat, &rsa_public_key);
+		int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.keys_table[i], len, decryptBuffer, &len, NULL, 0, sha256, LTC_PKCS_1_OAEP, &stat, &rsa_public_key);
 		if (decryptResult != CRYPT_OK || stat != 1)
 		{
 			printf("Failed to decrypt twofish key in table from archive\n");
@@ -452,7 +452,7 @@ bool ReadEncryptionHeader(FILE * pSourceArchive,
 	unsigned char decryptBuffer[ZipFile::RSA_KEY_MESSAGE_LENGTH] = { 0 };
 	unsigned long len = ZipFile::RSA_KEY_MESSAGE_LENGTH;
 	int stat = 0;
-	int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.CDR_IV, len, decryptBuffer, &len, NULL, 0, sha256, LTC_LTC_PKCS_1_OAEP, &stat, &rsa_public_key);
+	int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.CDR_IV, len, decryptBuffer, &len, NULL, 0, sha256, LTC_PKCS_1_OAEP, &stat, &rsa_public_key);
 	if (decryptResult != CRYPT_OK || stat != 1)
 	{
 		printf("Failed to decrypt initial vector from archive\n");
@@ -999,7 +999,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	encHeader.nHeaderSize = sizeof(ZipFile::CryCustomEncryptionHeader);
 
 	unsigned long bufferSize = sizeof(encHeader.CDR_IV);
-	int res = custom_rsa_encrypt_key_ex( CDR_initial_vector, sizeof(CDR_initial_vector), encHeader.CDR_IV, &bufferSize, NULL, 0, &g_yarrow_prng_state, prng_idx, sha256, LTC_LTC_PKCS_1_OAEP, &rsa_private_key);
+	int res = custom_rsa_encrypt_key_ex( CDR_initial_vector, sizeof(CDR_initial_vector), encHeader.CDR_IV, &bufferSize, NULL, 0, &g_yarrow_prng_state, prng_idx, sha256, LTC_PKCS_1_OAEP, &rsa_private_key);
 	if (res != CRYPT_OK)
 	{
 		printf("custom_rsa_encrypt_key_ex returned %s\n", error_to_string(res));
@@ -1008,7 +1008,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	for( int i = 0; i < ZipFile::BLOCK_CIPHER_NUM_KEYS; i++ )
 	{
 		bufferSize = ZipFile::RSA_KEY_MESSAGE_LENGTH;
-		int res = custom_rsa_encrypt_key_ex( block_cipher_keys_table[i], sizeof(block_cipher_keys_table[i]), encHeader.keys_table[i], &bufferSize, NULL, 0, &g_yarrow_prng_state, prng_idx, sha256, LTC_LTC_PKCS_1_OAEP, &rsa_private_key);
+		int res = custom_rsa_encrypt_key_ex( block_cipher_keys_table[i], sizeof(block_cipher_keys_table[i]), encHeader.keys_table[i], &bufferSize, NULL, 0, &g_yarrow_prng_state, prng_idx, sha256, LTC_PKCS_1_OAEP, &rsa_private_key);
 		if (res != CRYPT_OK)
 		{
 			printf("custom_rsa_encrypt_key_ex returned %s\n", error_to_string(res));
