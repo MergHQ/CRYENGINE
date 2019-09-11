@@ -38,8 +38,8 @@ struct SListenerSerializeHelper final
 	void Serialize(Serialization::IArchive& archive)
 	{
 		archive(Serialization::AudioListener<string>(m_name), "name", "Name");
-		archive(m_updatePosition, "updatepos", "Update Position");
-		archive.doc("If enabled, the listener position gets updated when the entity moves.");
+		archive(m_offset, "offset", "Offset");
+		archive.doc("Offset of the listener position.");
 
 		if (archive.isInput())
 		{
@@ -52,12 +52,15 @@ struct SListenerSerializeHelper final
 				m_name = CryAudio::g_szDefaultListenerName;
 				m_id = CryAudio::DefaultListenerId;
 			}
+
+			m_hasOffset = m_offset != ZERO;
 		}
 	}
 
 	CryAudio::ListenerId m_id = CryAudio::DefaultListenerId;
 	string               m_name = CryAudio::g_szDefaultListenerName;
-	bool                 m_updatePosition = true;
+	Vec3                 m_offset = ZERO;
+	bool                 m_hasOffset = false;
 };
 
 class CListenerComponent final : public IEntityComponent
@@ -86,14 +89,15 @@ public:
 		desc.SetLabel("Listener");
 		desc.SetDescription("Audio Listener from which transformation the audio is recorded.");
 		desc.SetIcon("icons:Audio/component_audio_listener.ico");
-		desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
+		desc.SetComponentFlags({ IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 		desc.AddMember(&CListenerComponent::m_listenerHelper, 'list', "listener", "Listener", "The listener of this component.", SListenerSerializeHelper());
 	}
 
-	void SetUpdatePosition(bool const updatePos)
+	void SetOffset(Vec3 const& offset)
 	{
-		m_listenerHelper.m_updatePosition = updatePos;
+		m_listenerHelper.m_offset = offset;
+		m_listenerHelper.m_hasOffset = m_listenerHelper.m_offset != ZERO;
 	}
 
 private:

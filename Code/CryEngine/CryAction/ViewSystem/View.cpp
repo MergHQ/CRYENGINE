@@ -813,9 +813,4 @@ void CView::SetActive(bool const bActive)
 		// Make sure we have a valid audio listener entity on an active view!
 		CreateAudioListener();
 	}
-
-	if (m_pAudioListenerComponent != nullptr)
-	{
-		m_pAudioListenerComponent->SetUpdatePosition(bActive);
-	}
 }

@@ -10,14 +10,16 @@ namespace Audio
 {
 namespace DefaultComponents
 {
+constexpr float g_positionUpdateThreshold = 0.01f; // Listener needs to move at least 1 cm to trigger an update.
+
 //////////////////////////////////////////////////////////////////////////
 void CListenerComponent::Register(Schematyc::CEnvRegistrationScope& componentScope)
 {
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CListenerComponent::SetUpdatePosition, "7EA9C2D4-1C50-4485-9136-625DAE4ADFC6"_cry_guid, "UpdatePosition");
-		pFunction->SetDescription("Enables/Disables the component.");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CListenerComponent::SetOffset, "339E91ED-31F3-4FA1-B3C2-2DF9FA87DA94"_cry_guid, "SetOffset");
+		pFunction->SetDescription("Sets an offset to the listener component.");
 		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
-		pFunction->BindInput(1, 'val', "Enable");
+		pFunction->BindInput(1, 'val', "Offset");
 		componentScope.Register(pFunction);
 	}
 }
@@ -66,14 +68,11 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 		{
 		case ENTITY_EVENT_XFORM:
 			{
-				if (m_listenerHelper.m_updatePosition)
-				{
-					int const flags = static_cast<int>(event.nParam[0]);
+				int const flags = static_cast<int>(event.nParam[0]);
 
-					if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) != 0)
-					{
-						OnTransformChanged();
-					}
+				if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) != 0)
+				{
+					OnTransformChanged();
 				}
 
 				break;
@@ -85,14 +84,9 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 				{
 					m_pIListener = gEnv->pAudioSystem->GetListener(m_listenerHelper.m_id);
 					m_previousListenerId = m_listenerHelper.m_id;
-
-					if (m_listenerHelper.m_updatePosition)
-					{
-						// Force transformation update for newly selected listener.
-						m_previousTransformation = GetWorldTransformMatrix();
-						m_pIListener->SetTransformation(m_previousTransformation);
-					}
 				}
+
+				OnTransformChanged();
 
 				break;
 			}
@@ -108,13 +102,26 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 void CListenerComponent::OnTransformChanged()
 {
-	Matrix34 const tm = GetWorldTransformMatrix();
-
-	// Listener needs to move at least 1 cm to trigger an update.
-	if (!m_previousTransformation.IsEquivalent(tm, 0.01f))
+	if (!m_listenerHelper.m_hasOffset)
 	{
-		m_previousTransformation = tm;
-		m_pIListener->SetTransformation(m_previousTransformation);
+		Matrix34 const tm = GetWorldTransformMatrix();
+
+		if (!m_previousTransformation.IsEquivalent(tm, g_positionUpdateThreshold))
+		{
+			m_previousTransformation = tm;
+			m_pIListener->SetTransformation(m_previousTransformation);
+		}
+	}
+	else
+	{
+		Matrix34 tm = GetWorldTransformMatrix();
+		tm.AddTranslation(m_listenerHelper.m_offset);
+
+		if (!m_previousTransformation.IsEquivalent(tm, g_positionUpdateThreshold))
+		{
+			m_previousTransformation = tm;
+			m_pIListener->SetTransformation(m_previousTransformation);
+		}
 	}
 }
 } // namespace DefaultComponents
