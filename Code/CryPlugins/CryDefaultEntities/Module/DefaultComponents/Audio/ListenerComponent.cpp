@@ -114,8 +114,7 @@ void CListenerComponent::OnTransformChanged()
 	}
 	else
 	{
-		Matrix34 tm = GetWorldTransformMatrix();
-		tm.AddTranslation(m_listenerHelper.m_offset);
+		Matrix34 const tm = GetWorldTransformMatrix() * Matrix34(IDENTITY, m_listenerHelper.m_offset);
 
 		if (!m_previousTransformation.IsEquivalent(tm, g_positionUpdateThreshold))
 		{
