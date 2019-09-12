@@ -53,9 +53,9 @@ void CListenerComponent::OnShutDown()
 Cry::Entity::EventFlags CListenerComponent::GetEventMask() const
 {
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	return ENTITY_EVENT_XFORM | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_RESET | ENTITY_EVENT_DONE | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 #else
-	return ENTITY_EVENT_XFORM;
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_RESET | ENTITY_EVENT_DONE;
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 
@@ -74,6 +74,13 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 				{
 					OnTransformChanged();
 				}
+
+				break;
+			}
+		case ENTITY_EVENT_RESET:
+		case ENTITY_EVENT_DONE:
+			{
+				m_listenerHelper.m_offset = ZERO;
 
 				break;
 			}
