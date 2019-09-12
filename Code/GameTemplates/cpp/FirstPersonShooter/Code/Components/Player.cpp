@@ -65,6 +65,10 @@ void CPlayerComponent::InitializeLocalPlayer()
 {
 	// Create the camera component, will automatically update the viewport every frame
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCameraComponent>();
+
+	// Create the audio listener component.
+	m_pAudioListenerComponent = m_pEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
+
 	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
 	
@@ -128,8 +132,10 @@ void CPlayerComponent::InitializeLocalPlayer()
 
 Cry::Entity::EventFlags CPlayerComponent::GetEventMask() const
 {
-	return Cry::Entity::EEvent::BecomeLocalPlayer |
-			Cry::Entity::EEvent::Update;
+	return
+		Cry::Entity::EEvent::BecomeLocalPlayer |
+		Cry::Entity::EEvent::Update |
+		Cry::Entity::EEvent::Reset;
 }
 
 void CPlayerComponent::ProcessEvent(const SEntityEvent& event)
@@ -164,6 +170,12 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& event)
 			// Update the camera component offset
 			UpdateCamera(frameTime);
 		}
+	}
+	break;
+	case Cry::Entity::EEvent::Reset:
+	{
+		// Disable player when leaving game mode.
+		m_isAlive = event.nParam[0] != 0;
 	}
 	break;
 	}
@@ -344,6 +356,7 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 	}
 
 	m_pCameraComponent->SetTransformMatrix(localTransform);
+	m_pAudioListenerComponent->SetOffset(localTransform.GetTranslation());
 }
 
 void CPlayerComponent::OnReadyForGameplayOnServer()

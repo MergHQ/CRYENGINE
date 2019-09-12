@@ -9,6 +9,7 @@
 #include <DefaultComponents/Physics/CharacterControllerComponent.h>
 #include <DefaultComponents/Geometry/AdvancedAnimationComponent.h>
 #include <DefaultComponents/Input/InputComponent.h>
+#include <DefaultComponents/Audio/ListenerComponent.h>
 #include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 ////////////////////////////////////////////////////////
@@ -77,6 +78,7 @@ protected:
 	Cry::DefaultComponents::CCharacterControllerComponent* m_pCharacterController = nullptr;
 	Cry::DefaultComponents::CAdvancedAnimationComponent* m_pAnimationComponent = nullptr;
 	Cry::DefaultComponents::CInputComponent* m_pInputComponent = nullptr;
+	Cry::Audio::DefaultComponents::CListenerComponent* m_pAudioListenerComponent = nullptr;
 	IEntityNavigationComponent* m_pNavigationComponent = nullptr;
 
 	TagID m_walkTagId;
