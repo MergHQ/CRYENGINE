@@ -99,7 +99,7 @@
                     "optional": true
                 },
                 {
-                    "name": "FMOD 2.00.03",
+                    "name": "FMOD 2.00.04",
                     "description": "The FMOD SDK gives you the power to customize FMOD to meet your requirements. This low-level API is intended to cover the basics/primitives of sound. This includes concepts such as 'Channels', 'Sounds', 'DSP', 'ChannelGroups', 'Sound Groups', 'Recording' and concepts for 3D Sound and occlusion.",
                     "website": "https://www.fmod.com/download",
                     "optional": true
