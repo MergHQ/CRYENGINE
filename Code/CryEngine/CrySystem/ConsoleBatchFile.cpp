@@ -10,32 +10,6 @@
 #include "System.h"
 #include "SystemCFG.h"
 
-class CConsoleBatchSink : public ILoadConfigurationEntrySink
-{
-public:
-	CConsoleBatchSink(bool ignoreWhitelist) 
-		: m_pConsole(gEnv->pConsole), m_ignoreWhitelist(ignoreWhitelist)
-	{}
-
-	virtual void OnLoadConfigurationEntry(const char* szKey, const char* szValue, const char* szGroup) override
-	{
-		if (m_ignoreWhitelist || (gEnv->pSystem->IsCVarWhitelisted(szKey, false)))
-		{
-			gEnv->pConsole->ExecuteString((string(szKey) + " " + szValue).c_str());
-		}
-#if defined(DEDICATED_SERVER)
-		else
-		{
-			gEnv->pSystem->GetILog()->LogError("Failed to apply CVar/ execute command '%s' as it is not whitelisted\n", szKey);
-		}
-#endif   // defined(DEDICATED_SERVER)
-	}
-
-private:
-	IConsole* m_pConsole;
-	bool m_ignoreWhitelist;
-};
-
 void CConsoleBatchFile::Init()
 {
 	REGISTER_COMMAND("exec", (ConsoleCommandFunc)ExecuteFileCmdFunc, 0, "Executes a batch file of console commands");
@@ -59,7 +33,52 @@ void CConsoleBatchFile::ExecuteFileCmdFunc(IConsoleCmdArgs* args)
 
 	// Only circumvent whitelist when the file was in an archive, since we expect archives to be signed in release mode when whitelist is used
 	// Note that we still support running release mode without signed / encrypted archives, however this means that a conscious decision to sacrifice security has already been made.
+#ifdef RELEASE
 	const bool ignoreWhitelist = file.IsInPak();
-	CConsoleBatchSink sink(ignoreWhitelist);
-	gEnv->pSystem->LoadConfiguration(filename.c_str(), &sink, ELoadConfigurationType::eLoadConfigDefault);
+#else
+	const bool ignoreWhitelist = true;
+#endif
+
+	std::vector<char> fileContents(file.GetLength() + 1);
+	file.ReadRaw(fileContents.data(), file.GetLength());
+	fileContents.back() = '\0';
+	
+	char* const strLast = &fileContents.back() + 1;
+	char* str = fileContents.data();
+	while (str < strLast)
+	{
+		char* szLineStart = str;
+		// find the first line break
+		while (str < strLast && *str != '\n' && *str != '\r')
+			str++;
+		// clear it to handle the line as one string
+		*str = '\0';
+		str++;
+		// and skip any remaining line break chars
+		while (str < strLast && (*str == '\n' || *str == '\r'))
+			str++;
+
+		//trim all whitespace characters at the beginning and the end of the current line
+		string strLine = szLineStart;
+		strLine.Trim();
+
+		//skip empty lines
+		if (strLine.empty())
+			continue;
+
+		//skip comments, comments start with ";" or "--" (any preceding whitespaces have already been trimmed)
+		if (strLine[0] == ';' || strLine.find("--") == 0)
+			continue;
+
+		if (ignoreWhitelist || (gEnv->pSystem->IsCVarWhitelisted(strLine, false)))
+		{
+			gEnv->pConsole->ExecuteString(strLine);
+		}
+#if defined(DEDICATED_SERVER)
+		else
+		{
+			gEnv->pSystem->GetILog()->LogError("Failed to apply CVar/ execute command '%s' as it is not whitelisted\n", strKey.c_str());
+		}
+#endif // defined(DEDICATED_SERVER)
+	}
 }
