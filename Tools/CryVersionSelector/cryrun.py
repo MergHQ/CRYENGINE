@@ -349,7 +349,7 @@ def generate_engine_solution(engine_path):
             'title': 'Visual Studio 2015 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
-            'cmake_builddir': 'solutions_cmake/win64',
+            'cmake_builddir': 'solutions/win64',
             'compiler': {
                 'reg_key': winreg.HKEY_CLASSES_ROOT,
                 'key_path': r'\VisualStudio.DTE.14.0'
@@ -361,7 +361,7 @@ def generate_engine_solution(engine_path):
             'title': 'Visual Studio 2017 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017 Win64',
-            'cmake_builddir': 'solutions_cmake/win64',
+            'cmake_builddir': 'solutions/win64',
             'compiler': {
                 'reg_key': winreg.HKEY_CLASSES_ROOT,
                 'key_path': r'\VisualStudio.DTE.15.0'
