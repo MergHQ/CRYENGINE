@@ -35,7 +35,7 @@ class CryProject:
             if 'managed' in plugin.get('type', '').lower():
                 return True
 
-            if plugin.get('guid') is not None:
+            if plugin.get('guid') != "":
                 plugin_file = cryplugin.find(
                     self.data.get(
                         'require', []).get('engine', '.'), plugin['guid'])
