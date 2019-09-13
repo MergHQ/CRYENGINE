@@ -638,7 +638,7 @@ def cmd_upgrade(args):
         error_project_not_found(args.project_file)
 
     try:
-        file = open(args.project_file, 'r')
+        file = open(args.project_file, 'r', encoding="utf-8")
         project = configparser.ConfigParser()
         project.read_string('[project]\n' + file.read())
         file.close()
@@ -783,7 +783,7 @@ def cmd_require(args):
     if os.path.isfile(plugin_path):
         os.remove(plugin_path)
 
-    plugin_file = open(plugin_path, 'w')
+    plugin_file = open(plugin_path, 'w', encoding="utf-8")
     for k in plugin_list:
         project_file = cryregistry.project_file(registry, k)
         project_path = os.path.dirname(project_file)

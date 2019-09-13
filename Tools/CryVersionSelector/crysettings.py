@@ -20,14 +20,14 @@ class Settings:
         if not os.path.isfile(filepath):
             return
         try:
-            with open(filepath) as fd:
+            with open(filepath, encoding="utf-8") as fd:
                 self.settings = json.loads(fd.read())
         except ValueError:
             self.settings = {}
 
     def save(self):
         filepath = self.get_filepath()
-        with open(filepath, 'w') as fd:
+        with open(filepath, 'w', encoding="utf-8") as fd:
             json.dump(self.settings, fd, indent=4, sort_keys=True)
 
     def get_last_cmake_config(self):

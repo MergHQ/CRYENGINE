@@ -41,7 +41,7 @@ except ImportError:
 
 def load_engine_file(path):
     try:
-        file = open(path, 'r')
+        file = open(path, 'r', encoding="utf-8")
         proj = json.loads(file.read())
         file.close()
     except ValueError:
@@ -776,7 +776,7 @@ class CrySwitch(tk.Frame):
                 engine_id = "{%s}" % uuid.uuid4()
                 engine_path = os.path.join(engine_dirname, os.path.basename(
                     engine_dirname) + cryregistry.ENGINE_EXTENSION)
-                file = open(engine_path, 'w')
+                file = open(engine_path, 'w', encoding="utf-8")
                 file.write(json.dumps(
                     {'info': {'id': engine_id}}, indent=4, sort_keys=True))
                 file.close()

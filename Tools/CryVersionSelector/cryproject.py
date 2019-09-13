@@ -10,14 +10,14 @@ class CryProject:
         self.path = ''
 
     def load(self, path):
-        file = open(path, 'r')
+        file = open(path, 'r', encoding="utf-8")
         self.data = json.loads(file.read())
         file.close()
 
         self.path = path
 
     def save(self, path):
-        file = open(path, 'w')
+        file = open(path, 'w', encoding="utf-8")
         file.write(json.dumps(self.data, indent=4, sort_keys=True))
         file.close()
 
