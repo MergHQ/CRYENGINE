@@ -351,8 +351,8 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3 &vel, pe_pa
 						pbdst[nBuoys].waterFlow.zero();
 						for(int i=0;i<3;i++)
 							pbdst[nBuoys].waterFlow += m_pFlows[pMesh->m_pIndices[m_trihit.idx*3+i]]*(rarea*
-								((pMesh->m_pVertices[pMesh->m_pIndices[m_trihit.idx*3+i]]-ptloc ^ 
-								  pMesh->m_pVertices[pMesh->m_pIndices[m_trihit.idx*3+inc_mod3[i]]]-ptloc)*m_trihit.n));
+								((pMesh->m_pVertices[pMesh->m_pIndices[m_trihit.idx*3+inc_mod3[i]]]-ptloc ^ 
+								  pMesh->m_pVertices[pMesh->m_pIndices[m_trihit.idx*3+dec_mod3[i]]]-ptloc)*m_trihit.n));
 						pbdst[nBuoys].waterFlow = m_R*pbdst[nBuoys].waterFlow;
 					}
 				}
@@ -444,7 +444,7 @@ int CPhysArea::CheckPoint(const Vec3& pttest, float radius) const
 		if (bInside && m_pGeom && !m_debugGeomHash) {
 			CTriMesh *pMesh = (CTriMesh*)m_pGeom;
 			if (!(bInside &= pMesh->PointInsideStatusMesh(ptloc,&m_trihit)))
-				if (radius>0 && (i=pMesh->SphereCheck(ptloc,radius))) {
+				if (radius>0 && !(bInside = pMesh->PointInsideStatusMesh(ptloc-(m_pb.waterPlane.n*m_R)*radius,&m_trihit)) && (i=pMesh->SphereCheck(ptloc,radius))) {
 					m_trihit.idx = --i;	bInside = 1;
 					m_trihit.n = pMesh->m_pNormals[i];
 					for(i1=0;i1<3;i1++) m_trihit.pt[i1] = pMesh->m_pVertices[pMesh->m_pIndices[i*3+i1]];
@@ -1651,7 +1651,7 @@ IPhysicalEntity *CPhysicalWorld::AddArea(Vec3 *pt,int npt, float zmin,float zmax
 			if (pFlows)
 				pArea->m_pFlows[i] = pFlows[i]*pArea->m_R0;
 		}
-		if (pArea->m_pGeom = CreateMesh(pvtx,pidx,0,0,nTris, mesh_SingleBB|mesh_shared_vtx)) {
+		if (pArea->m_pGeom = CreateMesh(pvtx,pidx,0,0,nTris, mesh_AABB_rotated|mesh_shared_vtx, 0, 1,1)) {
 			((CTriMesh*)pArea->m_pGeom)->m_flags &= ~(mesh_shared_vtx|mesh_shared_idx);
 			pArea->m_pGeom->PrepareForRayTest(0);	pArea->m_debugGeomHash = 0;
 		}

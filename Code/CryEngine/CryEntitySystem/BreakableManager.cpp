@@ -912,30 +912,7 @@ void CBreakableManager::CreateObjectAsParticles(IStatObj* pStatObj, IPhysicalEnt
 IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEntity* pPhysEnt, IPhysicalEntity* pSrcPhysEnt, IBreakableManager::SCreateParams& createParams, bool bCreateSubstProxy)
 {
 	// Create new Rigid body entity.
-	IEntityClass* pClass = NULL;
-
-	bool bDefault = false;
-	//
-	if (!createParams.pSrcStaticRenderNode)
-	{
-		BreakLogAlways("BREAK: Using 'Breakage' class");
-		pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
-	}
-	else
-	{
-		if (createParams.overrideEntityClass)
-		{
-			pClass = createParams.overrideEntityClass;
-		}
-		else
-		{
-			BreakLogAlways("BREAK: Using 'Breakage' class with SrcStaticRenderNode");
-			bDefault = true;
-			pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
-		}
-	}
-	if (!pClass)
-		return 0;
+	bool bDefault = !createParams.overrideEntityClass;
 
 	if (pPhysEnt)
 	{
@@ -953,7 +930,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 	{
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW |
 		                ENTITY_FLAG_SPAWNED | createParams.nEntityFlagsAdd;
-		params.pClass = pClass;
+		params.pClass = createParams.overrideEntityClass;
 		params.vScale = Vec3(createParams.fScale, createParams.fScale, createParams.fScale);
 		params.sName = createParams.pName;
 

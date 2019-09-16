@@ -226,7 +226,7 @@ bool CEntityRender::SetParentSlot(int nParentIndex, int nChildIndex)
 //////////////////////////////////////////////////////////////////////////
 IStatObj* CEntityRender::GetCompoundObj() const
 {
-	return m_slots.size() == 1 && Slot(0)->GetStatObj() && Slot(0)->GetStatObj()->GetFlags() & STATIC_OBJECT_COMPOUND ? Slot(0)->GetStatObj() : 0;
+	return m_slots.size() >= 1 && Slot(0) && Slot(0)->GetStatObj() && Slot(0)->GetStatObj()->GetFlags() & STATIC_OBJECT_COMPOUND ? Slot(0)->GetStatObj() : 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
