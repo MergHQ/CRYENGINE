@@ -160,9 +160,16 @@ CQuerySimulator::CQuerySimulator()
 	m_queryHost.SetCallback(functor(*this, &CQuerySimulator::OnQueryHostFinished));
 	m_queryHost.SetQuerierName("QuerySimulator");
 
-	// instantiate the CUQSHistoryPostRenderer on the heap - it's IPostRenderer is refcounted and deletes itself when un-registering from the game's viewport
-	m_pHistoryPostRenderer = new CUQSHistoryPostRenderer;
-	GetIEditor()->GetViewportManager()->GetGameViewport()->AddPostRenderer(m_pHistoryPostRenderer);	// this increments its refcount
+	if (CViewport* pGameViewport = GetIEditor()->GetViewportManager()->GetGameViewport())
+	{
+		// instantiate the CUQSHistoryPostRenderer on the heap - it's IPostRenderer is refcounted and deletes itself when un-registering from the game's viewport
+		m_pHistoryPostRenderer = new CUQSHistoryPostRenderer;
+		pGameViewport->AddPostRenderer(m_pHistoryPostRenderer);	// this increments its refcount
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "UQS Editor needs a Viewport window to render UQS Primitives. If you wish to render UQS primitives, close the UQS Editor, open a new Viewport, and open the UQS Editor again.");
+	}
 }
 
 CQuerySimulator::~CQuerySimulator()
