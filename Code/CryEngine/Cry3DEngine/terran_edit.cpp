@@ -319,6 +319,7 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 						if (src.GetHole())
 						{
 							dst = SRangeInfo::e_index_hole;
+							ri.GetLocalSurfaceTypeID(SRangeInfo::e_undefined);
 						}
 						else
 						{
