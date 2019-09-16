@@ -14,7 +14,7 @@ class CLateCameraInjectionEventComponent final : public IEntityComponent
 
 		if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 		{
-			pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(cameraRotation, cameraPosition));
+			pDevice->EnableLateCameraInjectionForCurrentFrame(gEnv->pRenderer->GetFrameID(), std::make_pair(cameraRotation, cameraPosition));
 
 			// Indicate that the late camera injection was prepared successfully for current frame
 			return true;

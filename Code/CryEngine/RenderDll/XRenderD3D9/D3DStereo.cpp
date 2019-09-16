@@ -650,7 +650,7 @@ SStereoRenderContext CD3DStereoRenderer::PrepareStereoRenderingContext(int nFlag
 	{
 		IHmdDevice* pHmdDevice = pHmdManager->GetHmdDevice();
 		if (pHmdDevice)
-			context.orientationForLateCameraInjection = pHmdDevice->GetOrientationForLateCameraInjection();
+			context.orientationForLateCameraInjection = pHmdDevice->GetOrientationForLateCameraInjection(passInfo.GetFrameID());
 	}
 
 	context.flags = nFlags;

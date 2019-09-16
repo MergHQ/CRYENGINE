@@ -949,7 +949,7 @@ OculusStatus Device::SubmitFrame(const SHmdSubmitFrameData &data)
 		}
 	}
 
-	this->OnEndFrame();
+	this->OnEndFrame(m_currentFrameId);
 
 	{
 		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "OculusDevice::ovr_EndFrame");
