@@ -1399,17 +1399,7 @@ function(add_subdirectories)
 endfunction()
 
 function(set_visual_studio_debugger_command TARGET_NAME EXE_PATH CMD_LINE)
-	if (WIN32 AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.vcxproj.user")
-		#Configure default Visual Studio debugger settings
-		file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.vcxproj.user"
-			"<?xml version=\"1.0\" encoding=\"utf-8\"?>
-			<Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
-				<PropertyGroup>
-					<LocalDebuggerCommand>${EXE_PATH}</LocalDebuggerCommand>
-					<LocalDebuggerCommandArguments>${CMD_LINE}</LocalDebuggerCommandArguments>
-					<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-				</PropertyGroup>
-			</Project>"
-		)
-	endif()
+	set_target_properties(${TARGET_NAME}
+		PROPERTIES VS_DEBUGGER_COMMAND ${EXE_PATH}
+		VS_DEBUGGER_COMMAND_ARGUMENTS ${CMD_LINE})
 endfunction()
