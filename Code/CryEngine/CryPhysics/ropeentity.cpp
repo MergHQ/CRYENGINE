@@ -875,21 +875,29 @@ int CRopeEntity::Action(pe_action *_action, int bThreadSafe)
 				return 1;
 		} else
 			return 0;
-		pe_params_pos pp; GetParams(&pp);
-		CRopeEntity *pentDst = (CRopeEntity*)m_pWorld->CreatePhysicalEntity(PE_ROPE,&pp);
-		pe_params_flags pf; pf.flags = m_flags;
-		pentDst->SetParams(&pf);
-		pe_simulation_params sp; GetParams(&sp);
-		pentDst->SetParams(&sp);
-		pe_params_rope pr; GetParams(&pr);
-		MARK_UNUSED pr.nSegments;
-		pentDst->SetParams(&pr);
-		new(&pr) pe_params_rope;
 
-		if (i==0)
+		pe_params_rope pr;
+		if (i==0)	{
 			pr.pEntTiedTo[0] = 0;
-		else {
+			if (!m_pTiedTo[1]) {
+				m_flags|=rope_subdivide_segs; m_nMaxSubVtx=0;
+			}
+		} else {
 			if (i<m_nSegs) {
+				pe_params_pos pp; GetParams(&pp);
+				CRopeEntity *pentDst = (CRopeEntity*)m_pWorld->CreatePhysicalEntity(PE_ROPE,&pp,0,0x5AFE);
+				pe_params_flags pf; pf.flags = m_flags;
+				pentDst->SetParams(&pf);
+				pe_simulation_params sp; GetParams(&sp);
+				pentDst->SetParams(&sp);
+				GetParams(&pr);
+				MARK_UNUSED pr.nSegments;
+				if (!m_pTiedTo[1]) {
+					pr.nMaxSubVtx=0; pentDst->m_flags|=rope_subdivide_segs;
+				}
+				pentDst->SetParams(&pr);
+				new(&pr) pe_params_rope;
+
 				float seglen = m_length/m_nSegs;
 				if (pentDst->m_nSegs < m_nSegs-i) {
 					if (pentDst->m_segs) delete[] pentDst->m_segs;

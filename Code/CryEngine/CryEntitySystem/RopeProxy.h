@@ -54,6 +54,7 @@ public:
 protected:
 	IRopeRenderNode* m_pRopeRenderNode;
 	int              m_nSegmentsOrg;
+	int              m_nPhysSegmentsOrg;
 	float            m_texTileVOrg;
 
 	int              m_segmentsCount = 0;

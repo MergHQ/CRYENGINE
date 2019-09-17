@@ -240,7 +240,7 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3 &vel, pe_pa
 			if (!is_unused(m_gravity))
 				zero_unused(gravity) += m_R*(gpull*t+gcent*(1-t))*m_gravity.z-vel*m_damping;
 			if (bUseBuoy)
-				pbdst[nBuoys].waterFlow = m_R*(gpull*t+gcent*(1-t))*m_pb.waterFlow.z;
+				pbdst[nBuoys].waterFlow = m_R*(gpull*(1-max(0.0f,t-m_falloff0)*m_rfalloff0))*m_pb.waterFlow.z;
 		} else {
 			EventPhysArea epa;
 			epa.pt=pt; epa.gravity=m_gravity; epa.pb=m_pb; epa.pent=pent;
@@ -307,10 +307,12 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3 &vel, pe_pa
 								getHeight = getHeightFunc;
 							}
 							org = ((org-offset)*m_R)*m_rscale;
-							ibbox[0].x = max(0, min(phf->size.x-1, float2int((org.x-sz.x)*phf->stepr.x-0.5f)));
-							ibbox[0].y = max(0, min(phf->size.y-1, float2int((org.y-sz.y)*phf->stepr.y-0.5f)));
-							ibbox[1].x = max(0, min(phf->size.x-1, float2int((org.x+sz.x)*phf->stepr.x+0.5f)));
-							ibbox[1].y = max(0, min(phf->size.y-1, float2int((org.y+sz.y)*phf->stepr.y+0.5f)));
+							ibbox[0].x = float2int((org.x-sz.x)*phf->stepr.x-0.5f);
+							ibbox[0].y = float2int((org.y-sz.y)*phf->stepr.y-0.5f);
+							ibbox[1].x = float2int((org.x+sz.x)*phf->stepr.x+0.5f);
+							ibbox[1].y = float2int((org.y+sz.y)*phf->stepr.y+0.5f);
+							if (m_pWaterMan) for(i=0;i<2;i++) for(j=0;j<2;j++)
+								ibbox[i][j] = max(0, min(phf->size[j]-1, ibbox[i][j]));
 							org.zero(); C.SetZero();
 							istep=(ibbox[1].x-ibbox[0].x>>2)+1; jstep=(ibbox[1].y-ibbox[0].y>>2)+1;
 							for(i=ibbox[0].x,npt=0;i<=ibbox[1].x;i+=istep) for(j=ibbox[0].y;j<=ibbox[1].y;j+=jstep,npt++) {
@@ -948,14 +950,17 @@ int CPhysArea::GetStatus(pe_status *_status) const
 
 		if (!is_unused(status->ptClosest)) {
 			Vec3 ptloc = ((status->ptClosest-m_offset)*m_R)*m_rscale, ptres[2]={ ptloc,ortx };
-			int i;
+			int i=0,iFeature=0x40;
 			if (m_pGeom) {
 				geom_world_data gwd; 
-				m_pGeom->FindClosestPoint(&gwd,i,i,ptloc,ptloc,ptres);
+				m_pGeom->FindClosestPoint(&gwd,i,iFeature,ptloc,ptloc,ptres);
 				contact cnt;
 				box bbox; m_pGeom->GetBBox(&bbox);
 				float r = (bbox.size.x+bbox.size.y+bbox.size.z)*0.03f;
-				((CGeometry*)m_pGeom)->UnprojectSphere(ptres[0],r,r,&cnt);
+				if (((CGeometry*)m_pGeom)->IsAPrimitive())
+					((CGeometry*)m_pGeom)->UnprojectSphere(ptres[0],r,r,&cnt);
+				else
+					cnt.n = m_pGeom->GetNormal(i,ptloc);
 				ptres[1] = cnt.n;
 			}	else if (m_ptSpline) {
 				Vec3 p0,p1,p2,v0,v1,v2;

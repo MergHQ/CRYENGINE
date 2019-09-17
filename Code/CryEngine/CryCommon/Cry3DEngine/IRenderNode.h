@@ -1139,6 +1139,7 @@ struct IRopeRenderNode : public IRenderNode
 		eRope_Awake                  = 0x0800,  //!< Rope will be awake initially.
 		eRope_UseBones							 = 0x1000,  //!< Rope will use skinned mesh instead fully generated
 		eRope_SegObjBends						 = 0x2000,  //!< Is segment cgf is used, whether it'll be rigidly linked to bones
+		eRope_FlipMeshAxis           = 0x8000,  //!< Flips the mesh along the main axis (if mesh is used)
 	};
 	enum ERopeSegAxis
 	{

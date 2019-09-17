@@ -987,6 +987,8 @@ IPhysicalEntity* CRopeRenderNode::GetPhysics() const
 //////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::SetPhysics(IPhysicalEntity* pPhysicalEntity)
 {
+	if (m_pPhysicalEntity)
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_pPhysicalEntity);
 	m_pPhysicalEntity = pPhysicalEntity;
 	m_bStaticPhysics = pPhysicalEntity->GetType() != PE_ROPE;
 	pe_params_foreign_data pfd;
@@ -1719,11 +1721,12 @@ void CRopeRenderNode::UpdateRenderMesh()
 				trans.s = m_lenSkin / (bbox.GetSize()[iax] * m_params.segObjLen * m_params.nNumSegments);
 				const float ds = trans.s * m_params.sizeChange / m_params.nNumSegments;
 				const float dx = bbox.GetSize()[iax] * trans.s * m_params.segObjLen, dxInv = 1 / dx;
-				if (iax)
-					trans.q = Quat::CreateRotationV0V1(Vec3(0, iax & 1, iax >> 1 & 1), Vec3(1, 0, 0));
+				int flip = !!(m_params.nFlags & eRope_FlipMeshAxis);
+				if (iax | flip)
+					trans.q = Quat::CreateRotationV0V1(Vec3(0, iax & 1, iax >> 1 & 1), Vec3(1 - flip*2, 0, 0));
 				trans.q = Quat::CreateRotationAA(m_params.segObjRot0, Vec3(1, 0, 0)) * trans.q;
 				Quat dq = Quat::CreateRotationAA(m_params.segObjRot, Vec3(1, 0, 0) * trans.q);
-				trans.t = Vec3(-bbox.min[iax] * trans.s, 0, 0);
+				trans.t = Vec3((bbox.max[iax] * flip - bbox.min[iax] * (1 - flip)) * trans.s, 0, 0);
 				uint8 nosmooth = m_params.nFlags & eRope_SegObjBends ? 0 : 255;
 
 				pSegMesh->LockForThreadAccess();

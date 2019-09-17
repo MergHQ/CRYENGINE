@@ -333,7 +333,7 @@ void CDeferredCollisionEventOnPhysCollision::PostStep()
 
 	if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ROPE && pCollision->vloc[0].len2() > sqr(20.0f) && !gEnv->bMultiplayer &&
 	    !(((IRopeRenderNode*)pCollision->pForeignData[1])->GetParams().nFlags & IRopeRenderNode::eRope_Nonshootable) &&
-	    pCollision->pEntity[1]->GetParams(&pr) && pr.pEntTiedTo[0] && pr.pEntTiedTo[1])
+	    pCollision->pEntity[1]->GetParams(&pr) && pr.pEntTiedTo[0])
 	{
 		pe_action_slice as;
 		Vec3 pt;

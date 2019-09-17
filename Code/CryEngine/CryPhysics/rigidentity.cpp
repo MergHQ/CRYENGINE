@@ -593,25 +593,30 @@ int CRigidEntity::GetStatus(pe_status *_status) const
 
 	if (_status->type==pe_status_constraint::type_id) {
 		pe_status_constraint *status = (pe_status_constraint*)_status;
-		int i; 
+		int i,res=0;
+		status->n.zero(); status->flags = 0;
 		if ((i=status->idx)>=0)
 			if (m_constraintMask & getmask(i)) {
 				status->id=m_pConstraintInfos[i].id; goto foundconstr;
 			} else
 				return 0;
+
 		for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].id==status->id) {
 		foundconstr:
 			for(int iop=0;iop<2;iop++) {
 				status->pt[iop] = m_pConstraints[i].pt[iop];
 				status->partid[iop] = m_pConstraints[i].pent[iop]->m_parts[m_pConstraints[i].ipart[iop]].id;
 			}
-			status->n = m_pConstraints[i].n; 
-			status->flags = m_pConstraintInfos[i].flags;
+			if (!status->n.len2() || m_pConstraints[i].flags & contact_angular)
+				status->n = m_pConstraints[i].n; 
+			status->flags |= m_pConstraintInfos[i].flags;
 			status->pBuddyEntity = m_pConstraints[i].pent[1];
 			status->pConstraintEntity = m_pConstraintInfos[i].pConstraintEnt;
-			return 1;
+			res++;
+			if (status->idx>=0)
+				return 1;
 		}
-		return 0;
+		return res;
 	}
 
 	if (_status->type==pe_status_dynamics::type_id) {
@@ -1188,7 +1193,7 @@ void CRigidEntity::AlertNeighbourhoodND(int mode)
 	m_iSimClass = 7; // notifies the others that we are being deleted
 
 	for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) 
-		if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].pConstraintEnt && (unsigned int)m_pConstraintInfos[i].pConstraintEnt->m_iSimClass<7u) 
+		if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].pConstraintEnt && !m_pConstraintInfos[i].pConstraintEnt->m_iDeletionTime && m_pConstraintInfos[i].pConstraintEnt->m_iSimClass!=5) 
 			m_pConstraintInfos[i].pConstraintEnt->Awake();
 	m_iSimClass = iSimClass;
 

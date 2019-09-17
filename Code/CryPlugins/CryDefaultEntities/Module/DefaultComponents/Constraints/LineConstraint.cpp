@@ -91,12 +91,21 @@ namespace Cry
 			{
 				Vec3 axis = m_axis * m_pEntity->GetRotation().GetInverted();
 
-				Vec3 pos1 = m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation();
+				Vec3 pos1 = m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation(), pos2 = pos1;
+				if (gEnv->pPhysicalWorld->GetPhysVars()->lastTimeStep && m_pEntity->GetPhysicalEntity() && !m_constraintIds.empty())
+				{
+					pe_status_constraint sc;
+					sc.id = m_constraintIds[0].second;
+					if (m_pEntity->GetPhysicalEntity()->GetStatus(&sc) && (pos1 - sc.pt[0]).len2() > sqr(0.001f))
+					{
+						pos1 = pos2 = sc.pt[0];
+						axis = sc.n;
+					}
+				}
 				pos1.x += m_limitMin * axis.x;
 				pos1.y += m_limitMin * axis.y;
 				pos1.z += m_limitMin * axis.z;
 
-				Vec3 pos2 = m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation();
 				pos2.x += m_limitMax * axis.x;
 				pos2.y += m_limitMax * axis.y;
 				pos2.z += m_limitMax * axis.z;
