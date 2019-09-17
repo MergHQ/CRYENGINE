@@ -259,6 +259,7 @@ bool CParticleGraphModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();
 		targetNode.GetComponentInterface().SetChanged();
+		targetNode.OnChanged();
 		m_effect.Update();
 		// ~TODO
 
@@ -410,6 +411,7 @@ CConnectionItem* CParticleGraphModel::CreateConnection(CBasePinItem& sourcePin, 
 
 		// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
 		SignalCreateConnection(*pConnectionItem);
+		targetNode.OnChanged();
 
 		if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 		{
@@ -431,6 +433,7 @@ CNodeItem* CParticleGraphModel::CreateNodeItem(pfx2::IParticleComponent& compone
 
 	// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
 	SignalCreateNode(*pNodeItem);
+	pNodeItem->OnChanged();
 
 	if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 	{
