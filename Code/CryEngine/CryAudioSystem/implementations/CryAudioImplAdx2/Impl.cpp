@@ -269,7 +269,7 @@ void ParseAcbInfoFile(XmlNodeRef const& rootNode, uint32 const acbId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadAcbInfos(string const& folderPath)
+void LoadAcbInfos(CryFixedStringT<MaxFilePathLength> const& folderPath)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
@@ -279,7 +279,7 @@ void LoadAcbInfos(string const& folderPath)
 	{
 		do
 		{
-			string fileName = fd.name;
+			CryFixedStringT<MaxFilePathLength> const fileName = fd.name;
 			XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
 
 			if (rootNode.isValid())
@@ -623,7 +623,7 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 
 		if (pFileData != nullptr)
 		{
-			string acbToAwbPath = pFileInfo->szFilePath;
+			CryFixedStringT<MaxFilePathLength> acbToAwbPath(pFileInfo->filePath);
 			PathUtil::RemoveExtension(acbToAwbPath);
 			acbToAwbPath += ".awb";
 
@@ -633,14 +633,15 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 
 			if (pFileData->pAcb != nullptr)
 			{
-				string name = pFileInfo->szFileName;
+				CryFixedStringT<MaxFileNameLength> name(pFileInfo->fileName);
 				PathUtil::RemoveExtension(name);
 				g_acbHandles[StringToId(name.c_str())] = pFileData->pAcb;
 			}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, "Failed to load ACB %s\n", pFileInfo->szFileName);
+				CryFixedStringT<MaxFileNameLength> const name(pFileInfo->fileName);
+				Cry::Audio::Log(ELogType::Error, "Failed to load ACB %s\n", name.c_str());
 			}
 #endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 		}
@@ -686,7 +687,9 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			pFileInfo->szFileName = szFileName;
+			cry_strcpy(pFileInfo->fileName, static_cast<size_t>(MaxFileNameLength), szFileName);
+			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->bLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
+			cry_strcpy(pFileInfo->filePath, static_cast<size_t>(MaxFilePathLength), filePath.c_str());
 
 			// The Atom library accesses on-memory data with a 32-bit width.
 			// The first address of the data must be aligned at a 4-byte boundary.
@@ -697,12 +700,6 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 
 			result = ERequestStatus::Success;
 		}
-		else
-		{
-			pFileInfo->szFileName = nullptr;
-			pFileInfo->memoryBlockAlignment = 0;
-			pFileInfo->pImplData = nullptr;
-		}
 	}
 
 	return result;
@@ -712,19 +709,6 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 void CImpl::DestructFile(IFile* const pIFile)
 {
 	delete pIFile;
-}
-
-//////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
-{
-	char const* szResult = nullptr;
-
-	if (pFileInfo != nullptr)
-	{
-		szResult = pFileInfo->bLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str();
-	}
-
-	return szResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1133,7 +1117,10 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool ParseSelectorNode(XmlNodeRef const& node, string& selectorName, string& selectorLabelName)
+bool ParseSelectorNode(
+	XmlNodeRef const& node,
+	CryFixedStringT<MaxFileNameLength>& selectorName,
+	CryFixedStringT<MaxFileNameLength>& selectorLabelName)
 {
 	bool foundAttributes = false;
 
@@ -1174,13 +1161,13 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 
 	if (_stricmp(szTag, g_szSelectorTag) == 0)
 	{
-		string szSelectorName;
-		string szSelectorLabelName;
+		CryFixedStringT<MaxFileNameLength> selectorName;
+		CryFixedStringT<MaxFileNameLength> selectorLabelName;
 
-		if (ParseSelectorNode(rootNode, szSelectorName, szSelectorLabelName))
+		if (ParseSelectorNode(rootNode, selectorName, selectorLabelName))
 		{
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CSelectorLabel");
-			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSelectorLabel(szSelectorName, szSelectorLabelName));
+			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSelectorLabel(selectorName.c_str(), selectorLabelName));
 		}
 	}
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)

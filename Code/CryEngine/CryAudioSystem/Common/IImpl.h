@@ -185,13 +185,6 @@ struct IImpl
 	virtual void DestructFile(IFile* const pIFile) = 0;
 
 	/**
-	 * Get the full path to the folder containing the file described by the pFileInfo
-	 * @param pFileInfo - audio system-specific information describing the file whose location is being queried
-	 * @return A C-string containing the path to the folder where the file corresponding to the pFileInfo is stored
-	 */
-	virtual char const* const GetFileLocation(SFileInfo* const pFileInfo) = 0;
-
-	/**
 	 * Parse the implementation-specific XML node that represents an ITriggerConnection, return a pointer to the data needed for identifying
 	 * and using this trigger connection instance inside the AudioImplementation
 	 * @param rootNode - an XML node corresponding to the new ITriggerConnection to be created

@@ -244,10 +244,10 @@ void FreeMemoryPools()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadEventsMaxAttenuations(const string& soundbanksPath)
+void LoadEventsMaxAttenuations(CryFixedStringT<MaxFilePathLength> const& soundbanksPath)
 {
 	g_maxAttenuations.clear();
-	string const bankInfoPath = soundbanksPath + "/SoundbanksInfo.xml";
+	CryFixedStringT<MaxFilePathLength> const bankInfoPath = soundbanksPath + "/SoundbanksInfo.xml";
 	XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(bankInfoPath.c_str());
 
 	if (rootNode.isValid())
@@ -1038,7 +1038,9 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			pFileInfo->szFileName = szFileName;
+			cry_strcpy(pFileInfo->fileName, static_cast<size_t>(MaxFileNameLength), szFileName);
+			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->bLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
+			cry_strcpy(pFileInfo->filePath, static_cast<size_t>(MaxFilePathLength), filePath.c_str());
 			pFileInfo->memoryBlockAlignment = AK_BANK_PLATFORM_DATA_ALIGNMENT;
 
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CSoundBank");
@@ -1047,7 +1049,6 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		}
 		else
 		{
-			pFileInfo->szFileName = nullptr;
 			pFileInfo->memoryBlockAlignment = 0;
 			pFileInfo->pImplData = nullptr;
 		}
@@ -1060,19 +1061,6 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 void CImpl::DestructFile(IFile* const pIFile)
 {
 	delete pIFile;
-}
-
-//////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
-{
-	char const* szResult = nullptr;
-
-	if (pFileInfo != nullptr)
-	{
-		szResult = pFileInfo->bLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str();
-	}
-
-	return szResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1737,7 +1725,7 @@ void CImpl::SetPanningRule(int const panningRule)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetInitBankSize()
 {
-	string const initBankPath = m_regularSoundBankFolder + "/Init.bnk";
+	CryFixedStringT<MaxFilePathLength> const initBankPath = m_regularSoundBankFolder + "/Init.bnk";
 	m_initBankSize = gEnv->pCryPak->FGetSize(initBankPath.c_str());
 }
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE

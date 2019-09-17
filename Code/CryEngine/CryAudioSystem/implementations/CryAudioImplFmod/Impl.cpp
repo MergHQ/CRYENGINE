@@ -480,7 +480,7 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 									 FMOD_STUDIO_LOAD_BANK_NORMAL,
 									 &pFileData->pBank) == FMOD_OK);
 
-			CryFixedStringT<MaxFilePathLength> streamsBankPath = pFileInfo->szFilePath;
+			CryFixedStringT<MaxFilePathLength> streamsBankPath(pFileInfo->filePath);
 			PathUtil::RemoveExtension(streamsBankPath);
 			streamsBankPath += ".streams.bank";
 
@@ -552,21 +552,17 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			pFileInfo->szFileName = szFileName;
+			cry_strcpy(pFileInfo->fileName, static_cast<size_t>(MaxFileNameLength), szFileName);
+			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->bLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
+			cry_strcpy(pFileInfo->filePath, static_cast<size_t>(MaxFilePathLength), filePath.c_str());
 
 			// FMOD Studio always uses 32 byte alignment for preloaded banks regardless of the platform.
 			pFileInfo->memoryBlockAlignment = 32;
 
-			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CFile");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CBank");
 			pFileInfo->pImplData = new CBank();
 
 			result = ERequestStatus::Success;
-		}
-		else
-		{
-			pFileInfo->szFileName = nullptr;
-			pFileInfo->memoryBlockAlignment = 0;
-			pFileInfo->pImplData = nullptr;
 		}
 	}
 
@@ -577,19 +573,6 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 void CImpl::DestructFile(IFile* const pIFile)
 {
 	delete pIFile;
-}
-
-//////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
-{
-	char const* szResult = nullptr;
-
-	if (pFileInfo != nullptr)
-	{
-		szResult = pFileInfo->bLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str();
-	}
-
-	return szResult;
 }
 
 //////////////////////////////////////////////////////////////////////////

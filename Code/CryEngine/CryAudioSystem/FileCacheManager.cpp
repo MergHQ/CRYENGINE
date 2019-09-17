@@ -65,11 +65,9 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const& fileNode, Conte
 
 	if (g_pIImpl->ConstructFile(fileNode, &fileInfo) == ERequestStatus::Success)
 	{
-		CryFixedStringT<MaxFilePathLength> fullPath(g_pIImpl->GetFileLocation(&fileInfo));
-		fullPath += "/";
-		fullPath += fileInfo.szFileName;
+		CryFixedStringT<MaxFilePathLength> const filePath(fileInfo.filePath);
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CFile");
-		auto pFile = new CFile(fullPath, fileInfo.pImplData);
+		auto const pFile = new CFile(filePath.c_str(), fileInfo.pImplData);
 
 		if (pFile != nullptr)
 		{
@@ -480,8 +478,8 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 			fileInfo.pFileData = pFile->m_pMemoryBlock->GetData();
 			fileInfo.size = pFile->m_size;
 			fileInfo.pImplData = pFile->m_pImplData;
-			fileInfo.szFileName = PathUtil::GetFile(pFile->m_path.c_str());
-			fileInfo.szFilePath = pFile->m_path.c_str();
+			cry_strcpy(fileInfo.fileName, static_cast<size_t>(MaxFileNameLength), PathUtil::GetFile(pFile->m_path.c_str()));
+			cry_strcpy(fileInfo.filePath, static_cast<size_t>(MaxFilePathLength), pFile->m_path.c_str());
 			fileInfo.bLocalized = (pFile->m_flags & EFileFlags::Localized) != EFileFlags::None;
 
 			g_pIImpl->RegisterInMemoryFile(&fileInfo);
@@ -559,7 +557,8 @@ void CFileCacheManager::UncacheFile(CFile* const pFile)
 		fileInfo.pFileData = pFile->m_pMemoryBlock->GetData();
 		fileInfo.size = pFile->m_size;
 		fileInfo.pImplData = pFile->m_pImplData;
-		fileInfo.szFileName = PathUtil::GetFile(pFile->m_path.c_str());
+		cry_strcpy(fileInfo.fileName, static_cast<size_t>(MaxFileNameLength), PathUtil::GetFile(pFile->m_path.c_str()));
+		cry_strcpy(fileInfo.filePath, static_cast<size_t>(MaxFilePathLength), pFile->m_path.c_str());
 
 		g_pIImpl->UnregisterInMemoryFile(&fileInfo);
 	}
@@ -599,14 +598,9 @@ void CFileCacheManager::UpdateLocalizedFileData(CFile* const pFile)
 	fileInfo.pFileData = nullptr;
 	fileInfo.memoryBlockAlignment = 0;
 
-	CryFixedStringT<MaxFileNameLength> fileName(PathUtil::GetFile(pFile->m_path.c_str()));
 	fileInfo.pImplData = pFile->m_pImplData;
-	fileInfo.szFileName = fileName.c_str();
-
-	pFile->m_path = g_pIImpl->GetFileLocation(&fileInfo);
-	pFile->m_path += "/";
-	pFile->m_path += fileName.c_str();
-	pFile->m_path.MakeLower();
+	cry_strcpy(fileInfo.fileName, static_cast<size_t>(MaxFileNameLength), PathUtil::GetFile(pFile->m_path.c_str()));
+	cry_strcpy(fileInfo.filePath, static_cast<size_t>(MaxFilePathLength), pFile->m_path.c_str());
 
 	pFile->m_size = gEnv->pCryPak->FGetSize(pFile->m_path.c_str());
 	CRY_ASSERT(pFile->m_size > 0);

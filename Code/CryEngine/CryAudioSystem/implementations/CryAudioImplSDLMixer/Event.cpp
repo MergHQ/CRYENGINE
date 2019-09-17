@@ -97,6 +97,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 					g_channels[channelID].pObject = pObject;
 					pEventInstance->m_channels.push_back(channelID);
+					g_sampleChannels[m_sampleId].emplace_back(channelID);
 				}
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 				else
