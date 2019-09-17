@@ -77,7 +77,7 @@ void CConsoleBatchFile::ExecuteFileCmdFunc(IConsoleCmdArgs* args)
 #if defined(DEDICATED_SERVER)
 		else
 		{
-			gEnv->pSystem->GetILog()->LogError("Failed to apply CVar/ execute command '%s' as it is not whitelisted\n", strKey.c_str());
+			gEnv->pSystem->GetILog()->LogError("Failed to apply CVar/ execute command '%s' as it is not whitelisted\n", strLine.c_str());
 		}
 #endif // defined(DEDICATED_SERVER)
 	}
