@@ -596,6 +596,7 @@ void CPhysicalWorld::Shutdown(int bDeleteGeometries)
 
 	for(int i=m_nWorkerThreads-1;i>=0;i--) {
 		m_threads[i]->bStop=1,m_threadStart[i].Set(),m_threadDone[i].Wait();
+		gEnv->pThreadManager->JoinThread(m_threads[i], eJM_Join);
 		delete m_threads[i]; m_threads[i] = NULL;
 	}
 	int i; CPhysicalEntity *pent,*pent_next;
@@ -2417,6 +2418,7 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 	if (m_vars.numThreads!=m_nWorkerThreads+FIRST_WORKER_THREAD) {
 		for(i=m_nWorkerThreads-1;i>=0;i--) {
 			m_threads[i]->bStop=1,m_threadStart[i].Set(), m_threadDone[i].Wait();
+			gEnv->pThreadManager->JoinThread(m_threads[i], eJM_Join);
 			delete m_threads[i]; m_threads[i] = NULL;
 		}
 
