@@ -56,7 +56,7 @@ constexpr float g_defaultStateValue = 0.0f;
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
 {
-	CryFixedStringT<MaxControlNameLength> name;
+	char name[MaxControlNameLength] = { '\0' };
 };
 
 struct SPoolSizes final

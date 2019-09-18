@@ -700,15 +700,15 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
-			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			cry_strcpy(pFileInfo->fileName, static_cast<size_t>(MaxFileNameLength), szFileName);
+			pFileInfo->isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
+			cry_strcpy(pFileInfo->fileName, szFileName);
 			pFileInfo->memoryBlockAlignment = 32;
 
 			char const* const szPath = rootNode->getAttr(g_szPathAttribute);
 			string const filePath = GetFullFilePath(szFileName, szPath);
-			string const fullFilePath = (pFileInfo->bLocalized ? s_localizedAssetsPath : s_regularAssetsPath) + filePath;
-			cry_strcpy(pFileInfo->filePath, static_cast<size_t>(MaxFilePathLength), fullFilePath.c_str());
-			SampleId const sampleId = LoadSample(filePath, true, pFileInfo->bLocalized);
+			string const fullFilePath = (pFileInfo->isLocalized ? s_localizedAssetsPath : s_regularAssetsPath) + filePath;
+			cry_strcpy(pFileInfo->filePath, fullFilePath.c_str());
+			SampleId const sampleId = LoadSample(filePath, true, pFileInfo->isLocalized);
 
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CFile");
 			pFileInfo->pImplData = new CFile(sampleId);
@@ -730,11 +730,11 @@ void CImpl::DestructFile(IFile* const pIFile)
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-	implInfo.name = m_name.c_str();
+	cry_strcpy(implInfo.name, m_name.c_str());
 #else
-	implInfo.name = "name-not-present-in-release-mode";
+	cry_fixed_size_strcpy(implInfo.name, g_implNameInRelease);
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
-	implInfo.folderName = g_szImplFolderName;
+	cry_strcpy(implInfo.folderName, g_szImplFolderName, strlen(g_szImplFolderName));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -885,7 +885,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 	if (pTriggerInfo != nullptr)
 	{
-		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
+		string const fullFilePath = GetFullFilePath(pTriggerInfo->name, pTriggerInfo->path);
 		SampleId const sampleId = LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEvent");

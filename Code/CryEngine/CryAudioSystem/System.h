@@ -117,7 +117,6 @@ private:
 	std::atomic<uint32>   m_externalThreadFrameId{ 0 };
 	uint32                m_lastExternalThreadFrameId = 0;
 	uint16                m_objectPoolSize = 0;
-	SImplInfo             m_implInfo;
 	CMainThread           m_mainThread;
 
 	Requests              m_requestQueue;

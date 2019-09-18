@@ -1037,20 +1037,15 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		if ((szFileName != nullptr) && (szFileName[0] != '\0'))
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
-			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			cry_strcpy(pFileInfo->fileName, static_cast<size_t>(MaxFileNameLength), szFileName);
-			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->bLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
-			cry_strcpy(pFileInfo->filePath, static_cast<size_t>(MaxFilePathLength), filePath.c_str());
+			pFileInfo->isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
+			cry_strcpy(pFileInfo->fileName, szFileName);
+			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->isLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
+			cry_strcpy(pFileInfo->filePath, filePath.c_str());
 			pFileInfo->memoryBlockAlignment = AK_BANK_PLATFORM_DATA_ALIGNMENT;
 
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CSoundBank");
 			pFileInfo->pImplData = new CSoundBank();
 			result = ERequestStatus::Success;
-		}
-		else
-		{
-			pFileInfo->memoryBlockAlignment = 0;
-			pFileInfo->pImplData = nullptr;
 		}
 	}
 
@@ -1067,11 +1062,11 @@ void CImpl::DestructFile(IFile* const pIFile)
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	implInfo.name = m_name.c_str();
+	cry_strcpy(implInfo.name, m_name.c_str());
 #else
-	implInfo.name = "name-not-present-in-release-mode";
+	cry_fixed_size_strcpy(implInfo.name, g_implNameInRelease);
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-	implInfo.folderName = g_szImplFolderName;
+	cry_strcpy(implInfo.folderName, g_szImplFolderName, strlen(g_szImplFolderName));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1259,7 +1254,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 	if (pTriggerInfo != nullptr)
 	{
-		char const* const szName = pTriggerInfo->name.c_str();
+		char const* const szName = pTriggerInfo->name;
 		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(szName);
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CEvent");

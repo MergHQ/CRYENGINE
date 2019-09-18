@@ -26,6 +26,8 @@ struct SFileInfo;
 
 using IListeners = DynArray<IListener*>;
 
+constexpr char g_implNameInRelease[] { "name-not-present-in-release-mode" };
+
 struct IImpl
 {
 	/** @cond */

@@ -22,7 +22,7 @@ struct SFileInfo
 	size_t size = 0;                                  // file size
 	char   fileName[MaxFileNameLength] = { '\0' };    // file name
 	char   filePath[MaxFilePathLength] = { '\0' };    // file path
-	bool   bLocalized = false;                        // is the file localized
+	bool   isLocalized = false;                       // is the file localized
 	IFile* pImplData = nullptr;                       // pointer to the implementation-specific data needed for this AudioFileEntry
 };
 } // namespace Impl

@@ -163,7 +163,7 @@ void CMainWindow::UpdateState()
 	m_pRefreshAction->setEnabled(middleWareFound);
 	m_pPreferencesAction->setEnabled(middleWareFound);
 
-	setWindowTitle(QString("%1 (%2)").arg(g_szEditorName).arg(middleWareFound ? g_implInfo.name.c_str() : "Warning: No middleware implementation!"));
+	setWindowTitle(QString("%1 (%2)").arg(g_szEditorName).arg(middleWareFound ? g_implInfo.name : "Warning: No middleware implementation!"));
 }
 
 //////////////////////////////////////////////////////////////////////////

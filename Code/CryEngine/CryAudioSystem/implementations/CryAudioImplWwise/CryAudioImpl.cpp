@@ -47,7 +47,7 @@ class CEngineModule_CryAudioImplWwise : public CryAudio::IImplModule
 	virtual const char* GetCategory() const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
+	virtual bool Initialize(SSystemGlobalEnvironment& env, SSystemInitParams const& initParams) override
 	{
 #if defined(CRY_AUDIO_IMPL_WWISE_PROVIDE_SECONDARY_POOL)
 		size_t secondarySize = 0;

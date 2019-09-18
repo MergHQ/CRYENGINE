@@ -176,7 +176,7 @@ void CImpl::Initialize(
 
 	CryAudio::SImplInfo systemImplInfo;
 	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
-	m_implName = systemImplInfo.name.c_str();
+	m_implName = systemImplInfo.name;
 
 	SetImplInfo(implInfo);
 	extensionFilters = s_extensionFilters;
@@ -983,11 +983,12 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 {
 	SetLocalizedAssetsPath();
 
-	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::SDL_mixer::g_szImplFolderName;
-	implInfo.projectPath = m_assetAndProjectPath.c_str();
-	implInfo.assetsPath = m_assetAndProjectPath.c_str();
-	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
+	cry_strcpy(implInfo.name, m_implName.c_str());
+	cry_strcpy(implInfo.folderName, CryAudio::Impl::SDL_mixer::g_szImplFolderName, strlen(CryAudio::Impl::SDL_mixer::g_szImplFolderName));
+	cry_strcpy(implInfo.projectPath, m_assetAndProjectPath.c_str());
+	cry_strcpy(implInfo.assetsPath, m_assetAndProjectPath.c_str());
+	cry_strcpy(implInfo.localizedAssetsPath, m_localizedAssetsPath.c_str());
+
 	implInfo.flags = (
 		EImplInfoFlags::SupportsFileImport |
 		EImplInfoFlags::SupportsTriggers |

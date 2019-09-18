@@ -349,7 +349,7 @@ CImpl::CImpl()
 	: m_pAcfBuffer(nullptr)
 	, m_dbasId(CRIATOMEXDBAS_ILLEGAL_ID)
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	, m_name("Adx2 - " CRI_ATOM_VER_NUM)
+	, m_name("ADX2 - " CRI_ATOM_VER_NUM)
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 {
 	g_pImpl = this;
@@ -686,10 +686,10 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
-			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			cry_strcpy(pFileInfo->fileName, static_cast<size_t>(MaxFileNameLength), szFileName);
-			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->bLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
-			cry_strcpy(pFileInfo->filePath, static_cast<size_t>(MaxFilePathLength), filePath.c_str());
+			pFileInfo->isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
+			cry_strcpy(pFileInfo->fileName, szFileName);
+			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->isLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
+			cry_strcpy(pFileInfo->filePath, filePath.c_str());
 
 			// The Atom library accesses on-memory data with a 32-bit width.
 			// The first address of the data must be aligned at a 4-byte boundary.
@@ -715,11 +715,11 @@ void CImpl::DestructFile(IFile* const pIFile)
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	implInfo.name = m_name.c_str();
+	cry_strcpy(implInfo.name, m_name.c_str());
 #else
-	implInfo.name = "name-not-present-in-release-mode";
+	cry_fixed_size_strcpy(implInfo.name, g_implNameInRelease);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
-	implInfo.folderName = g_szImplFolderName;
+	cry_strcpy(implInfo.folderName, g_szImplFolderName, strlen(g_szImplFolderName));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -931,8 +931,8 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 	if (pTriggerInfo != nullptr)
 	{
-		char const* const szName = pTriggerInfo->name.c_str();
-		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
+		char const* const szName = pTriggerInfo->name;
+		char const* const szCueSheetName = pTriggerInfo->cueSheet;
 		uint32 const cueId = StringToId(szName);
 		uint32 const cueSheetId = StringToId(szCueSheetName);
 

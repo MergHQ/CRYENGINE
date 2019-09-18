@@ -73,7 +73,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const& fileNode, Conte
 		{
 			pFile->m_memoryBlockAlignment = fileInfo.memoryBlockAlignment;
 
-			if (fileInfo.bLocalized)
+			if (fileInfo.isLocalized)
 			{
 				pFile->m_flags |= EFileFlags::Localized;
 			}
@@ -478,9 +478,9 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 			fileInfo.pFileData = pFile->m_pMemoryBlock->GetData();
 			fileInfo.size = pFile->m_size;
 			fileInfo.pImplData = pFile->m_pImplData;
-			cry_strcpy(fileInfo.fileName, static_cast<size_t>(MaxFileNameLength), PathUtil::GetFile(pFile->m_path.c_str()));
-			cry_strcpy(fileInfo.filePath, static_cast<size_t>(MaxFilePathLength), pFile->m_path.c_str());
-			fileInfo.bLocalized = (pFile->m_flags & EFileFlags::Localized) != EFileFlags::None;
+			cry_strcpy(fileInfo.fileName, PathUtil::GetFile(pFile->m_path.c_str()));
+			cry_strcpy(fileInfo.filePath, pFile->m_path.c_str());
+			fileInfo.isLocalized = (pFile->m_flags & EFileFlags::Localized) != EFileFlags::None;
 
 			g_pIImpl->RegisterInMemoryFile(&fileInfo);
 			bSuccess = true;
@@ -557,8 +557,8 @@ void CFileCacheManager::UncacheFile(CFile* const pFile)
 		fileInfo.pFileData = pFile->m_pMemoryBlock->GetData();
 		fileInfo.size = pFile->m_size;
 		fileInfo.pImplData = pFile->m_pImplData;
-		cry_strcpy(fileInfo.fileName, static_cast<size_t>(MaxFileNameLength), PathUtil::GetFile(pFile->m_path.c_str()));
-		cry_strcpy(fileInfo.filePath, static_cast<size_t>(MaxFilePathLength), pFile->m_path.c_str());
+		cry_strcpy(fileInfo.fileName, PathUtil::GetFile(pFile->m_path.c_str()));
+		cry_strcpy(fileInfo.filePath, pFile->m_path.c_str());
 
 		g_pIImpl->UnregisterInMemoryFile(&fileInfo);
 	}
@@ -593,14 +593,14 @@ void CFileCacheManager::TryToUncacheFiles()
 void CFileCacheManager::UpdateLocalizedFileData(CFile* const pFile)
 {
 	static Impl::SFileInfo fileInfo;
-	fileInfo.bLocalized = true;
+	fileInfo.isLocalized = true;
 	fileInfo.size = 0;
 	fileInfo.pFileData = nullptr;
 	fileInfo.memoryBlockAlignment = 0;
 
 	fileInfo.pImplData = pFile->m_pImplData;
-	cry_strcpy(fileInfo.fileName, static_cast<size_t>(MaxFileNameLength), PathUtil::GetFile(pFile->m_path.c_str()));
-	cry_strcpy(fileInfo.filePath, static_cast<size_t>(MaxFilePathLength), pFile->m_path.c_str());
+	cry_strcpy(fileInfo.fileName, PathUtil::GetFile(pFile->m_path.c_str()));
+	cry_strcpy(fileInfo.filePath, pFile->m_path.c_str());
 
 	pFile->m_size = gEnv->pCryPak->FGetSize(pFile->m_path.c_str());
 	CRY_ASSERT(pFile->m_size > 0);

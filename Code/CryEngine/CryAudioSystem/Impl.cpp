@@ -136,8 +136,8 @@ void CImpl::DestructFile(IFile* const pIFile)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
-	implInfo.name = "null-impl";
-	implInfo.folderName = "";
+	cry_fixed_size_strcpy(implInfo.name, "null-impl");
+	implInfo.folderName[0] = '\0';
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -33,9 +33,9 @@ constexpr char const* g_szStopValue = "stop";
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
 {
-	CryFixedStringT<MaxFileNameLength> name;
-	CryFixedStringT<MaxFilePathLength> path;
-	bool                               isLocalized;
+	char name[MaxFileNameLength] = { '\0' };
+	char path[MaxFilePathLength] = { '\0' };
+	bool isLocalized = false;
 };
 } // namespace PortAudio
 } // namespace Impl

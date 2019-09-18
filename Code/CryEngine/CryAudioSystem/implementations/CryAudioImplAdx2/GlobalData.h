@@ -72,8 +72,8 @@ constexpr int g_defaultChangeoverTime = 0;
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
 {
-	CryFixedStringT<MaxControlNameLength> name;
-	CryFixedStringT<MaxControlNameLength> cueSheet;
+	char name[MaxControlNameLength] = { '\0' };
+	char cueSheet[MaxControlNameLength] = { '\0' };
 };
 
 struct SPoolSizes final

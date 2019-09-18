@@ -42,6 +42,7 @@ extern TChannelQueue g_freeChannels;
 
 using SampleChannels = std::map<SampleId, std::vector<int>>;
 extern SampleChannels g_sampleChannels;
+
 struct SChannelData final
 {
 	CObject* pObject;
