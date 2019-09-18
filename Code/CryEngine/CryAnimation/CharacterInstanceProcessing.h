@@ -68,6 +68,7 @@ struct SContext
 		Unstarted,
 		StartAnimationProcessed,
 		JobExecuted,
+		JobCulled,
 		JobSkipped,
 		Finished,
 		Failure

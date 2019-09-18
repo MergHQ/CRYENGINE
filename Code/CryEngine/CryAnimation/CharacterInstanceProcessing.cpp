@@ -35,7 +35,7 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 		if (ctx.pInstance->IsQuasiStaticSleeping())
 		{
 			g_pCharacterManager->Debug_IncreaseQuasiStaticCullCounter();
-			return SContext::EState::Finished;
+			return SContext::EState::JobCulled;
 		}
 	}
 
