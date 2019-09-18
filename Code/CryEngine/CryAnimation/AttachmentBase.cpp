@@ -22,8 +22,10 @@ void SAttachmentBase::AddBinding(IAttachmentObject* pModel, ISkin* pISkin /*= 0*
 		return;
 	}
 
-	m_pAttachmentManager->AddAttachmentObject(this, pModel, pISkin, nLoadingFlags);
-	// Immediate_AddBinding(pModel, pISkin, nLoadingFlags);
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->AddAttachmentObject(this, pModel, pISkin, nLoadingFlags);
+	}
 }
 
 void SAttachmentBase::ClearBinding(uint32 nLoadingFlags /*= 0*/)
@@ -34,12 +36,16 @@ void SAttachmentBase::ClearBinding(uint32 nLoadingFlags /*= 0*/)
 		return;
 	}
 
-	m_pAttachmentManager->ClearAttachmentObject(this, nLoadingFlags);
-	// Immediate_ClearBinding(nLoadingFlags);
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->ClearAttachmentObject(this, nLoadingFlags);
+	}
 }
 
 void SAttachmentBase::SwapBinding(IAttachment* pNewAttachment)
 {
-	m_pAttachmentManager->SwapAttachmentObject(this, pNewAttachment);
-	// Immediate_SwapBinding(pNewAttachment);
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->SwapAttachmentObject(this, pNewAttachment);
+	}
 }

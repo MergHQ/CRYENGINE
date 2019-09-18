@@ -11,6 +11,11 @@
 
 uint32 CAttachmentBONE::SetJointName(const char* szJointName)
 {
+	if (!m_pAttachmentManager)
+	{
+		return 0;
+	}
+
 	m_nJointID = -1;
 	if (!CRY_VERIFY(szJointName))  { return 0; }
 	int nJointID = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(szJointName);
@@ -27,6 +32,11 @@ uint32 CAttachmentBONE::SetJointName(const char* szJointName)
 
 uint32 CAttachmentBONE::ReName(const char* szSocketName, uint32 crc)
 {
+	if (!m_pAttachmentManager)
+	{
+		return 0;
+	}
+
 	m_strSocketName.clear();
 	m_strSocketName = szSocketName;
 	m_nSocketCRC32 = crc;
@@ -36,6 +46,11 @@ uint32 CAttachmentBONE::ReName(const char* szSocketName, uint32 crc)
 
 void CAttachmentBONE::AlignJointAttachment()
 {
+	if (!m_pAttachmentManager)
+	{
+		return;
+	}
+
 	CCharInstance* pSkelInstance = m_pAttachmentManager->m_pSkelInstance;
 	int32 nJointCount = pSkelInstance->m_pDefaultSkeleton->GetJointCount();
 	if (m_nJointID < nJointCount)
@@ -47,6 +62,11 @@ void CAttachmentBONE::AlignJointAttachment()
 
 bool CAttachmentBONE::ProjectAttachment(const Skeleton::CPoseData* pPoseData)
 {
+	if (!m_pAttachmentManager)
+	{
+		return false;
+	}
+
 	m_nJointID = -1;
 	int32 JointId = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(m_strJointName.c_str());
 	if (JointId < 0)
@@ -76,12 +96,19 @@ bool CAttachmentBONE::ProjectAttachment(const Skeleton::CPoseData* pPoseData)
 
 void CAttachmentBONE::PostUpdateSimulationParams(bool bAttachmentSortingRequired, const char* pJointName)
 {
+	if (!m_pAttachmentManager)
+	{
+		return;
+	}
+
 	m_pAttachmentManager->m_TypeSortingRequired += bAttachmentSortingRequired;
 	m_Simulation.PostUpdate(m_pAttachmentManager, pJointName);
 };
 
 void CAttachmentBONE::Update_Redirected(Skeleton::CPoseData& rPoseData)
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	if (m_nJointID < 0)
 		return;
 	if ((m_AttFlags & FLAGS_ATTACH_PROJECTED) == 0)
@@ -117,6 +144,8 @@ void CAttachmentBONE::Update_Redirected(Skeleton::CPoseData& rPoseData)
 
 void CAttachmentBONE::Update(Skeleton::CPoseData& poseData)
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	if (m_nJointID < 0)
 	{
 		return;
@@ -175,14 +204,26 @@ const QuatT& CAttachmentBONE::GetAttModelRelative() const
 
 const QuatTS CAttachmentBONE::GetAttWorldAbsolute() const
 {
+	if (!m_pAttachmentManager)
+	{
+		return m_AttModelRelative;
+	}
+
 	const QuatTS& rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation * m_AttModelRelative;
 }
 
 void CAttachmentBONE::UpdateAttModelRelative()
 {
-	if (m_nJointID < 0)
+	if (!m_pAttachmentManager)
+	{
 		return;
+	}
+
+	if (m_nJointID < 0)
+	{
+		return;
+	}
 
 	const Skeleton::CPoseData& poseData = m_pAttachmentManager->m_pSkelInstance->m_SkeletonPose.GetPoseData();
 	m_AttModelRelative = poseData.GetJointAbsoluteOPS(m_nJointID) * m_AttRelativeDefault;
@@ -190,23 +231,30 @@ void CAttachmentBONE::UpdateAttModelRelative()
 
 uint32 CAttachmentBONE::Immediate_AddBinding(IAttachmentObject* pIAttachmentObject, ISkin* pISkin, uint32 nLoadingFlags)
 {
-	if (m_pIAttachmentObject)
+	if (m_pIAttachmentObject && m_pAttachmentManager)
 	{
-		uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType());
-		if (IsFastUpdateType)
+		if (m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType()))
+		{
 			m_pAttachmentManager->RemoveEntityAttachment();
+		}
 	}
 
 	SAFE_RELEASE(m_pIAttachmentObject);
 	m_pIAttachmentObject = pIAttachmentObject;
 
-	if (pIAttachmentObject)
+	if (pIAttachmentObject && m_pAttachmentManager)
 	{
-		uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(pIAttachmentObject->GetAttachmentType());
-		if (IsFastUpdateType)
+		if (m_pAttachmentManager->IsFastUpdateType(pIAttachmentObject->GetAttachmentType()))
+		{
 			m_pAttachmentManager->AddEntityAttachment();
+		}
 	}
-	m_pAttachmentManager->m_TypeSortingRequired++;
+
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->m_TypeSortingRequired++;
+	}
+
 	return 1;
 }
 
@@ -219,21 +267,25 @@ void CAttachmentBONE::ClearBinding_Internal(bool release)
 {
 	if (m_pIAttachmentObject)
 	{
-		if (m_pAttachmentManager->m_pSkelInstance)
+		if (m_pAttachmentManager && m_pAttachmentManager->m_pSkelInstance)
 		{
 			uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType());
 			if (IsFastUpdateType)
 				m_pAttachmentManager->RemoveEntityAttachment();
-
-			if (release)
-			{
-				m_pIAttachmentObject->Release();
-			}
-
-			m_pIAttachmentObject = 0;
 		}
+
+		if (release)
+		{
+			m_pIAttachmentObject->Release();
+		}
+
+		m_pIAttachmentObject = 0;
 	}
-	m_pAttachmentManager->m_TypeSortingRequired++;
+
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->m_TypeSortingRequired++;
+	}
 }
 
 uint32 CAttachmentBONE::Immediate_SwapBinding(IAttachment* pNewAttachment)

@@ -44,67 +44,67 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 		m_pRenderSkin = pCSkinRenderModel;            //increase the Ref-Counter 		
 	}
 
-	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-	CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
-
-#ifdef EDITOR_PCDEBUGCODE
-	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
-	const char* pSkinFilePath = m_pRenderSkin->GetModelFilePath();
-#endif
-
-	uint32 numJointsSkin = m_pRenderSkin->m_arrModelJoints.size();
-
-	uint32 NotMatchingNames = 0;
-	m_arrRemapTable.resize(numJointsSkin, 0);
-	for (uint32 js = 0; js < numJointsSkin; js++)
+	if (m_pAttachmentManager)
 	{
-		const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pRenderSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
-		if (nID >= 0)
-			m_arrRemapTable[js] = nID;
+		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
+		CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 #ifdef EDITOR_PCDEBUGCODE
-		else
-			NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pRenderSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+		const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
+		const char* pSkinFilePath = m_pRenderSkin->GetModelFilePath();
 #endif
-	} //for loop
+		uint32 numJointsSkin = m_pRenderSkin->m_arrModelJoints.size();
 
-	if (NotMatchingNames)
-	{
-		if (pInstanceSkel->m_CharEditMode)
+		uint32 NotMatchingNames = 0;
+		m_arrRemapTable.resize(numJointsSkin, 0);
+		for (uint32 js = 0; js < numJointsSkin; js++)
 		{
-			//for now limited to CharEdit
-			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags);
-		}
-		else
+			const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pRenderSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
+			if (nID >= 0)
+				m_arrRemapTable[js] = nID;
+#ifdef EDITOR_PCDEBUGCODE
+			else
+				NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pRenderSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+#endif
+		} //for loop
+
+		if (NotMatchingNames)
 		{
-			if (nLogWarnings)
+			if (pInstanceSkel->m_CharEditMode)
 			{
-				CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
-				CryLogAlways("SKIN: %s", m_pRenderSkin->GetModelFilePath());
-
-#if !defined(EXCLUDE_NORMAL_LOG)
-				uint32 numJointCount = pDefaultSkeleton->GetJointCount();
-				for (uint32 i = 0; i < numJointCount; i++)
-				{
-					const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
-					CryLogAlways("%03d JointName: %s", i, pJointName);
-				}
-#endif
+				//for now limited to CharEdit
+				RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags);
 			}
+			else
+			{
+				if (nLogWarnings)
+				{
+					CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
+					CryLogAlways("SKIN: %s", m_pRenderSkin->GetModelFilePath());
+#if !defined(EXCLUDE_NORMAL_LOG)
+					uint32 numJointCount = pDefaultSkeleton->GetJointCount();
+					for (uint32 i = 0; i < numJointCount; i++)
+					{
+						const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
+						CryLogAlways("%03d JointName: %s", i, pJointName);
+#endif
+					}
+				}
 
-			// Free the new attachment as we cannot use it
-			SAFE_RELEASE(pIAttachmentObject);
-			return 0; //critical! incompatible skeletons. cant create skin-attachment
+				// Free the new attachment as we cannot use it
+				SAFE_RELEASE(pIAttachmentObject);
+				return 0; //critical! incompatible skeletons. cant create skin-att
+			}
 		}
-	}
 
-	// Patch the remapping 
-	for (size_t i = 0; i < m_pRenderSkin->GetNumLODs(); i++)
-	{
-		CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(i);
-		IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
-		if (!pRenderMesh)
-			continue;
-		pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
+		// Patch the remapping 
+		for (size_t i = 0; i < m_pRenderSkin->GetNumLODs(); i++)
+		{
+			CModelMesh* pModelMesh = m_pRenderSkin->GetModelMesh(i);
+			IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
+			if (!pRenderMesh)
+				continue;
+			pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
+		}
 	}
 
 	SAFE_RELEASE(m_pIAttachmentObject);
@@ -152,33 +152,34 @@ uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadi
 		m_pSimSkin = pCSkinRenderModel;            //increase the Ref-Counter 		
 	}
 
-	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-	CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
-
+	if (m_pAttachmentManager)
+	{
+		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
+		CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 #ifdef EDITOR_PCDEBUGCODE
-	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
-	const char* pSkinFilePath = m_pSimSkin->GetModelFilePath();
+		const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
+		const char* pSkinFilePath = m_pSimSkin->GetModelFilePath();
 #endif
-
 	uint32 numJointsSkin = m_pSimSkin->m_arrModelJoints.size();
 
-	uint32 NotMatchingNames = 0;
-	m_arrSimRemapTable.resize(numJointsSkin, 0);
-	for (uint32 js = 0; js < numJointsSkin; js++)
-	{
-		const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pSimSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
-		if (nID >= 0)
-			m_arrSimRemapTable[js] = nID;
+		uint32 NotMatchingNames = 0;
+		m_arrSimRemapTable.resize(numJointsSkin, 0);
+		for (uint32 js = 0; js < numJointsSkin; js++)
+		{
+			const int32 nID = pDefaultSkeleton->GetJointIDByCRC32(m_pSimSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
+			if (nID >= 0)
+				m_arrSimRemapTable[js] = nID;
 #ifdef EDITOR_PCDEBUGCODE
-		else
-			NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pSimSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+			else
+				NotMatchingNames++, g_pILog->LogError("The joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pSimSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
 #endif
-	} //for loop
+		} //for loop
 
-	if (NotMatchingNames)
-	{
-		CryFatalError("CryAnimation: the simulation-attachment is supposed to have the same skeleton as the render-attachment");
-		return 0; //critical! incompatible skeletons. cant create skin-attachment
+		if (NotMatchingNames)
+		{
+			CryFatalError("CryAnimation: the simulation-attachment is supposed to have the same skeleton as the render-attachment");
+			return 0; //critical! incompatible skeletons. cant create skin-attachment
+		}
 	}
 
 	return 1;
@@ -206,6 +207,8 @@ void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
 
 void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint32 loadingFlags)
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
 	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
 	{
@@ -249,6 +252,8 @@ void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint3
 
 void CAttachmentVCLOTH::UpdateRemapTable()
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	if (m_pRenderSkin == 0)
 		return;
 
@@ -299,8 +304,15 @@ bool CAttachmentVCLOTH::EnsureRemapTableIsValid()
 
 void CAttachmentVCLOTH::ReleaseSimRemapTablePair()
 {
-	if (!m_pSimSkin)
+	if (!m_pAttachmentManager)
+	{
 		return;
+	}
+
+	if (!m_pSimSkin)
+	{
+		return;
+	}
 
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pModelSkel = pInstanceSkel->m_pDefaultSkeleton;
@@ -314,8 +326,15 @@ void CAttachmentVCLOTH::ReleaseSimRemapTablePair()
 
 void CAttachmentVCLOTH::ReleaseRenderRemapTablePair()
 {
-	if (!m_pRenderSkin)
+	if (!m_pAttachmentManager)
+	{
 		return;
+	}
+
+	if (!m_pRenderSkin)
+	{
+		return;
+	}
 
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pModelSkel = pInstanceSkel->m_pDefaultSkeleton;
@@ -374,6 +393,11 @@ void CAttachmentVCLOTH::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EG
 
 const QuatTS CAttachmentVCLOTH::GetAttWorldAbsolute() const
 {
+	if (!m_pAttachmentManager)
+	{
+		return QuatTS(IDENTITY);
+	}
+
 	QuatTS rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation;
 };
@@ -384,6 +408,7 @@ void CAttachmentVCLOTH::UpdateAttModelRelative()
 
 int CAttachmentVCLOTH::GetGuid() const
 {
+	CRY_ASSERT(m_pAttachmentManager);
 	return m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetGuid();
 }
 
@@ -535,6 +560,8 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 
 void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo)
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	if (!m_clothPiece.GetSimulator().IsVisible() || Console::GetInst().ca_VClothMode == 0) return;
 
 	DEFINE_PROFILER_FUNCTION();
@@ -899,6 +926,9 @@ void CAttachmentVCLOTH::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRe
 SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimation, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
 {
 	DEFINE_PROFILER_FUNCTION();
+
+	CRY_ASSERT(m_pAttachmentManager);
+
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
 	if (pMaster == 0)
 	{

@@ -11,23 +11,30 @@
 
 uint32 CAttachmentFACE::Immediate_AddBinding(IAttachmentObject* pIAttachmentObject, ISkin* pISkin, uint32 nLoadingFlags)
 {
-	if (m_pIAttachmentObject)
+	if (m_pIAttachmentObject && m_pAttachmentManager)
 	{
-		uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType());
-		if (IsFastUpdateType)
+		if (m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType()))
+		{
 			m_pAttachmentManager->RemoveEntityAttachment();
+		}
 	}
 
 	SAFE_RELEASE(m_pIAttachmentObject);
 	m_pIAttachmentObject = pIAttachmentObject;
 
-	if (pIAttachmentObject)
+	if (pIAttachmentObject && m_pAttachmentManager)
 	{
-		uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(pIAttachmentObject->GetAttachmentType());
-		if (IsFastUpdateType)
+		if (m_pAttachmentManager->IsFastUpdateType(pIAttachmentObject->GetAttachmentType()))
+		{
 			m_pAttachmentManager->AddEntityAttachment();
+		}
 	}
-	m_pAttachmentManager->m_TypeSortingRequired++;
+
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->m_TypeSortingRequired++;
+	}
+
 	return 1;
 }
 
@@ -40,21 +47,25 @@ void CAttachmentFACE::ClearBinding_Internal(bool release)
 {
 	if (m_pIAttachmentObject)
 	{
-		if (m_pAttachmentManager->m_pSkelInstance)
+		if (m_pAttachmentManager && m_pAttachmentManager->m_pSkelInstance)
 		{
 			uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType());
 			if (IsFastUpdateType)
 				m_pAttachmentManager->RemoveEntityAttachment();
-
-			if (release)
-			{
-				m_pIAttachmentObject->Release();
-			}
-
-			m_pIAttachmentObject = 0;
 		}
+
+		if (release)
+		{
+			m_pIAttachmentObject->Release();
+		}
+
+		m_pIAttachmentObject = 0;
 	}
-	m_pAttachmentManager->m_TypeSortingRequired++;
+
+	if (m_pAttachmentManager)
+	{
+		m_pAttachmentManager->m_TypeSortingRequired++;
+	}
 }
 
 uint32 CAttachmentFACE::Immediate_SwapBinding(IAttachment* pNewAttachment)
@@ -79,6 +90,8 @@ uint32 CAttachmentFACE::Immediate_SwapBinding(IAttachment* pNewAttachment)
 
 bool CAttachmentFACE::ProjectAttachment(const Skeleton::CPoseData* pPoseData)
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	CCharInstance* pSkelInstance = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pDefaultSkeleton = pSkelInstance->m_pDefaultSkeleton;
 	if (pDefaultSkeleton->m_ObjectType != CHR)
@@ -194,6 +207,8 @@ bool CAttachmentFACE::ProjectAttachment(const Skeleton::CPoseData* pPoseData)
 
 void CAttachmentFACE::ComputeTriMat()
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	CCharInstance* pSkelInstance = m_pAttachmentManager->m_pSkelInstance;
 	const CDefaultSkeleton* pDefaultSkeleton = pSkelInstance->m_pDefaultSkeleton;
 	const CDefaultSkeleton::SJoint* pJoints = &pDefaultSkeleton->m_arrModelJoints[0];
@@ -260,6 +275,11 @@ void CAttachmentFACE::ComputeTriMat()
 
 void CAttachmentFACE::PostUpdateSimulationParams(bool bAttachmentSortingRequired, const char* pJointName)
 {
+	if (!m_pAttachmentManager)
+	{
+		return;
+	}
+
 	m_pAttachmentManager->m_TypeSortingRequired += bAttachmentSortingRequired;
 	m_Simulation.PostUpdate(m_pAttachmentManager, pJointName);
 };
@@ -300,6 +320,11 @@ void CAttachmentFACE::Update(Skeleton::CPoseData& poseData)
 
 const QuatTS CAttachmentFACE::GetAttWorldAbsolute() const
 {
+	if (!m_pAttachmentManager)
+	{
+		return m_AttModelRelative;
+	}
+
 	QuatTS rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation * m_AttModelRelative;
 };
