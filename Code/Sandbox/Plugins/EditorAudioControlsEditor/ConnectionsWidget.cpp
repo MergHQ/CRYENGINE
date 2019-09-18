@@ -176,21 +176,21 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 
 			if (pIItem != nullptr)
 			{
+				pContextMenu->addSeparator();
+
 				if ((m_pControl->GetFlags() & EAssetFlags::IsDefaultControl) == 0)
 				{
 					string const& itemName = pIItem->GetName();
 					string const& typeName = AssetUtils::GetTypeName(m_pControl->GetType());
 
-					pContextMenu->addSeparator();
 					pContextMenu->addAction(tr("Rename the connected " + typeName + " to \"" + itemName + "\""), [=]()
 						{
-							m_pControl->SetName(itemName);
+							RenameControl(itemName);
 						});
 				}
 
 				if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == EItemFlags::None)
 				{
-					pContextMenu->addSeparator();
 					pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
 						{
 							if (g_pIImpl != nullptr)
@@ -199,7 +199,6 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 							}
 						});
 				}
-
 			}
 		}
 
@@ -325,6 +324,22 @@ XmlNodeRef CConnectionsWidget::ConstructTemporaryTriggerConnections(CControl con
 	}
 
 	return node;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::RenameControl(string const& newName)
+{
+	string const& typeName = AssetUtils::GetTypeName(m_pControl->GetType());
+	string const& controlName = m_pControl->GetName();
+	QString const text = "Are you sure you want to rename the " + typeName + " \"" + controlName + "\" to \"" + newName + "\"?";
+
+	auto const messageBox = new CQuestionDialog();
+	messageBox->SetupQuestion(g_szEditorName, text);
+
+	if (messageBox->Execute() == QDialogButtonBox::Yes)
+	{
+		m_pControl->SetName(newName);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

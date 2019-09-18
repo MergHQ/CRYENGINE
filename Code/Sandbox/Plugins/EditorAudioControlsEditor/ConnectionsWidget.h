@@ -52,6 +52,7 @@ private:
 	void       UpdateSelectedConnections();
 	void       ResizeColumns();
 	void       ExecuteConnection();
+	void       RenameControl(string const& newName);
 	XmlNodeRef ConstructTemporaryTriggerConnections(CControl const* const pControl);
 
 	CControl*                         m_pControl;
