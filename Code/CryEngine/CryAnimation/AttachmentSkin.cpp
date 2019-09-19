@@ -152,13 +152,16 @@ void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
 		if (nLoadingFlags & CA_SkipSkelRecreation)
 			return;
 		
-		// For now limited to CharEdit
-		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
+		if (m_pAttachmentManager)
 		{
-			CRY_ASSERT(pInstanceSkel->m_CharEditMode);
-			CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
-			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
+			// For now limited to CharEdit
+			CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
+			if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
+			{
+				CRY_ASSERT(pInstanceSkel->m_CharEditMode);
+				CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
+				RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
+			}
 		}
 	}
 }; 
