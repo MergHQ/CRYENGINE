@@ -72,12 +72,14 @@ void CSkeletonAnim::FinishAnimationComputations()
 	const CharacterInstanceProcessing::SContext* pCtx = m_pInstance->GetProcessingContext();
 	if (pCtx)
 	{
-		g_pCharacterManager->GetContextSyncQueue().ExecuteForContextAndAllChildrenRecursively(
-		  pCtx->slot, [](CharacterInstanceProcessing::SContext& ctx)
+		const auto finishFunction = [](CharacterInstanceProcessing::SContext& ctx)
 		{
 			ctx.job.Wait();
 			return CharacterInstanceProcessing::SFinishAnimationComputations()(ctx);
-		});
+		};
+
+		g_pCharacterManager->GetContextSyncQueue().ExecuteForAllParentsRecursively(pCtx->slot, finishFunction);
+		g_pCharacterManager->GetContextSyncQueue().ExecuteForContextAndAllChildrenRecursively(pCtx->slot, finishFunction);
 	}
 }
 

@@ -161,7 +161,7 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 	CharacterInstanceProcessing::SContext& ctx = queue.AppendContext();
 	SetProcessingContext(ctx);
 	int numberOfChildren = m_AttachmentManager.GenerateAttachedCharactersContexts();
-	ctx.Initialize(this, nullptr, nullptr, numberOfChildren);
+	ctx.Initialize(this, nullptr, -1, numberOfChildren);
 	queue.ExecuteForContextAndAllChildrenRecursively(
 	  m_processingContext, CharacterInstanceProcessing::SStartAnimationProcessing(params));
 

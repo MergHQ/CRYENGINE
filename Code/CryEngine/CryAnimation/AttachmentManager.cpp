@@ -1630,6 +1630,8 @@ const std::vector<CCharInstance*>& CAttachmentManager::GetAttachedCharacterInsta
 
 int CAttachmentManager::GenerateAttachedCharactersContexts()
 {
+	CRY_ASSERT(m_pSkelInstance->GetProcessingContext());
+
 	RebuildAttachedCharactersCache();
 
 	int generatedContextsCount = 0;
@@ -1648,7 +1650,7 @@ int CAttachmentManager::GenerateAttachedCharactersContexts()
 		generatedContextsCount += 1;
 
 		const int numChildren = pCharacter->m_AttachmentManager.GenerateAttachedCharactersContexts();
-		ctx.Initialize(pCharacter, pAttachment, m_pSkelInstance, numChildren);
+		ctx.Initialize(pCharacter, pAttachment, m_pSkelInstance->GetProcessingContext()->slot, numChildren);
 		generatedContextsCount += numChildren;
 	}
 

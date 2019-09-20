@@ -38,8 +38,8 @@ struct SContext
 	SContext()
 		: pInstance(nullptr)
 		, attachmentNameCRC(0)
-		, pParent(nullptr)
 		, numChildren(0)
+		, parentSlot(-1)
 		, slot(-1)
 		, pCommandBuffer(nullptr)
 		, job(nullptr)
@@ -47,7 +47,7 @@ struct SContext
 	{
 	}
 
-	void Initialize(CCharInstance* pInst, const IAttachment* pAttachment, const CCharInstance* pParent, int numChildren);
+	void Initialize(CCharInstance* pInst, const IAttachment* pAttachment, int parentSlot, int numChildren);
 
 	//! Checks if computation of this processing context is currently in progress.
 	//! \return True if computation is still in progress. False if computation did not yet start or already finished for the current frame.
@@ -55,9 +55,9 @@ struct SContext
 
 	_smart_ptr<CCharInstance> pInstance;
 	uint32                    attachmentNameCRC;
-	const CCharInstance*      pParent;
 
 	int                       numChildren;
+	int                       parentSlot;
 	int                       slot;
 
 	Command::CBuffer*         pCommandBuffer;
@@ -125,6 +125,17 @@ public:
 		{
 			auto& ctx = m_contexts[i];
 			f(ctx);
+		}
+	}
+	template<class Function>
+	void ExecuteForAllParentsRecursively(int slot, Function f)
+	{
+		const auto parentSlot = m_contexts[slot].parentSlot;
+		if (parentSlot >= 0)
+		{
+			ExecuteForAllParentsRecursively(parentSlot, f);
+			auto& parentCtx = m_contexts[parentSlot];
+			parentCtx.state = f(parentCtx);
 		}
 	}
 	template<class Function>
