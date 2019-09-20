@@ -133,7 +133,18 @@ void CAreaComponent::Physicalize()
 		IEntityAreaComponent *pShape = m_pEntity->GetComponent<IEntityAreaComponent>();
 		if (!pShape)
 			return;
-		pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(const_cast<Vec3*>(pShape->GetPoints()), pShape->GetPointsCount(), m_shapeParameters.size.x, 
+		Vec3 *pt = const_cast<Vec3*>(pShape->GetPoints());
+		int npt = pShape->GetPointsCount();
+		bool closed = pShape->GetArea()->IsPointInside(pShape->GetArea()->GetAABB().GetCenter());
+		std::vector<Vec3> ptClosed;
+		if (closed)
+		{
+			ptClosed.resize(npt+1);
+			memcpy(&ptClosed[0], pt, npt*sizeof(Vec3));
+			ptClosed[npt++] = pt[0];	
+			pt = &ptClosed[0];
+		}
+		pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(pt, npt, m_shapeParameters.size.x, 
 			m_pEntity->GetWorldPos(), m_pEntity->GetWorldRotation(), m_pEntity->GetScale().len() / (float)sqrt3);
 	}
 	break;

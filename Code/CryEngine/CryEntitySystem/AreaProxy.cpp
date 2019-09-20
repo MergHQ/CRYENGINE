@@ -635,6 +635,10 @@ void CEntityComponentArea::SetPoints(Vec3 const* const pPoints, bool const* cons
 			m_pArea->SetPoints(nullptr, pSoundObstructionSegments, numLocalPoints, bClosed);
 		}
 	}
+
+	SEntityEvent evt;
+	evt.event = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
+	GetEntity()->SendEvent(evt);
 }
 
 //////////////////////////////////////////////////////////////////////////

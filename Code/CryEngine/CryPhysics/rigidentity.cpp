@@ -2227,13 +2227,14 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			pe_status_area sa; sa.ptClosest = m_pConstraints[i].pt[0];
 			m_pConstraintInfos[i].pConstraintEnt->GetStatus(&sa);
 			m_pConstraints[i].pt[1] = sa.ptClosest;
-			m_pConstraintInfos[i].qframe_rel[1] = !m_pConstraints[i].pbody[1]->q*Quat::CreateRotationV0V1(ortx,sa.dirClosest);
+			Vec3 dirClosest = sa.dirClosest.len2()>1.01f ? sa.dirClosest.normalized() : sa.dirClosest;
+			m_pConstraintInfos[i].qframe_rel[1] = !m_pConstraints[i].pbody[1]->q*Quat::CreateRotationV0V1(ortx,dirClosest);
 			m_pConstraints[i].flags &= ~contact_constraint_3dof	| -iszero(m_pConstraints[i].flags & (contact_constraint_1dof|contact_constraint_2dof));
 			if (!(m_pConstraints[i].flags & (contact_angular|contact_constraint_3dof)) && 
 					(m_pConstraints[i].flags & contact_constraint_2dof || sa.dirClosest.len2()>1.01f) &&
 					(m_pConstraints[i].pt[0]-m_pConstraints[i].pt[1]).len2()>m_body.v.len2()*sqr(m_maxAllowedStep*2))
 				m_pConstraints[i].flags |= contact_constraint_3dof;
-			m_pConstraints[i].nloc = !frames[FrameOwner(m_pConstraints[i])].q*(sa.dirClosest.len2()>1.01f ? sa.dirClosest.normalized():sa.dirClosest);
+			m_pConstraints[i].nloc = !frames[FrameOwner(m_pConstraints[i])].q*dirClosest;
 		}	else
 			m_pConstraints[i].pt[1] = frames[1]*m_pConstraintInfos[i].ptloc[1];
 
