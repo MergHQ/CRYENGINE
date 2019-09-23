@@ -43,6 +43,7 @@ enum ECharRenderFlags
 	CS_FLAG_STREAM_HIGH_PRIORITY = 1 << 12,
 
 	CS_FLAG_RENDER_NODE_VISIBLE  = 1 << 13, //!< Set by 3DEngine when render node owning character is potentially visible and needs rendering
+	CS_FLAG_MARKED_GARBAGE       = 1 << 14, //!< Set by Entity system when the Entity owning this character becomes garbage, checked in PerFrameUpdate to skip update in such a case.
 };
 
 enum CHRLOADINGFLAGS : uint32

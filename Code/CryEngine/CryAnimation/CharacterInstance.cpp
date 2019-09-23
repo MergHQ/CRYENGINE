@@ -142,7 +142,10 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 
 	// execute only if start animation processing has not been started for this character
 	if (GetProcessingContext())
+	{
+		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "[%s] Executing StartAnimationProcessing on a character that already has a processing context. Skipping animation update.", GetFilePath());
 		return;
+	}
 
 	SetupThroughParams(&params);
 
@@ -945,7 +948,7 @@ void CCharInstance::SetupThroughParams(const SAnimationProcessParams* pParams)
 //////////////////////////////////////////////////////////////////////////
 void CCharInstance::PerFrameUpdate()
 {
-	if (m_rpFlags & CS_FLAG_UPDATE)
+	if ((m_rpFlags & CS_FLAG_UPDATE) && !(m_rpFlags & CS_FLAG_MARKED_GARBAGE))
 	{
 		if ((m_rpFlags & CS_FLAG_UPDATE_ALWAYS) ||
 				(m_rpFlags & CS_FLAG_RENDER_NODE_VISIBLE))

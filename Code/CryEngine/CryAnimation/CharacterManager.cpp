@@ -3499,6 +3499,7 @@ void CharacterManager::UpdateInstances(bool bPause)
 	// Go through all registered character instances and check if they need to be updated.
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
 
+
 	// This acts as a filter for weeding out character instances which are attached on top of other characters. Such instances will
 	// be processed recursively by their parents through attachment hierarchy traversal to ensure correct transform propagation.
 	// By applying this filter, we make sure that only top-level characters have their updates dispatched here.
@@ -3508,6 +3509,7 @@ void CharacterManager::UpdateInstances(bool bPause)
 	{
 		for (CCharInstance* pCharacter : modelRef.m_RefByInstances)
 		{
+			pCharacter->m_AttachmentManager.ProcessAttachedCharactersChanges();
 			for (CCharInstance* pDependentCharacter : pCharacter->m_AttachmentManager.GetAttachedCharacterInstances())
 			{
 				dependentCharacterInstances.insert(pDependentCharacter);

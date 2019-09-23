@@ -13,6 +13,8 @@ uint32 CAttachmentFACE::Immediate_AddBinding(IAttachmentObject* pIAttachmentObje
 {
 	if (m_pIAttachmentObject && m_pAttachmentManager)
 	{
+		m_pAttachmentManager->m_attachedCharactersCache.Erase(this);
+
 		if (m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType()))
 		{
 			m_pAttachmentManager->RemoveEntityAttachment();
@@ -24,6 +26,8 @@ uint32 CAttachmentFACE::Immediate_AddBinding(IAttachmentObject* pIAttachmentObje
 
 	if (pIAttachmentObject && m_pAttachmentManager)
 	{
+		m_pAttachmentManager->m_attachedCharactersCache.Insert(this);
+
 		if (m_pAttachmentManager->IsFastUpdateType(pIAttachmentObject->GetAttachmentType()))
 		{
 			m_pAttachmentManager->AddEntityAttachment();
@@ -49,6 +53,8 @@ void CAttachmentFACE::ClearBinding_Internal(bool release)
 	{
 		if (m_pAttachmentManager && m_pAttachmentManager->m_pSkelInstance)
 		{
+			m_pAttachmentManager->m_attachedCharactersCache.Erase(this);
+
 			uint32 IsFastUpdateType = m_pAttachmentManager->IsFastUpdateType(m_pIAttachmentObject->GetAttachmentType());
 			if (IsFastUpdateType)
 				m_pAttachmentManager->RemoveEntityAttachment();
