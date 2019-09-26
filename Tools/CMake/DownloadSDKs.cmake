@@ -1,6 +1,6 @@
 if (NOT EXISTS "${CMAKE_SOURCE_DIR}/Tools/branch_bootstrap/bootstrap.exe" AND NOT EXISTS "${CMAKE_SOURCE_DIR}/Code/SDKs")
-	set(SDK_ARCHIVE   "CRYENGINE_v5.6.0_SDKs.zip")
-	set(GIT_TAG       "5.6.0")
+	set(SDK_ARCHIVE   "CRYENGINE_v5.6.2_SDKs.zip")
+	set(GIT_TAG       "5.6.2")
 
 	if(EXISTS "${CMAKE_SOURCE_DIR}/${SDK_ARCHIVE}")
 		message(STATUS "Using pre-downloaded SDKs: ${SDK_ARCHIVE}")
