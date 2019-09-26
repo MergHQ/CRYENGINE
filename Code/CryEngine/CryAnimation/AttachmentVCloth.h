@@ -560,6 +560,8 @@ public:
 	{
 	}
 
+	~CClothPiece();
+
 	// initializes the object given a skin and a stat obj
 	bool                 Initialize(const CAttachmentVCLOTH* pVClothAttachment);
 	void				 Reset() { m_reset = true; }
