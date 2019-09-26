@@ -760,6 +760,7 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 
 void CAttachmentManager::UpdateBindings()
 {
+	DEFINE_PROFILER_FUNCTION();
 	m_modificationCommandBuffer.Execute();
 }
 
@@ -1570,6 +1571,8 @@ int CAttachmentManager::GenerateAttachedCharactersContexts()
 
 void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	if (m_TypeSortingRequired)
 	{
 		SortByType();
@@ -1590,6 +1593,8 @@ void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 
 void CAttachmentManager::UpdateAttachedObjects()
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	if (m_TypeSortingRequired)
 	{
 		SortByType();

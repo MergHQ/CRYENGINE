@@ -110,6 +110,8 @@ bool CSkeletonPose::PreparePoseDataAndLocatorWriteables(Memory::CPool& memoryPoo
 
 void CSkeletonPose::SynchronizePoseDataAndLocatorWriteables()
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	if (m_pPoseDataWriteable)
 	{
 		m_pInstance->WaitForSkinningJob();

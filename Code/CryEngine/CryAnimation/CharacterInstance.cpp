@@ -867,6 +867,8 @@ CharacterInstanceProcessing::SContext* CCharInstance::GetProcessingContext()
 
 void CCharInstance::WaitForSkinningJob() const
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	// wait for the skinning transformation from the last frame to finish
 	// *note* the skinning pool id is increased in EF_Start, which is called during the frame
 	// after the CommandBuffer Job, thus we need the current id to get the skinning data from the last frame
