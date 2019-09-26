@@ -785,19 +785,17 @@ bool CTerrain::Load(FILE* f, int nDataSize, STerrainChunkHeader* pTerrainChunkHe
 	// in case of small data amount (console game) load entire file into memory in single operation
 	if (nDataSize < 4 * 1024 * 1024 && !GetCVars()->e_StreamInstances)
 	{
-		IMemoryBlock* pMemBlock = gEnv->pCryPak->PoolAllocMemoryBlock(nDataSize + 8, "LoadTerrain");
+		_smart_ptr<IMemoryBlock> pMemBlock = gEnv->pCryPak->PoolAllocMemoryBlock(nDataSize + 8, "LoadTerrain");
 		byte* pPtr = (byte*)pMemBlock->GetData();
 		while (UINT_PTR(pPtr) & 3)
 			pPtr++;
 
 		if (GetPak()->FReadRaw(pPtr, 1, nDataSize, f) != nDataSize)
 		{
-			gEnv->pCryPak->PoolFree(pMemBlock);
 			return false;
 		}
 
 		bRes = Load_T(pPtr, nDataSize, pTerrainChunkHeader, ppStatObjTable, ppMatTable, 0, 0);
-		gEnv->pCryPak->PoolFree(pMemBlock);
 	}
 	else
 	{

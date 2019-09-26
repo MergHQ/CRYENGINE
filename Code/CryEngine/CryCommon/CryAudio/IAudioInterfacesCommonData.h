@@ -298,7 +298,7 @@ struct STriggerData
 
 struct SImplInfo
 {
-	CryFixedStringT<MaxInfoStringLength> name;
-	CryFixedStringT<MaxInfoStringLength> folderName;
+	char name[MaxInfoStringLength] = { '\0' };
+	char folderName[MaxInfoStringLength] = { '\0' };
 };
 } // namespace CryAudio

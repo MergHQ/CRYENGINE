@@ -1,4 +1,4 @@
-LIBRARY "CrySpatial"
+LIBRARY "CrySpatialWwise"
 
 EXPORTS
   AkCreatePlugin

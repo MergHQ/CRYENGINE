@@ -467,8 +467,10 @@ void CStatObj::DisableStreaming()
 			// force start streaming immediately, otherwise mesh may be loaded only when global streaming update reaches it in few frames
 			if (pParentObject->m_eStreamingStatus == ecss_NotLoaded)
 			{
-				// don't wait for the stream to finish here; may cause deadlock!
-				pParentObject->StartStreaming(false, nullptr);
+				IReadStream_AutoPtr readStream;
+				pParentObject->StartStreaming(true, &readStream);
+				if (!(GetSystem()->GetStreamEngine()->GetPauseMask() & 1 << eStreamTaskTypeGeometry))
+					readStream->Wait(3000);
 			}
 		}
 	}

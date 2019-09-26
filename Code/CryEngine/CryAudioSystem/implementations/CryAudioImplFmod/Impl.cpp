@@ -480,7 +480,7 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 									 FMOD_STUDIO_LOAD_BANK_NORMAL,
 									 &pFileData->pBank) == FMOD_OK);
 
-			CryFixedStringT<MaxFilePathLength> streamsBankPath = pFileInfo->szFilePath;
+			CryFixedStringT<MaxFilePathLength> streamsBankPath(pFileInfo->filePath);
 			PathUtil::RemoveExtension(streamsBankPath);
 			streamsBankPath += ".streams.bank";
 
@@ -551,22 +551,18 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
 			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
-			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
-			pFileInfo->szFileName = szFileName;
+			pFileInfo->isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
+			cry_strcpy(pFileInfo->fileName, szFileName);
+			CryFixedStringT<MaxFilePathLength> const filePath = (pFileInfo->isLocalized ? m_localizedSoundBankFolder : m_regularSoundBankFolder) + "/" + szFileName;
+			cry_strcpy(pFileInfo->filePath, filePath.c_str());
 
 			// FMOD Studio always uses 32 byte alignment for preloaded banks regardless of the platform.
 			pFileInfo->memoryBlockAlignment = 32;
 
-			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CFile");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CBank");
 			pFileInfo->pImplData = new CBank();
 
 			result = ERequestStatus::Success;
-		}
-		else
-		{
-			pFileInfo->szFileName = nullptr;
-			pFileInfo->memoryBlockAlignment = 0;
-			pFileInfo->pImplData = nullptr;
 		}
 	}
 
@@ -580,27 +576,14 @@ void CImpl::DestructFile(IFile* const pIFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
-{
-	char const* szResult = nullptr;
-
-	if (pFileInfo != nullptr)
-	{
-		szResult = pFileInfo->bLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str();
-	}
-
-	return szResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	implInfo.name = m_name.c_str();
+	cry_strcpy(implInfo.name, m_name.c_str());
 #else
-	implInfo.name = "name-not-present-in-release-mode";
+	cry_fixed_size_strcpy(implInfo.name, g_implNameInRelease);
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
-	implInfo.folderName = g_szImplFolderName;
+	cry_strcpy(implInfo.folderName, g_szImplFolderName, strlen(g_szImplFolderName));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -850,7 +833,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	if (pTriggerInfo != nullptr)
 	{
 		stack_string fullName(g_szEventPrefix);
-		char const* const szName = pTriggerInfo->name.c_str();
+		char const* const szName = pTriggerInfo->name;
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 

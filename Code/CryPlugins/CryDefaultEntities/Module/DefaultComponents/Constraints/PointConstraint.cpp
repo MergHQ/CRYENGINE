@@ -87,19 +87,28 @@ namespace Cry
 			{
 				Vec3 axis = Vec3(m_axis.value) * m_pEntity->GetRotation().GetInverted();
 
-				Vec3 pos1 = m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation();
+				Vec3 pos = m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation(), pos1 = pos, pos2 = pos1;
+				if (gEnv->pPhysicalWorld->GetPhysVars()->lastTimeStep && m_pEntity->GetPhysicalEntity() && !m_constraintIds.empty())
+				{
+					pe_status_constraint sc;
+					sc.id = m_constraintIds[0].second;
+					if (m_pEntity->GetPhysicalEntity()->GetStatus(&sc) && (pos1 - sc.pt[0]).len2() > sqr(0.001f))
+					{
+						pos = pos1 = pos2 = sc.pt[0];
+						axis = sc.n;
+					}
+				}
 				pos1.x += 0.5f * axis.x;
 				pos1.y += 0.5f * axis.y;
 				pos1.z += 0.5f * axis.z;
 
-				Vec3 pos2 = m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation();
 				pos2.x += -0.5f * axis.x;
 				pos2.y += -0.5f * axis.y;
 				pos2.z += -0.5f * axis.z;
 
 				gEnv->pAuxGeomRenderer->DrawLine(pos1, context.debugDrawInfo.color, pos2, context.debugDrawInfo.color, 2.0f);
 
-				gEnv->pAuxGeomRenderer->DrawSphere(m_pEntity->GetSlotWorldTM(GetEntitySlotId()).GetTranslation(), 0.1f, context.debugDrawInfo.color, true);
+				gEnv->pAuxGeomRenderer->DrawSphere(pos, 0.1f, context.debugDrawInfo.color, true);
 			}
 		}
 #endif

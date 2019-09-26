@@ -621,7 +621,7 @@ def create_config(project_file, export_path, config_path, config_type):
                 if current_platform not in platforms:
                     continue
 
-            if "guid" in it:
+            if it.get("guid", '') != '':
                 plugin = cryplugin.CryPlugin()
                 plugin.load(cryplugin.find(engine_id, it["guid"]))
 

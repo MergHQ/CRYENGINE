@@ -44,6 +44,7 @@ void CAreaComponent::SShapeParameters::Serialize(Serialization::IArchive& archiv
 		}
 		break;
 		case CAreaComponent::EType::Sphere:
+		case CAreaComponent::EType::Spline:
 		{
 			archive(Serialization::Range(size.x, 0.f, 10000.f), "Radius", "Radius");
 		}
@@ -53,6 +54,11 @@ void CAreaComponent::SShapeParameters::Serialize(Serialization::IArchive& archiv
 		{
 			archive(Serialization::Range(size.x, 0.f, 10000.f), "Radius", "Radius");
 			archive(Serialization::Range(size.y, 0.f, 10000.f), "Height", "Height");
+		}
+		break;
+		case CAreaComponent::EType::Geometry:
+		{
+			archive(geomPath, "Geometry", "Geometry");
 		}
 		break;
 	}
@@ -66,6 +72,7 @@ void CAreaComponent::Physicalize()
 	m_pEntity->Physicalize(physParams);
 
 	IGeometry* pGeometry;
+	IPhysicalEntity* pPhysicalEntity = nullptr;
 
 	switch (m_type)
 	{
@@ -112,28 +119,60 @@ void CAreaComponent::Physicalize()
 		pGeometry = gEnv->pPhysicalWorld->GetGeomManager()->CreatePrimitive(static_cast<int>(primitive.type), &primitive);
 	}
 	break;
+	case CAreaComponent::EType::Geometry:
+	{
+		if (!m_pCachedGeom || strcmp(m_pCachedGeom->GetFilePath(), m_shapeParameters.geomPath.value))
+			m_pCachedGeom = gEnv->p3DEngine->LoadStatObj(m_shapeParameters.geomPath.value);
+		if (!m_pCachedGeom || !m_pCachedGeom->GetPhysGeom())
+			return;
+		(pGeometry = m_pCachedGeom->GetPhysGeom()->pGeom)->AddRef();
+	}
+	break;
+	case CAreaComponent::EType::Spline:
+	{
+		IEntityAreaComponent *pShape = m_pEntity->GetComponent<IEntityAreaComponent>();
+		if (!pShape)
+			return;
+		Vec3 *pt = const_cast<Vec3*>(pShape->GetPoints());
+		int npt = pShape->GetPointsCount();
+		bool closed = pShape->GetArea()->IsPointInside(pShape->GetArea()->GetAABB().GetCenter());
+		std::vector<Vec3> ptClosed;
+		if (closed)
+		{
+			ptClosed.resize(npt+1);
+			memcpy(&ptClosed[0], pt, npt*sizeof(Vec3));
+			ptClosed[npt++] = pt[0];	
+			pt = &ptClosed[0];
+		}
+		pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(pt, npt, m_shapeParameters.size.x, 
+			m_pEntity->GetWorldPos(), m_pEntity->GetWorldRotation(), m_pEntity->GetScale().len() / (float)sqrt3);
+	}
+	break;
 	default:
 		CRY_ASSERT(false);
 		return;
 	}
 
-	IPhysicalEntity* pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(pGeometry, m_pEntity->GetWorldPos(), m_pEntity->GetWorldRotation(), m_pEntity->GetScale().GetLength());
+	if (!pPhysicalEntity)
+		pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(pGeometry, m_pEntity->GetWorldPos(), m_pEntity->GetWorldRotation(), m_pEntity->GetScale().GetLength());
 	m_pEntity->AssignPhysicalEntity(pPhysicalEntity);
 
+	pe_params_area areaParams;
 	// Set gravity params
 	if (m_bCustomGravity)
 	{
-		pe_params_area areaParams;
-		areaParams.gravity = m_gravity;
-		pPhysicalEntity->SetParams(&areaParams);
+		areaParams.gravity = m_bUniform ? m_gravity : Vec3(0, 0, m_gravity.x + m_gravity.y + m_gravity.z);
 	}
+	areaParams.bUniform = m_bUniform;
+	areaParams.falloff0 = m_falloff0;
+	pPhysicalEntity->SetParams(&areaParams);
 
 	// Set air / water params
 	if (m_buoyancyParameters.medium != SBuoyancyParameters::EType::None)
 	{
 		pe_params_buoyancy buoyancyParams;
 		buoyancyParams.iMedium = (pe_params_buoyancy::EMediumType)m_buoyancyParameters.medium;
-		buoyancyParams.waterFlow = m_buoyancyParameters.flow;
+		buoyancyParams.waterFlow = m_bUniform ? m_buoyancyParameters.flow : Vec3(0, 0, m_buoyancyParameters.flow.x + m_buoyancyParameters.flow.y + m_buoyancyParameters.flow.z);
 		buoyancyParams.flowVariance = 0.f;
 		buoyancyParams.waterDensity = m_buoyancyParameters.density;
 		buoyancyParams.waterResistance = m_buoyancyParameters.resistance;

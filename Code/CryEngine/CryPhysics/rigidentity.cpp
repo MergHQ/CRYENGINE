@@ -593,25 +593,30 @@ int CRigidEntity::GetStatus(pe_status *_status) const
 
 	if (_status->type==pe_status_constraint::type_id) {
 		pe_status_constraint *status = (pe_status_constraint*)_status;
-		int i; 
+		int i,res=0;
+		status->n.zero(); status->flags = 0;
 		if ((i=status->idx)>=0)
 			if (m_constraintMask & getmask(i)) {
 				status->id=m_pConstraintInfos[i].id; goto foundconstr;
 			} else
 				return 0;
+
 		for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].id==status->id) {
 		foundconstr:
 			for(int iop=0;iop<2;iop++) {
 				status->pt[iop] = m_pConstraints[i].pt[iop];
 				status->partid[iop] = m_pConstraints[i].pent[iop]->m_parts[m_pConstraints[i].ipart[iop]].id;
 			}
-			status->n = m_pConstraints[i].n; 
-			status->flags = m_pConstraintInfos[i].flags;
+			if (!status->n.len2() || m_pConstraints[i].flags & contact_angular)
+				status->n = m_pConstraints[i].n; 
+			status->flags |= m_pConstraintInfos[i].flags;
 			status->pBuddyEntity = m_pConstraints[i].pent[1];
 			status->pConstraintEntity = m_pConstraintInfos[i].pConstraintEnt;
-			return 1;
+			res++;
+			if (status->idx>=0)
+				return 1;
 		}
-		return 0;
+		return res;
 	}
 
 	if (_status->type==pe_status_dynamics::type_id) {
@@ -1188,7 +1193,7 @@ void CRigidEntity::AlertNeighbourhoodND(int mode)
 	m_iSimClass = 7; // notifies the others that we are being deleted
 
 	for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) 
-		if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].pConstraintEnt && (unsigned int)m_pConstraintInfos[i].pConstraintEnt->m_iSimClass<7u) 
+		if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].pConstraintEnt && !m_pConstraintInfos[i].pConstraintEnt->m_iDeletionTime && m_pConstraintInfos[i].pConstraintEnt->m_iSimClass!=5) 
 			m_pConstraintInfos[i].pConstraintEnt->Awake();
 	m_iSimClass = iSimClass;
 
@@ -2222,13 +2227,14 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			pe_status_area sa; sa.ptClosest = m_pConstraints[i].pt[0];
 			m_pConstraintInfos[i].pConstraintEnt->GetStatus(&sa);
 			m_pConstraints[i].pt[1] = sa.ptClosest;
-			m_pConstraintInfos[i].qframe_rel[1] = !m_pConstraints[i].pbody[1]->q*Quat::CreateRotationV0V1(ortx,sa.dirClosest);
+			Vec3 dirClosest = sa.dirClosest.len2()>1.01f ? sa.dirClosest.normalized() : sa.dirClosest;
+			m_pConstraintInfos[i].qframe_rel[1] = !m_pConstraints[i].pbody[1]->q*Quat::CreateRotationV0V1(ortx,dirClosest);
 			m_pConstraints[i].flags &= ~contact_constraint_3dof	| -iszero(m_pConstraints[i].flags & (contact_constraint_1dof|contact_constraint_2dof));
 			if (!(m_pConstraints[i].flags & (contact_angular|contact_constraint_3dof)) && 
 					(m_pConstraints[i].flags & contact_constraint_2dof || sa.dirClosest.len2()>1.01f) &&
 					(m_pConstraints[i].pt[0]-m_pConstraints[i].pt[1]).len2()>m_body.v.len2()*sqr(m_maxAllowedStep*2))
 				m_pConstraints[i].flags |= contact_constraint_3dof;
-			m_pConstraints[i].nloc = !frames[FrameOwner(m_pConstraints[i])].q*(sa.dirClosest.len2()>1.01f ? sa.dirClosest.normalized():sa.dirClosest);
+			m_pConstraints[i].nloc = !frames[FrameOwner(m_pConstraints[i])].q*dirClosest;
 		}	else
 			m_pConstraints[i].pt[1] = frames[1]*m_pConstraintInfos[i].ptloc[1];
 

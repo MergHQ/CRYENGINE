@@ -292,7 +292,6 @@ public:
 	void          LoadSurfaceTypesFromXML(XmlNodeRef pDoc);
 	void          UpdateSurfaceTypes();
 	bool          RenderArea(Vec3 vPos, float fRadius, _smart_ptr<IRenderMesh>& arrLightRenderMeshs, CRenderObject* pObj, IMaterial* pMaterial, const char* szComment, float* pCustomData, Plane* planes, const SRenderingPassInfo& passInfo);
-	void          IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const SRenderingPassInfo& passInfo);
 	void          IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult);
 	void          MarkAllSectorsAsUncompiled();
 	void          GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& crstAABB);

@@ -8,6 +8,8 @@ namespace CryEngine
 	/// </summary>
 	public class LevelSystem : ILevelSystemListener
 	{
+		private bool isListening = false;
+
 		internal static LevelSystem Instance { get; set; }
 
 		/// <summary>
@@ -115,15 +117,22 @@ namespace CryEngine
 		private void AddListener()
 		{
 			Engine.GameFramework?.GetILevelSystem()?.AddListener(this);
+			isListening = true;
 		}
 
-		private void RemoveListener()
+		public void RemoveListener()
 		{
+			if (isListening == false)
+			{
+				return;
+			}
+
 			var levelSystem = Engine.GameFramework?.GetILevelSystem();
 			if(levelSystem != null)
 			{
 				levelSystem.RemoveListener(this);
 			}
+			isListening = false;
 		}
 
 		/// <summary>

@@ -89,6 +89,16 @@ namespace Cry
 			{
 				Quat rot = Quat::CreateRotationV0V1(Vec3(0, 0, 1), m_axis).GetInverted() * Quat(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false)).GetInverted() * m_pEntity->GetRotation().GetInverted();
 				Vec3 org = GetWorldTransformMatrix().GetTranslation();
+				if (gEnv->pPhysicalWorld->GetPhysVars()->lastTimeStep && m_pEntity->GetPhysicalEntity() && !m_constraintIds.empty())
+				{
+					pe_status_constraint sc;
+					sc.id = m_constraintIds[0].second;
+					if (m_pEntity->GetPhysicalEntity()->GetStatus(&sc) && (org - sc.pt[0]).len2() > sqr(0.001f))
+					{
+						org = sc.pt[0];
+						rot = Quat::CreateRotationV0V1(Vec3(0, 0, 1), sc.n).GetInverted();
+					}
+				}
 
 				Vec3 pos1 = Vec3(-1, 1, 0) * rot + org;
 				Vec3 pos2 = Vec3(1, 1, 0) * rot + org;

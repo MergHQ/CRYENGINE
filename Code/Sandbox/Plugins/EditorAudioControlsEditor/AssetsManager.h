@@ -48,6 +48,7 @@ public:
 	void             ReloadAllConnections();
 	void             DeleteAsset(CAsset* const pAsset);
 	void             MoveAssets(CAsset* const pParent, Assets const& assets);
+	void             DuplicateAssets(Assets const& assets);
 	void             CreateAndConnectImplItems(Impl::IItem* const pIItem, CAsset* const pParent);
 
 	bool             IsTypeDirty(EAssetType const type) const;
@@ -85,11 +86,13 @@ public:
 	CCrySignal<void(CAsset*, CAsset*)> SignalOnAfterAssetRemoved;
 	CCrySignal<void(CAsset*)>          SignalAssetRenamed;
 	CCrySignal<void(CControl*)>        SignalControlModified;
+	CCrySignal<void()>                 SignalControlsDuplicated;
 	CCrySignal<void(CControl*)>        SignalConnectionAdded;
 	CCrySignal<void(CControl*)>        SignalConnectionRemoved;
 
 private:
 
+	void    DuplicateStates(CControl* const pOldSwitch, CControl* const pNewSwitch);
 	CAsset* CreateAndConnectImplItemsRecursively(Impl::IItem* const pIItem, CAsset* const pParent);
 
 	void    SetTypeModified(EAssetType const type, bool const isModified);

@@ -1,7 +1,7 @@
 
 #options
 
-option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin (currently Schematyc2.dll)" ON)
+option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin (currently Schematyc2.dll)" OFF)
 option(PLUGIN_SCHEMATYC_EXPERIMENTAL "Enables compilation of the Experimental Schematyc plugin (Schematyc.dll)" ON)
 
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
@@ -43,11 +43,17 @@ endif()
 
 #Plugins
 if(WINDOWS)
-	
-	if(EXISTS "${SDK_DIR}/OculusSDK")
-		option(PLUGIN_VR_OCULUS "Oculus support" ON)
+
+	# Oculus SDK 1.40.0 does not compile starting with Visual Studio 2019 16.3.0 (vc142)
+	if (MSVC_VERSION LESS 1923)
+		if(EXISTS "${SDK_DIR}/OculusSDK")
+			option(PLUGIN_VR_OCULUS "Oculus support" ON)
+		else()
+			option(PLUGIN_VR_OCULUS "Oculus support" OFF)
+		endif()
 	else()
-		option(PLUGIN_VR_OCULUS "Oculus support" OFF)
+		message(WARNING "Disabling Oculus VR Plugin because Oculus SDK 1.40.0 does not compile starting with Visual Studio 2019 16.3.0 (vc142)")
+		unset(PLUGIN_VR_OCULUS CACHE)
 	endif()
 
 	option(OPTION_CRYMONO "C# support" OFF)
@@ -530,6 +536,7 @@ if (OPTION_ENGINE)
 	if (AUDIO_CRYSPATIAL)
 		add_subdirectory("Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise/plugins/CrySpatial/WwisePlugin")
 		add_subdirectory("Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise/plugins/CrySpatial/SoundEnginePlugin")
+		add_subdirectory("Code/CryEngine/CryAudioSystem/implementations/CryAudioImplFmod/plugins/CrySpatial")
 	endif()
 	if (AUDIO_ADX2)
 		add_subdirectory ("Code/CryEngine/CryAudioSystem/implementations/CryAudioImplAdx2")

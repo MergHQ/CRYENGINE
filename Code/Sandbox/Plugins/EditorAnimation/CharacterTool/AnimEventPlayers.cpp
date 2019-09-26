@@ -21,6 +21,8 @@
 namespace CharacterTool {
 using Serialization::IArchive;
 
+static CryAudio::ListenerId s_audioListenerId = CryAudio::DefaultListenerId;
+
 void SerializeParameterAudioTrigger(string& parameter, IArchive& ar)
 {
 	ar(Serialization::AudioTrigger(parameter), "parameter", "^");
@@ -202,8 +204,6 @@ public:
 
 	void Initialize() override
 	{
-		CryAudio::SCreateObjectData const objectData("Character Tool", CryAudio::EOcclusionType::Ignore);
-		m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 		SetPredefinedSwitches();
 	}
 
@@ -272,15 +272,21 @@ public:
 
 	void EnableAudio(bool enableAudio) override
 	{
-		if (enableAudio && m_pIAudioListener == nullptr)
+		if (enableAudio)
 		{
-			static const Matrix34 identityMatrix(IDENTITY);
-			m_pIAudioListener = gEnv->pAudioSystem->CreateListener(identityMatrix, "AnimEventPlayer");
-		}
-		else if (m_pIAudioListener != nullptr)
-		{
-			gEnv->pAudioSystem->ReleaseListener(m_pIAudioListener);
-			m_pIAudioListener = nullptr;
+			if (m_pIAudioListener == nullptr)
+			{
+				static const Matrix34 identityMatrix(IDENTITY);
+				m_pIAudioListener = gEnv->pAudioSystem->CreateListener(identityMatrix, "AnimEventPlayer");
+			}
+
+			if ((m_pIAudioObject == nullptr) && (m_pIAudioListener != nullptr))
+			{
+				s_audioListenerId = m_pIAudioListener->GetId();
+				CryAudio::ListenerIds const listenerIds{ s_audioListenerId };
+				CryAudio::SCreateObjectData const objectData("Character Tool", CryAudio::EOcclusionType::Ignore, CryAudio::CTransformation::GetEmptyObject(), false, listenerIds);
+				m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
+			}
 		}
 
 		m_audioEnabled = enableAudio;
@@ -478,10 +484,6 @@ public:
 		const char* name = event.m_EventName ? event.m_EventName : "";
 		if (stricmp(name, "footstep") == 0)
 		{
-			SMFXRunTimeEffectParams params;
-			params.pos = GetBonePosition(character, m_playerLocation, event.m_BonePathName);
-			params.angle = 0;
-
 			IMaterialEffects* pMaterialEffects = gEnv->pMaterialEffects;
 			TMFXEffectId effectId = InvalidEffectId;
 
@@ -492,36 +494,48 @@ public:
 			}
 
 			if (effectId != InvalidEffectId)
+			{
+				// setup sound params
+				SMFXRunTimeEffectParams params;
+				params.pos = GetBonePosition(character, m_playerLocation, event.m_BonePathName);
+				params.angle = 0;
+				params.audioListenerIds = { s_audioListenerId };
+
 				pMaterialEffects->ExecuteEffect(effectId, params);
+			}
 			else
+			{
 				gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find material for footstep sounds");
+			}
+
 			return true;
 		}
 		else if (stricmp(name, "groundEffect") == 0)
 		{
-			// setup sound params
-			SMFXRunTimeEffectParams params;
-			params.pos = GetBonePosition(character, m_playerLocation, event.m_BonePathName);
-			params.angle = 0;
-
 			IMaterialEffects* materialEffects = gEnv->pMaterialEffects;
 			TMFXEffectId effectId = InvalidEffectId;
 			if (materialEffects)
 				effectId = materialEffects->GetEffectIdByName(event.m_CustomParameter, "default");
 
 			if (effectId != 0)
+			{
+				// setup sound params
+				SMFXRunTimeEffectParams params;
+				params.pos = GetBonePosition(character, m_playerLocation, event.m_BonePathName);
+				params.angle = 0;
+				params.audioListenerIds = { s_audioListenerId };
+
 				materialEffects->ExecuteEffect(effectId, params);
+			}
 			else
+			{
 				gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find material for groundEffect anim event");
+			}
+
 			return true;
 		}
 		else if (stricmp(name, "foley") == 0)
 		{
-			// setup sound params
-			SMFXRunTimeEffectParams params;
-			params.angle = 0;
-			params.pos = GetBonePosition(character, m_playerLocation, event.m_BonePathName);
-
 			IMaterialEffects* materialEffects = gEnv->pMaterialEffects;
 			TMFXEffectId effectId = InvalidEffectId;
 
@@ -532,9 +546,19 @@ public:
 				                                              event.m_CustomParameter[0] ? event.m_CustomParameter : "default");
 
 				if (effectId != InvalidEffectId)
+				{
+					// setup sound params
+					SMFXRunTimeEffectParams params;
+					params.angle = 0;
+					params.pos = GetBonePosition(character, m_playerLocation, event.m_BonePathName);
+					params.audioListenerIds = { s_audioListenerId };
+
 					materialEffects->ExecuteEffect(effectId, params);
+				}
 				else
+				{
 					gEnv->pSystem->Warning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, 0, "Failed to find effect entry for foley sounds");
+				}
 			}
 			return true;
 		}

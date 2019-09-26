@@ -35,17 +35,6 @@ CManagedPlugin::~CManagedPlugin()
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
-
-	if (m_pMonoObject != nullptr)
-	{
-		if (CMonoClass* pClass = m_pMonoObject->GetClass())
-		{
-			if (std::shared_ptr<CMonoMethod> pShutdownMethod = pClass->FindMethod("Shutdown").lock())
-			{
-				pShutdownMethod->Invoke(m_pMonoObject.get());
-			}
-		}
-	}
 }
 
 void CManagedPlugin::InitializePlugin()
@@ -231,6 +220,9 @@ void CManagedPlugin::RegisterSchematycPackageContents(Schematyc::IEnvRegistrar& 
 
 void CManagedPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
+	if (m_wasShutdown)
+		return;
+
 	switch (event)
 	{
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
@@ -358,4 +350,20 @@ void CManagedPlugin::OnClientDisconnected(int channelId, EDisconnectionCause cau
 			}
 		}
 	}
+}
+
+void CManagedPlugin::Shutdown()
+{
+	if (m_pMonoObject != nullptr)
+	{
+		if (CMonoClass* pClass = m_pMonoObject->GetClass())
+		{
+			if (std::shared_ptr<CMonoMethod> pShutdownMethod = pClass->FindMethod("Shutdown").lock())
+			{
+				pShutdownMethod->Invoke(m_pMonoObject.get());
+			}
+		}
+	}
+
+	m_wasShutdown = true;
 }

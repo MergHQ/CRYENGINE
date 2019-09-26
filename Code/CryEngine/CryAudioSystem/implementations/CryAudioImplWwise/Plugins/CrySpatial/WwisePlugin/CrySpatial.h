@@ -1,6 +1,7 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+
 #include <afxwin.h>
 
 namespace CryAudio
@@ -20,7 +21,7 @@ public:
 	BOOL InitInstance() override;
 	DECLARE_MESSAGE_MAP()
 };
-}// namespace Plugins
-}// namespace Wwise
-}// namespace Impl
-}// namespace CryAudio
+} // namespace Plugins
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio

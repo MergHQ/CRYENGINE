@@ -82,6 +82,13 @@ namespace CryEngine
 					if (wparam == 0 && EditorGameEnded != null)
 						EditorGameEnded();
 					break;
+				case ESystemEvent.ESYSTEM_EVENT_FULL_SHUTDOWN:
+				case ESystemEvent.ESYSTEM_EVENT_FAST_SHUTDOWN:
+					LevelSystem.Instance.RemoveListener();
+					Input.RemoveListener();
+					AudioManager.RemoveListener();
+					Mouse.RemoveListener();
+					break;
 			}
 		}
 	}

@@ -25,9 +25,11 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
 	CRY_ASSERT(ctx.pInstance->GetProcessingContext() == &ctx);
 
-	if (ctx.pParent)
+	if (ctx.parentSlot >= 0)
 	{
-		ctx.pInstance->SetupThroughParent(ctx.pParent);
+		const CCharInstance* pParent = CRY_VERIFY(g_pCharacterManager->GetContextSyncQueue().GetContext(ctx.parentSlot).pInstance);
+
+		ctx.pInstance->SetupThroughParent(pParent);
 
 		// Anticipated skip for quasi-static objects
 		// This allows to skip the animation update for those objects which just stay in the same pose / animation loop for a long time
@@ -35,7 +37,7 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 		if (ctx.pInstance->IsQuasiStaticSleeping())
 		{
 			g_pCharacterManager->Debug_IncreaseQuasiStaticCullCounter();
-			return SContext::EState::Finished;
+			return SContext::EState::JobCulled;
 		}
 	}
 
@@ -123,11 +125,11 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 	CRY_ASSERT(ctx.state != SContext::EState::StartAnimationProcessed);
 	CRY_ASSERT(ctx.state != SContext::EState::Failure);
 
-	if (ctx.pParent)
+	if (ctx.parentSlot >= 0)
 	{
-		const IAttachment* pAttachment = ctx.pParent->m_AttachmentManager.GetInterfaceByNameCRC(ctx.attachmentNameCRC);
+		const CCharInstance* pParent = CRY_VERIFY(g_pCharacterManager->GetContextSyncQueue().GetContext(ctx.parentSlot).pInstance);
 
-		if (pAttachment)
+		if (const IAttachment* pAttachment = pParent->m_AttachmentManager.GetInterfaceByNameCRC(ctx.attachmentNameCRC))
 		{
 			ctx.pInstance->m_location = pAttachment->GetAttWorldAbsolute();
 		}
@@ -197,12 +199,12 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 	return SContext::EState::Finished;
 }
 
-void SContext::Initialize(CCharInstance* _pInst, const IAttachment* _pAttachment, const CCharInstance* _pParent, int _numChildren)
+void SContext::Initialize(CCharInstance* _pInst, const IAttachment* _pAttachment, int _parentSlot, int _numChildren)
 {
 	pInstance = _pInst;
 	attachmentNameCRC = _pAttachment ? _pAttachment->GetNameCRC() : 0;
-	pParent = _pParent;
 	numChildren = _numChildren;
+	parentSlot = _parentSlot;
 	pCommandBuffer = (Command::CBuffer*)CharacterInstanceProcessing::GetMemoryPool()->Allocate(sizeof(Command::CBuffer));
 	job = CJob(this);
 }
@@ -229,8 +231,9 @@ void CContextQueue::ClearContexts()
 		auto& ctx = m_contexts[i];
 		ctx.pInstance.reset();
 		ctx.attachmentNameCRC = 0;
-		ctx.pParent = nullptr;
 		ctx.numChildren = 0;
+		ctx.parentSlot = -1;
+		ctx.slot = -1;
 		ctx.pCommandBuffer = nullptr;
 		CRY_ASSERT(ctx.state == SContext::EState::Finished);
 		ctx.state = SContext::EState::Unstarted;

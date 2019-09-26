@@ -428,6 +428,7 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 		{
 			ar(Serialization::ModelFilename(m_ropeParams.segmentObj), "segObj", "Mesh");
 			ar(m_ropeParams.segObjAxis, "segObjAxis", "Mesh Axis");
+			SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_FlipMeshAxis, "flipax", "Flip Axis");
 			ar(Serialization::RadiansWithRangeAsDeg(m_ropeParams.segObjRot0, -180.0f, 180.0f), "segObjRot0", "Initial Rotation");
 			ar(m_ropeParams.segObjLen, "segObjLen", "Repeat Length");
 			ar(Serialization::RadiansWithRangeAsDeg(m_ropeParams.segObjRot, -180.0f, 180.0f), "segObjRot", "Repeat Rotation");

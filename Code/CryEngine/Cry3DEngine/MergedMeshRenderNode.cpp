@@ -2436,7 +2436,6 @@ bool CMergedMeshRenderNode::DeleteRenderMesh(RENDERMESH_UPDATE_TYPE type, bool b
 	if (type == RUT_STATIC)
 	{
 		InvalidatePermanentRenderObject();
-		m_manipulationFrame = -1;
 	}		
 
 	return true;
@@ -2685,7 +2684,6 @@ done:
 	if (type == RUT_STATIC)
 	{
 		InvalidatePermanentRenderObject();
-		m_manipulationFrame = -1;
 	}	
 }
 

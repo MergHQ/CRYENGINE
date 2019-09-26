@@ -175,9 +175,7 @@ else ()
 	list(APPEND global_defines  MEMREPLAY_USES_DETOURS=0)
 endif ()
 
-if(NOT TARGET WinPixEventRuntime)
-	include("${TOOLS_CMAKE_DIR}/modules/WinPixEventRuntime.cmake")
-endif()
+include("${TOOLS_CMAKE_DIR}/modules/WinPixEventRuntime.cmake")
 
 if(OPTION_ENGINE)
 	if(NOT TARGET SDL2)

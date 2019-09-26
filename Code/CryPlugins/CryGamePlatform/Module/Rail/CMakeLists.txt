@@ -1,4 +1,4 @@
-if (WIN32 AND OPTION_ENGINE)
+if (WIN32 AND EXISTS "${SDK_DIR}/RailPlatformSDK" AND OPTION_ENGINE)
 	option(PLUGIN_GAMEPLATFORM_RAIL "Enable Rail Game platform plug-in for WeGame integration" ON)
 else()
 	option(PLUGIN_GAMEPLATFORM_RAIL "Enable Rail Game platform plug-in for WeGame integration" OFF)

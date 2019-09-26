@@ -344,27 +344,14 @@ void CImpl::DestructFile(IFile* const pIFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
-{
-	char const* szResult = nullptr;
-
-	if (pFileInfo != nullptr)
-	{
-		szResult = pFileInfo->bLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str();
-	}
-
-	return szResult;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
-	implInfo.name = m_name.c_str();
+	cry_strcpy(implInfo.name, m_name.c_str());
 #else
-	implInfo.name = "name-not-present-in-release-mode";
+	cry_fixed_size_strcpy(implInfo.name, g_implNameInRelease);
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
-	implInfo.folderName = g_szImplFolderName;
+	cry_strcpy(implInfo.folderName, g_szImplFolderName, strlen(g_szImplFolderName));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -528,7 +515,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	{
 		stack_string path = (pTriggerInfo->isLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str());
 		path += "/";
-		stack_string const folderName = pTriggerInfo->path.c_str();
+		stack_string const folderName(pTriggerInfo->path);
 
 		if (!folderName.empty())
 		{
@@ -536,7 +523,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 			path += "/";
 		}
 
-		stack_string const name = pTriggerInfo->name.c_str();
+		stack_string const name(pTriggerInfo->name);
 		path += name.c_str();
 
 		SF_INFO sfInfo;

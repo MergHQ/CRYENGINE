@@ -176,8 +176,8 @@ void CDataPanel::PlayEvent()
 
 	if ((pItem != nullptr) && (pItem->GetType() == EItemType::Cue))
 	{
-		g_previewTriggerInfo.name = pItem->GetName().c_str();
-		g_previewTriggerInfo.cueSheet = pItem->GetCueSheetName().c_str();
+		cry_strcpy(g_previewTriggerInfo.name, pItem->GetName().c_str());
+		cry_strcpy(g_previewTriggerInfo.cueSheet, pItem->GetCueSheetName().c_str());
 
 		gEnv->pAudioSystem->ExecutePreviewTriggerEx(g_previewTriggerInfo);
 		g_isPreviewPlaying = true;

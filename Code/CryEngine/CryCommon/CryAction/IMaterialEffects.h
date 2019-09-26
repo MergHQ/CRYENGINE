@@ -95,6 +95,7 @@ struct SMFXRunTimeEffectParams
 		, numAudioRtpcs(0)
 		, numParticleParams(0)
 		, fDecalPlacementTestMaxSize(1000.f)
+		, audioListenerIds{CryAudio::DefaultListenerId}
 	{
 		dir[0].Set(0.0f, 0.0f, -1.0f);
 		dir[1].Set(0.0f, 0.0f, 1.0f);
@@ -167,6 +168,8 @@ public:
 
 	SMFXEmitterParameter  particleParams[MAX_PARTICLE_PARAMS];
 	uint32                numParticleParams;
+
+	CryAudio::ListenerIds audioListenerIds;
 };
 
 struct SMFXBreakageParams

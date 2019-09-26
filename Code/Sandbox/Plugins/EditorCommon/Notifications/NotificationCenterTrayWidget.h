@@ -60,6 +60,7 @@ protected:
 
 	// QWidget
 	virtual bool eventFilter(QObject* pWatched, QEvent* pEvent) override;
+	virtual void showEvent(QShowEvent* pEvent) override;
 
 protected:
 	QPopupWidget*              m_pPopUpMenu;

@@ -42,7 +42,7 @@ class CEngineModule_CryAudioImplAdx2 : public CryAudio::IImplModule
 	virtual char const* GetCategory()  const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
+	virtual bool Initialize(SSystemGlobalEnvironment& env, SSystemInitParams const& initParams) override
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplAdx2::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);

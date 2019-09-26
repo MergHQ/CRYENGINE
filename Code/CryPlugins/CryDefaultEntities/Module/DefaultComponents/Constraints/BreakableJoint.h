@@ -21,7 +21,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual Cry::Entity::EventFlags GetEventMask() const final { return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED; }
+			virtual Cry::Entity::EventFlags GetEventMask() const final { return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED; }
 			// ~IEntityComponent
 
 		public:
@@ -32,11 +32,11 @@ namespace Cry
 			struct SDynConstraint 
 			{
 				inline bool operator==(const SDynConstraint& rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
-				CryTransform::CAngle     m_minAngle;
-				CryTransform::CAngle     m_maxAngle;
-				Schematyc::PositiveFloat m_maxForce;
-				bool                     m_noColl;
-				Schematyc::PositiveFloat m_damping;
+				CryTransform::CAngle     m_minAngle = -90_degrees;
+				CryTransform::CAngle     m_maxAngle = 90_degrees;
+				Schematyc::PositiveFloat m_maxForce = 0.0f;
+				bool                     m_noColl = false;
+				Schematyc::PositiveFloat m_damping = 0.0f;
 			};
 
 			struct SBrokenSignal
@@ -52,13 +52,13 @@ namespace Cry
 			void Physicalize();
 
 		protected:
-			Schematyc::PositiveFloat m_maxForcePush, m_maxForcePull, m_maxForceShift;
-			Schematyc::PositiveFloat m_maxTorqueBend, m_maxTorqueTwist;
-			bool                     m_defDmgAccum;
-			Schematyc::Range<0,1>    m_damageAccum, m_damageAccumThresh;
-			bool                     m_breakable;
-			bool                     m_directBreaksOnly;
-			Schematyc::PositiveFloat m_szSensor;
+			Schematyc::PositiveFloat m_maxForcePush = 100000.0f, m_maxForcePull = 100000.0f, m_maxForceShift = 100000.0f;
+			Schematyc::PositiveFloat m_maxTorqueBend = 100000.0f, m_maxTorqueTwist = 100000.0f;
+			bool                     m_defDmgAccum = false;
+			Schematyc::Range<0,1>    m_damageAccum = 0.1f, m_damageAccumThresh = 0.0f;
+			bool                     m_breakable = true;
+			bool                     m_directBreaksOnly = false;
+			Schematyc::PositiveFloat m_szSensor = 0.05f;
 
 			SDynConstraint m_constr;
 		};

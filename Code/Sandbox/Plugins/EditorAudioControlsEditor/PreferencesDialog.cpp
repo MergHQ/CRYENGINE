@@ -25,7 +25,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	: CEditorDialog("AudioSystemPreferencesDialog", pParent)
-	, m_projectPath(g_implInfo.projectPath.c_str())
+	, m_projectPath(g_implInfo.projectPath)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
 	setWindowTitle(tr("Audio System Preferences"));
@@ -37,10 +37,10 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	auto const labelAlignment = static_cast<Qt::Alignment>(Qt::AlignLeft | Qt::AlignVCenter);
 
 	pLabelLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, labelAlignment);
-	pLabelLayout->addWidget(new QLabel(QtUtil::ToQString(g_implInfo.name.c_str())), 0, 1, labelAlignment);
+	pLabelLayout->addWidget(new QLabel(QtUtil::ToQString(g_implInfo.name)), 0, 1, labelAlignment);
 
 	pLabelLayout->addWidget(new QLabel(tr("Assets Path") + ":"), 1, 0, labelAlignment);
-	pLabelLayout->addWidget(new QLabel(g_implInfo.assetsPath.c_str()), 1, 1);
+	pLabelLayout->addWidget(new QLabel(g_implInfo.assetsPath), 1, 1);
 
 	pLabelLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 

@@ -67,6 +67,7 @@ private:
 	CControl*           CreateControl(string const& name, EAssetType const type, CAsset* const pParent);
 	CAsset*             CreateFolder(CAsset* const pParent);
 	void                CreateParentFolder();
+	void                DuplicateSelectedControls();
 	bool                DeleteSelectedControls();
 	bool                IsParentFolderAllowed() const;
 	bool                IsDefaultControlSelected() const;

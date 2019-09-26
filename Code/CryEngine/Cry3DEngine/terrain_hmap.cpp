@@ -600,8 +600,9 @@ uint8 CTerrain::GetSurfTypeFromUnits(int nX_units, int nY_units) const
 
 			return ri.pSTPalette[nType];
 		}
+
 	}
-	return SRangeInfo::e_undefined;
+	return SRangeInfo::e_hole;
 }
 
 SSurfaceTypeItem CTerrain::GetSurfTypeItemfromUnits(int x, int y) const
@@ -634,10 +635,19 @@ SSurfaceTypeItem CTerrain::GetSurfTypeItemfromUnits(int x, int y) const
 
 			return es;
 		}
+		else
+		{
+			SSurfaceTypeItem es;
+			es.SetHole(true);
+			return es;
+		}
 	}
 	else
 	{
-		assert(!"Sector not found");
+		CryLog("A hole was created where no sector was found");
+		SSurfaceTypeItem es;
+		es.SetHole(true);
+		return es;
 	}
 
 	SSurfaceTypeItem st;

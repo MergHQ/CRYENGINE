@@ -299,9 +299,10 @@ OutputVS ParticleVS(
 		IN.baseTC.x = vertID & 1;
 		IN.baseTC.y = vertID & 2 ? 1 : 0;
 	}
+	const float4 debugColor = float4(1.0, 1.0, 0.0, 1.0);
+#else
+    const float4 debugColor = float4(0.0, 1.0, 0.0, 1.0);
 #endif
-
-	const float4 debugColor = float4(0.8, 1.0, 0.0, 1.0);
 
 	SParticleVertex MID = ParticleCommonVertexOutput(Position, IN, CenterMotion(), debugColor);
 	return UnifyParticleOutputVS(MID);
@@ -351,7 +352,7 @@ OutputVS ParticlePulledVS(uint vertID : SV_VertexID)
 	IN.baseTC.x = vertID & 1;
 	IN.baseTC.y = vertID & 2 ? 1 : 0;
 
-	const float4 debugColor = float4(0.8, 1.0, 0.0, 1.0);
+	const float4 debugColor = float4(1.0, 1.0, 0.0, 1.0);
 #else
 	const uint vertexId = (vertID>>1) + particleInstance.vertexOffset;
 	const bool isDegen  = colorSTsSRV[vertexId].baseTC & 0x10000;
@@ -369,7 +370,7 @@ OutputVS ParticlePulledVS(uint vertID : SV_VertexID)
 
 	IN.baseTC.x = isDegen != isOdd ? 1 : 0;
 
-	const float4 debugColor = isDegen ? float4(1.0, 0.0, 0.0, 1.0) : float4(0.6, 1.0, 0.2, 1.0);
+	const float4 debugColor = isDegen ? float4(1.0, 0.0, 0.0, 1.0) : float4(0.0, 1.0, 0.0, 1.0);
 #endif
 
 	SParticleVertex MID = ParticleCommonVertexOutput(Position, IN, CenterMotion(), debugColor);
@@ -413,7 +414,7 @@ OutputVS GpuParticleVS(uint vertID : SV_VertexID)
 	IN.baseTC.z = int(animPos) / 255.f;
 	IN.baseTC.w = (animPos - int(animPos));
 
-	const float4 debugColor = float4(1.0, 0.8, 0.0, 1.0);
+	const float4 debugColor = float4(1.0, 0.5, 0.0, 1.0);
 
 	SParticleVertex MID = ParticleCommonVertexOutput(Position, IN, CenterMotion(), debugColor);
 	return UnifyParticleOutputVS(MID);
@@ -571,7 +572,7 @@ ControlPointHS ParticleHS(
 	ParticleHSInput IN = inputPatch[uCPID];
 #endif
 
-	const float4 debugColor = float4(0.0, 0.5, 1.0, 1.0);
+	const float4 debugColor = float4(0.0, 1.0, 1.0, 1.0);
 	SParticleVertex MID = ParticleCommonVertexOutput(IN.Position, IN.VSIn, 0, debugColor);
 
 	ControlPointHS OUT = (ControlPointHS)0;
@@ -717,9 +718,9 @@ void ApplyColorLookup( in OutputVS IN, inout half4 cBaseColor )
 	// are artist using this at all ? if not remove
 
 	#if %COLOR_LOOKUP
-	half fLum = dot(cBaseColor.xyz, 0.333 );
-	cBaseColor.xyz = saturate ( cBaseColor.w *ColLookupAmplitude * GetCustomSecTex(customSecondaryTex,  ColLookupColPhase * fLum  ) );
-		#endif
+		half fLum = dot(cBaseColor.xyz, 0.333 );
+		cBaseColor.xyz = saturate ( cBaseColor.w *ColLookupAmplitude * GetCustomSecTex(customSecondaryTex,  ColLookupColPhase * fLum  ) );
+	#endif
 #endif
 }
 
@@ -761,8 +762,8 @@ half3 GetNormalMap(OutputVS IN)
 #if %NORMAL_MAP
 	half3 cNormalMap = GetNormalMap(normalsTex, IN.baseTC.xy);
 	#if %_RT_ANIM_BLEND
-	half3 cNormalMapSec = GetNormalMap(normalsTex, IN.blendTC.xy);
-	cNormalMap += (cNormalMapSec - cNormalMap) * IN.blendTC.z;
+		half3 cNormalMapSec = GetNormalMap(normalsTex, IN.blendTC.xy);
+		cNormalMap += (cNormalMapSec - cNormalMap) * IN.blendTC.z;
 	#endif
 	return cNormalMap;
 #endif
@@ -773,8 +774,8 @@ half4 GetRefractionMap( OutputVS IN, float4 tcScreen, half3 cNormalMap)
 {
 #if USE_MATERIAL
 	#if %REFRACTION
-	half2 tcRefraction = tcScreen + cNormalMap.xy * RefrBumpScale.x * IN.alphaClip.x;
-	return texSceneTarget.Sample(ssForwardBilinearWrap, tcRefraction);
+		half2 tcRefraction = tcScreen + cNormalMap.xy * RefrBumpScale.x * IN.alphaClip.x;
+		return texSceneTarget.Sample(ssForwardBilinearWrap, tcRefraction);
 	#endif
 #endif
 	return 0;
@@ -1409,9 +1410,9 @@ technique ParticlesZPrePass
 {
     pass p0
     {
-        VertexShader = ParticlePulledVS() ZVS;
+        VertexShader = ParticlePulledVS() ParticleVS;
         GeometryShader = $AutoGS_MultiRes();
-        PixelShader = ParticleZPrePassPS() ZPS;
+        PixelShader = ParticleZPrePassPS() ParticlePS;
 
         ZEnable = true;
         ZWriteEnable = true;
@@ -1423,11 +1424,11 @@ technique ParticlesZPrePassTessellated
 {
     pass p0
     {
-        VertexShader = ParticlePulledTessVS() ZVS;
+        VertexShader = ParticlePulledTessVS() ParticleVS;
         HullShader = ParticleHS();
         DomainShader = ParticleDS();
         GeometryShader = $AutoGS_MultiRes();
-        PixelShader = ParticleZPrePassPS() ZPS;
+        PixelShader = ParticleZPrePassPS() ParticlePS;
 
         ZEnable = true;
         ZWriteEnable = true;
@@ -1441,7 +1442,7 @@ technique ParticlesZPrePassGpu
     {
         VertexShader = GpuParticleVS() ParticleVS;
         GeometryShader = $AutoGS_MultiRes();
-        PixelShader = ParticleZPrePassPS();
+        PixelShader = ParticleZPrePassPS() ParticlePS;
 
         ZEnable = true;
         ZWriteEnable = true;

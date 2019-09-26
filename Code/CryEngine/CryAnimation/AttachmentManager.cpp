@@ -1236,6 +1236,13 @@ void CAttachmentManager::RemoveAttachmentByIndex(uint32 index, uint32 loadingFla
 	}
 
 	pAttachment->ClearBinding(loadingFlags);
+
+	// Under normal circumstances, we expect an attachment object to be destroyed when it is removed from m_arrAttachments, unless an external system
+	// is still holding an owning reference to it. In such a case, we cannot guarantee that this CAttachmentManager outlives such external references,
+	// therefore a clear of the backwards pointer below is needed. In any case, we no longer consider this attachment to be a part of the character, 
+	// so the clear is reasonable regardless.
+	static_cast<SAttachmentBase*>(pAttachment)->m_pAttachmentManager = nullptr;
+
 	m_arrAttachments.erase(index);
 
 	m_Extents.Clear();
@@ -1623,6 +1630,8 @@ const std::vector<CCharInstance*>& CAttachmentManager::GetAttachedCharacterInsta
 
 int CAttachmentManager::GenerateAttachedCharactersContexts()
 {
+	CRY_ASSERT(m_pSkelInstance->GetProcessingContext());
+
 	RebuildAttachedCharactersCache();
 
 	int generatedContextsCount = 0;
@@ -1641,7 +1650,7 @@ int CAttachmentManager::GenerateAttachedCharactersContexts()
 		generatedContextsCount += 1;
 
 		const int numChildren = pCharacter->m_AttachmentManager.GenerateAttachedCharactersContexts();
-		ctx.Initialize(pCharacter, pAttachment, m_pSkelInstance, numChildren);
+		ctx.Initialize(pCharacter, pAttachment, m_pSkelInstance->GetProcessingContext()->slot, numChildren);
 		generatedContextsCount += numChildren;
 	}
 

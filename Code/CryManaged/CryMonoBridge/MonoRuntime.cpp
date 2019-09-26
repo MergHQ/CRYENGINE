@@ -177,9 +177,19 @@ bool CMonoRuntime::InitializeRuntime()
 
 void CMonoRuntime::Shutdown()
 {
+	for (std::weak_ptr<IManagedPlugin> pPlugin : m_plugins)
+	{
+		if (std::shared_ptr<IManagedPlugin> pManagedPlugin = pPlugin.lock())
+		{
+			pManagedPlugin->Shutdown();
+		}
+	}
+
 	// Root domain HAS to be deleted last, its destructor shuts down the entire runtime!
 	m_domains.clear();
 	m_pRootDomain.reset();
+
+	m_pAssetsPlugin.reset();
 
 	m_nodeCreators.clear();
 }

@@ -19,6 +19,7 @@ CRYREGISTER_CLASS(CEntityComponentRope);
 CEntityComponentRope::CEntityComponentRope()
 	: m_pRopeRenderNode(nullptr)
 	, m_nSegmentsOrg(0)
+	, m_nPhysSegmentsOrg(0)
 	, m_texTileVOrg(0.0f)
 {
 	m_componentFlags.Add(EEntityComponentFlags::NoSave);
@@ -76,6 +77,7 @@ void CEntityComponentRope::ProcessEvent(const SEntityEvent& event)
 		{
 			IRopeRenderNode::SRopeParams params = m_pRopeRenderNode->GetParams();
 			params.nNumSegments = m_nSegmentsOrg;
+			params.nPhysSegments = m_nPhysSegmentsOrg;
 			params.fTextureTileV = m_texTileVOrg;
 			m_pRopeRenderNode->SetParams(params);
 			m_nSegmentsOrg = -1;
@@ -97,6 +99,7 @@ void CEntityComponentRope::PreserveParams()
 	{
 		const IRopeRenderNode::SRopeParams& params = m_pRopeRenderNode->GetParams();
 		m_nSegmentsOrg = params.nNumSegments;
+		m_nPhysSegmentsOrg = params.nPhysSegments;
 		m_texTileVOrg = params.fTextureTileV;
 	}
 }

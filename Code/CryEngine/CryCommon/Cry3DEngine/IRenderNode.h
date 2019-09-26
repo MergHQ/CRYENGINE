@@ -602,7 +602,14 @@ public:
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void   InvalidatePermanentRenderObject() { if (m_pTempData) m_pTempData->invalidRenderObjects = m_pTempData->hasValidRenderObjects.load(); }
+	ILINE void InvalidatePermanentRenderObject()
+	{
+		if (m_pTempData)
+		{
+			m_pTempData->invalidRenderObjects = m_pTempData->hasValidRenderObjects.load();
+			m_manipulationFrame = -1;
+		}
+	}
 
 	void MarkAsUncompiled() const;
 	IOctreeNode* GetParent() const;
@@ -1132,6 +1139,7 @@ struct IRopeRenderNode : public IRenderNode
 		eRope_Awake                  = 0x0800,  //!< Rope will be awake initially.
 		eRope_UseBones							 = 0x1000,  //!< Rope will use skinned mesh instead fully generated
 		eRope_SegObjBends						 = 0x2000,  //!< Is segment cgf is used, whether it'll be rigidly linked to bones
+		eRope_FlipMeshAxis           = 0x8000,  //!< Flips the mesh along the main axis (if mesh is used)
 	};
 	enum ERopeSegAxis
 	{

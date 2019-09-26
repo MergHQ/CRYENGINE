@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
+
 namespace CryAudio
 {
 namespace Impl
@@ -15,13 +17,13 @@ struct IFile;
  */
 struct SFileInfo
 {
-	void*       pFileData;            // pointer to the memory location of the file's contents
-	size_t      memoryBlockAlignment; // memory alignment to be used for storing this file's contents in memory
-	size_t      size;                 // file size
-	char const* szFileName;           // file name
-	char const* szFilePath;           // file path
-	bool        bLocalized;           // is the file localized
-	IFile*      pImplData;            // pointer to the implementation-specific data needed for this AudioFileEntry
+	void*  pFileData = nullptr;                       // pointer to the memory location of the file's contents
+	size_t memoryBlockAlignment = 0;                  // memory alignment to be used for storing this file's contents in memory
+	size_t size = 0;                                  // file size
+	char   fileName[MaxFileNameLength] = { '\0' };    // file name
+	char   filePath[MaxFilePathLength] = { '\0' };    // file path
+	bool   isLocalized = false;                       // is the file localized
+	IFile* pImplData = nullptr;                       // pointer to the implementation-specific data needed for this AudioFileEntry
 };
 } // namespace Impl
 } // namespace CryAudio

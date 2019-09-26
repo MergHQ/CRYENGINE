@@ -356,7 +356,7 @@ void CImpl::Initialize(
 
 	CryAudio::SImplInfo systemImplInfo;
 	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
-	m_implName = systemImplInfo.name.c_str();
+	m_implName = systemImplInfo.name;
 
 	SetImplInfo(implInfo);
 
@@ -581,6 +581,95 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 	}
 
 	return pIConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	IConnection* pNewIConnection = nullptr;
+
+	auto const pItem = static_cast<CItem const*>(GetItem(pIConnection->GetID()));
+
+	switch (pItem->GetType())
+	{
+	case EItemType::Event:
+		{
+			auto const pOldConnection = static_cast<CEventConnection*>(pIConnection);
+			auto const pNewConnection = new CEventConnection(pOldConnection->GetID(), pOldConnection->GetActionType());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EItemType::Key:
+		{
+			auto const pOldConnection = static_cast<CKeyConnection*>(pIConnection);
+			auto const pNewConnection = new CKeyConnection(pOldConnection->GetID(), pOldConnection->GetEvent());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EItemType::Snapshot:
+		{
+			auto const pOldConnection = static_cast<CSnapshotConnection*>(pIConnection);
+			auto const pNewConnection = new CSnapshotConnection(pOldConnection->GetID(), pOldConnection->GetActionType());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EItemType::Parameter: // Intentional fall-through.
+	case EItemType::VCA:
+		{
+			switch (assetType)
+			{
+			case EAssetType::Parameter: // Intentional fall-through.
+			case EAssetType::Environment:
+				{
+					auto const pOldConnection = static_cast<CParameterConnection*>(pIConnection);
+					auto const pNewConnection = new CParameterConnection(
+						pOldConnection->GetID(),
+						pOldConnection->IsAdvanced(),
+						pOldConnection->GetMultiplier(),
+						pOldConnection->GetShift());
+
+					pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+					break;
+				}
+			case EAssetType::State:
+				{
+					auto const pOldConnection = static_cast<CParameterToStateConnection*>(pIConnection);
+					auto const pNewConnection = new CParameterToStateConnection(
+						pOldConnection->GetID(),
+						pItem->GetType(),
+						pOldConnection->GetValue());
+
+					pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
+			}
+
+			break;
+		}
+	case EItemType::Bank: // Intentional fall-through.
+	case EItemType::Return:
+		{
+			auto const pOldConnection = static_cast<CGenericConnection*>(pIConnection);
+			auto const pNewConnection = new CGenericConnection(pOldConnection->GetID());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	}
+	return pNewIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1037,7 +1126,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -1049,7 +1138,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -1119,11 +1208,12 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 {
 	SetLocalizedAssetsPath();
 
-	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::Fmod::g_szImplFolderName;
-	implInfo.projectPath = m_projectPath.c_str();
-	implInfo.assetsPath = m_assetsPath.c_str();
-	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
+	cry_strcpy(implInfo.name, m_implName.c_str());
+	cry_strcpy(implInfo.folderName, CryAudio::Impl::Fmod::g_szImplFolderName, strlen(CryAudio::Impl::Fmod::g_szImplFolderName));
+	cry_strcpy(implInfo.projectPath, m_projectPath.c_str());
+	cry_strcpy(implInfo.assetsPath, m_assetsPath.c_str());
+	cry_strcpy(implInfo.localizedAssetsPath, m_localizedAssetsPath.c_str());
+
 	implInfo.flags = (
 		EImplInfoFlags::SupportsProjects |
 		EImplInfoFlags::SupportsTriggers |

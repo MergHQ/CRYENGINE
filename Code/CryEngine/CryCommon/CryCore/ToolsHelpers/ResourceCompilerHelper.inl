@@ -668,7 +668,7 @@ ERcExitCode CResourceCompilerHelper::InvokeResourceCompiler(const char* szSrcFil
 	wchar_t szProjectDir[512];
 	GetCurrentDirectoryW(CRY_ARRAY_COUNT(szProjectDir), szProjectDir);
 
-	SettingsManagerHelpers::CFixedString<wchar_t, 512> wRemoteCmdLine;
+	SettingsManagerHelpers::CFixedString<wchar_t, 1024> wRemoteCmdLine;
 	SettingsManagerHelpers::CFixedString<wchar_t, 512> wDir;
 	CSettingsManagerTools smTools = CSettingsManagerTools();
 

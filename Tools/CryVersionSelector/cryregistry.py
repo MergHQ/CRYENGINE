@@ -81,7 +81,7 @@ def load_engines():
     for registry_path in paths_engine_database():
         try:
             if os.path.isfile(registry_path):
-                with open(registry_path, 'r') as file:
+                with open(registry_path, 'r', encoding="utf-8") as file:
                     database.update(json.loads(file.read()))
                     return database
         except Exception:
@@ -91,7 +91,7 @@ def load_engines():
     for registry_path in paths_engine_database_old():
         try:
             if os.path.isfile(registry_path):
-                with open(registry_path, 'r') as file:
+                with open(registry_path, 'r', encoding="utf-8") as file:
                     database.update(json.loads(file.read()))
                     return database
         except Exception:
@@ -110,7 +110,7 @@ def save_engines(database, register_action=True, silent=False):
             if not os.path.isdir(registry_dir):
                 os.makedirs(registry_dir)
 
-            with open(registry_path, 'w') as file:
+            with open(registry_path, 'w', encoding="utf-8") as file:
                 file.write(json.dumps(database, indent=4, sort_keys=True))
         except Exception:
             message = ''

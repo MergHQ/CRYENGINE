@@ -202,7 +202,10 @@ void CXMLProcessor::ParseSystemData()
 	g_pIImpl->OnBeforeLibraryDataChanged();
 	g_pIImpl->GetInfo(g_implInfo);
 	g_configPath = CRY_AUDIO_DATA_ROOT "/";
-	g_configPath += (g_implInfo.folderName + "/" + g_szConfigFolderName + "/").c_str();
+	g_configPath += g_implInfo.folderName;
+	g_configPath += "/";
+	g_configPath += g_szConfigFolderName;
+	g_configPath += "/";
 
 	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes, GlobalContextId);
 

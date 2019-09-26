@@ -14,7 +14,7 @@ class CryPlugin:
         if not path:
             raise Exception('No path specified')
 
-        file = open(path, 'r')
+        file = open(path, 'r', encoding="utf-8")
         self.data = json.loads(file.read())
         file.close()
 

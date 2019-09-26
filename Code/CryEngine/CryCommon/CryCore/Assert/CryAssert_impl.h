@@ -74,6 +74,7 @@ const char* GetCryModuleName(uint cryModuleId)
 	case eCryM_EditorPlugin:             return "Editor Plugin";
 	case eCryM_Schematyc2:               return "Schematyc2";
 	case eCryM_UniversalDebugRecordings: return "UniversalDebugRecordings";
+	case eCryM_AudioImplPlugin:          return "CryAudioImplPlugin";
 	default:                             return "Unknown Module";
 	}
 }

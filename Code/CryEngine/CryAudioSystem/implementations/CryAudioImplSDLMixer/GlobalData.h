@@ -37,6 +37,7 @@ constexpr char const* g_szEventsAttribute = "events";
 constexpr char const* g_szParametersAttribute = "parameters";
 constexpr char const* g_szParametersAdvancedAttribute = "parametersadvanced";
 constexpr char const* g_szSwitchStatesAttribute = "switchstates";
+constexpr char const* g_szFilesAttribute = "files";
 
 // XML values
 constexpr char const* g_szTrueValue = "true";
@@ -58,9 +59,9 @@ constexpr float g_defaultStateValue = 1.0f;
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
 {
-	CryFixedStringT<MaxFileNameLength> name;
-	CryFixedStringT<MaxFilePathLength> path;
-	bool                               isLocalized;
+	char name[MaxFileNameLength] = { '\0' };
+	char path[MaxFilePathLength] = { '\0' };
+	bool isLocalized = false;
 };
 
 struct SPoolSizes final
@@ -69,6 +70,7 @@ struct SPoolSizes final
 	uint16 parameters = 0;
 	uint16 parametersAdvanced = 0;
 	uint16 switchStates = 0;
+	uint16 files = 0;
 };
 } // namespace SDL_mixer
 } // namespace Impl

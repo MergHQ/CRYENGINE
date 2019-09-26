@@ -26,6 +26,8 @@ struct SFileInfo;
 
 using IListeners = DynArray<IListener*>;
 
+constexpr char g_implNameInRelease[] { "name-not-present-in-release-mode" };
+
 struct IImpl
 {
 	/** @cond */
@@ -183,13 +185,6 @@ struct IImpl
 	 * @see ConstructFile
 	 */
 	virtual void DestructFile(IFile* const pIFile) = 0;
-
-	/**
-	 * Get the full path to the folder containing the file described by the pFileInfo
-	 * @param pFileInfo - audio system-specific information describing the file whose location is being queried
-	 * @return A C-string containing the path to the folder where the file corresponding to the pFileInfo is stored
-	 */
-	virtual char const* const GetFileLocation(SFileInfo* const pFileInfo) = 0;
 
 	/**
 	 * Parse the implementation-specific XML node that represents an ITriggerConnection, return a pointer to the data needed for identifying

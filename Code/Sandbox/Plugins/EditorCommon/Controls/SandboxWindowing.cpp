@@ -227,6 +227,8 @@ void QToolsMenuToolWindowArea::OnCurrentChanged(int index)
 	{
 		customTabFrame->m_pLayout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
 	}
+
+	UpdateMenuButtonVisibility();
 }
 
 void QToolsMenuToolWindowArea::adjustDragVisuals()
@@ -270,6 +272,7 @@ void QToolsMenuToolWindowArea::adjustDragVisuals()
 			}
 		}
 
+		UpdateMenuButtonVisibility();
 	}
 
 	QToolWindowArea::adjustDragVisuals();
@@ -316,8 +319,23 @@ bool QToolsMenuToolWindowArea::event(QEvent* event)
 std::pair<IPane*, QWidget*> QToolsMenuToolWindowArea::FindIPaneInTabChildren(int tabIndex)
 {
 	std::pair<IPane*, QWidget*> result{ nullptr, nullptr };
+	QWidget* pWidgetAtIndex = widget(tabIndex);
+	QBaseTabPane* pPaneProxy = qobject_cast<QBaseTabPane*>(pWidgetAtIndex);
+	IPane* pPane = qobject_cast<IPane*>(pWidgetAtIndex);
+	if (pPaneProxy)
+	{
+		result.first = pPaneProxy->m_pane;
+		result.second = pPaneProxy;
+		return result;
+	}
+	else if (pPane)
+	{
+		result.first = pPane;
+		result.second = pWidgetAtIndex;
+		return result;
+	}
 
-	for (QObject* object : widget(tabIndex)->children())
+	for (QObject* object : pWidgetAtIndex->children())
 	{
 		QBaseTabPane* pPaneProxy = qobject_cast<QBaseTabPane*>(object);
 		IPane* pPane = qobject_cast<IPane*>(object);
@@ -347,7 +365,6 @@ QWidget* QToolsMenuToolWindowArea::SetupMenu(int currentIndex)
 	QWidget* ownerWidget = foundParents.second;
 	IPane* pane = foundParents.first;
 
-	m_menuButton->setVisible(false);
 	setCornerWidget(0);
 
 	QWidget* focusTarget = ownerWidget;
@@ -385,13 +402,24 @@ QWidget* QToolsMenuToolWindowArea::SetupMenu(int currentIndex)
 
 	}
 
-	if (menuToAttach)
-	{
-		m_menuButton->setMenu(menuToAttach);
-		m_menuButton->setVisible(true);
-	}
+	m_menuButton->setMenu(menuToAttach);
 
 	return focusTarget;
+}
+
+void QToolsMenuToolWindowArea::UpdateMenuButtonVisibility()
+{
+	if (!m_menuButton)
+		return;
+
+	if (m_menuButton->menu())
+	{
+		m_menuButton->setVisible(true);
+	}
+	else
+	{
+		m_menuButton->setVisible(false);
+	}
 }
 
 QMenu* QToolsMenuToolWindowArea::CreateDefaultMenu()

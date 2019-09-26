@@ -534,7 +534,6 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 
 		const float pixelRatio = devicePixelRatioF();
 
-		setMaximumSize(mi2Width / pixelRatio, mi2Height / pixelRatio); //Ensure window will not overlap taskbar
 		mmi->ptMaxTrackSize.x = min(this->maximumWidth() * pixelRatio, GetSystemMetrics(SM_CXMAXTRACK));
 		mmi->ptMaxTrackSize.y = min(this->maximumHeight() * pixelRatio, GetSystemMetrics(SM_CYMAXTRACK));
 		mmi->ptMinTrackSize.x = this->minimumWidth() * pixelRatio;

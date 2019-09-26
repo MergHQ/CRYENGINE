@@ -82,6 +82,10 @@ public:
 	}
 
 private:
+
+	void PushOp(OperatorQueue::SOp op);
+
 	std::vector<OperatorQueue::SOp> m_ops[2];
 	uint32 m_current;
+	uint32 m_lastPushFrameId;
 };

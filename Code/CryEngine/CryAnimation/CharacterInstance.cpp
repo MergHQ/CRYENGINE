@@ -161,7 +161,7 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 	CharacterInstanceProcessing::SContext& ctx = queue.AppendContext();
 	SetProcessingContext(ctx);
 	int numberOfChildren = m_AttachmentManager.GenerateAttachedCharactersContexts();
-	ctx.Initialize(this, nullptr, nullptr, numberOfChildren);
+	ctx.Initialize(this, nullptr, -1, numberOfChildren);
 	queue.ExecuteForContextAndAllChildrenRecursively(
 	  m_processingContext, CharacterInstanceProcessing::SStartAnimationProcessing(params));
 
@@ -215,9 +215,43 @@ void CCharInstance::SetParentRenderNode(ICharacterRenderNode* pRenderNode)
 		{
 			pCharacter->m_AttachmentManager.UpdateAttachedObjects();
 
-			for (CCharInstance* pDependentCharacter : pCharacter->m_AttachmentManager.GetAttachedCharacterInstances())
+			for (IAttachment* pAttachment : pCharacter->m_AttachmentManager.m_arrAttachments)
 			{
-				recursivelyUpdateAttachedObjects(pDependentCharacter);
+				IAttachmentObject* pAttachmentObject = pAttachment->GetIAttachmentObject();
+				if (!pAttachmentObject)
+					continue;
+
+				switch (pAttachmentObject->GetAttachmentType())
+				{
+				case IAttachmentObject::eAttachment_Skeleton:
+				{
+					if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(pAttachmentObject->GetICharacterInstance()))
+					{
+						recursivelyUpdateAttachedObjects(pChildInstance);
+					}
+				}
+				break;
+				case IAttachmentObject::eAttachment_Entity:
+				{
+					if (!gEnv || !gEnv->pEntitySystem)
+						continue;
+
+					const EntityId entityId = static_cast<CEntityAttachment*>(pAttachmentObject)->GetEntityId();
+					if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
+					{
+						for (int i = 0; i < pEntity->GetSlotCount(); ++i)
+						{
+							if (CCharInstance* pCharacter = static_cast<CCharInstance*>(pEntity->GetCharacter(i)))
+							{
+								recursivelyUpdateAttachedObjects(pCharacter);
+							}
+						}
+					}
+				}
+				break;
+				default:
+				break;
+				}
 			}
 		};
 

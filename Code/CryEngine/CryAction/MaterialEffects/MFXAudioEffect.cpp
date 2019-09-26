@@ -111,7 +111,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	}
 	else
 	{
-		CryAudio::SCreateObjectData const objectData("MFXAudioEffect", CryAudio::EOcclusionType::Low, params.pos, true);
+		CryAudio::SCreateObjectData const objectData("MFXAudioEffect", CryAudio::EOcclusionType::Low, params.pos, true, params.audioListenerIds);
 		CryAudio::IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 
 		MaterialEffectsUtils::PrepareForAudioTriggerExecution(pIObject, m_audioParams, params);

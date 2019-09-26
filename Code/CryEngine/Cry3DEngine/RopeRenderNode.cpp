@@ -753,7 +753,6 @@ CRopeRenderNode::CRopeRenderNode()
 	m_InvWorldTM.SetIdentity();
 	m_WSBBox.min = Vec3(0, 0, 0);
 	m_WSBBox.max = Vec3(1, 1, 1);
-	m_bNeedToReRegister = true;
 	m_bStaticPhysics = false;
 
 	gEnv->pPhysicalWorld->AddEventClient(EventPhysStateChange::id, &CRopeRenderNode::OnPhysStateChange, 1);
@@ -821,7 +820,6 @@ void CRopeRenderNode::SetMatrix(const Matrix34& mat)
 	m_WSBBox.SetTransformedAABB(mat, m_localBounds);
 
 	Get3DEngine()->RegisterEntity(this);
-	m_bNeedToReRegister = false;
 
 	if (!m_pPhysicalEntity)
 		Physicalize();
@@ -989,6 +987,8 @@ IPhysicalEntity* CRopeRenderNode::GetPhysics() const
 //////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::SetPhysics(IPhysicalEntity* pPhysicalEntity)
 {
+	if (m_pPhysicalEntity)
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_pPhysicalEntity);
 	m_pPhysicalEntity = pPhysicalEntity;
 	m_bStaticPhysics = pPhysicalEntity->GetType() != PE_ROPE;
 	pe_params_foreign_data pfd;
@@ -1511,6 +1511,14 @@ void CRopeRenderNode::SetMaterial(IMaterial* pMat)
 	if (!pMat)
 		pMat = m_pMaterial = GetMatMan()->GetDefaultMaterial();
 	m_pMaterial = pMat;
+	if (m_pMaterial && m_pPhysicalEntity)
+	{
+		int surfIds[MAX_SUB_MATERIALS] = {};
+		m_pMaterial->FillSurfaceTypeIds(surfIds);
+		pe_params_rope pr;
+		pr.surface_idx = surfIds[0];
+		m_pPhysicalEntity->SetParams(&pr);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1546,7 +1554,6 @@ void CRopeRenderNode::SyncWithPhysicalRope(bool bForce)
 		m_localBounds.max += Vec3(r, r, r);
 		m_WSBBox.min -= Vec3(r, r, r);
 		m_WSBBox.max += Vec3(r, r, r);
-		m_bNeedToReRegister = true; // Bounding box was recalculated, rope needs to be registered again 3d engine.
 		m_bModified = false;
 		return;
 	}
@@ -1588,7 +1595,6 @@ void CRopeRenderNode::SyncWithPhysicalRope(bool bForce)
 		m_localBounds.max += Vec3(r, r, r);
 		m_WSBBox.min -= Vec3(r, r, r);
 		m_WSBBox.max += Vec3(r, r, r);
-		m_bNeedToReRegister = true; // Bounding box was recalculated, rope needs to be registered again 3d engine.
 	}
 	//////////////////////////////////////////////////////////////////////////
 	m_bModified = false;
@@ -1715,11 +1721,12 @@ void CRopeRenderNode::UpdateRenderMesh()
 				trans.s = m_lenSkin / (bbox.GetSize()[iax] * m_params.segObjLen * m_params.nNumSegments);
 				const float ds = trans.s * m_params.sizeChange / m_params.nNumSegments;
 				const float dx = bbox.GetSize()[iax] * trans.s * m_params.segObjLen, dxInv = 1 / dx;
-				if (iax)
-					trans.q = Quat::CreateRotationV0V1(Vec3(0, iax & 1, iax >> 1 & 1), Vec3(1, 0, 0));
+				int flip = !!(m_params.nFlags & eRope_FlipMeshAxis);
+				if (iax | flip)
+					trans.q = Quat::CreateRotationV0V1(Vec3(0, iax & 1, iax >> 1 & 1), Vec3(1 - flip*2, 0, 0));
 				trans.q = Quat::CreateRotationAA(m_params.segObjRot0, Vec3(1, 0, 0)) * trans.q;
 				Quat dq = Quat::CreateRotationAA(m_params.segObjRot, Vec3(1, 0, 0) * trans.q);
-				trans.t = Vec3(-bbox.min[iax] * trans.s, 0, 0);
+				trans.t = Vec3((bbox.max[iax] * flip - bbox.min[iax] * (1 - flip)) * trans.s, 0, 0);
 				uint8 nosmooth = m_params.nFlags & eRope_SegObjBends ? 0 : 255;
 
 				pSegMesh->LockForThreadAccess();
@@ -1926,7 +1933,6 @@ void CRopeRenderNode::SetPoints(const Vec3* pPoints, int nCount)
 	m_WSBBox.SetTransformedAABB(m_worldTM, m_localBounds);
 
 	Get3DEngine()->RegisterEntity(this);
-	m_bNeedToReRegister = false;
 
 	Physicalize();
 	m_bModified = true;
@@ -1960,15 +1966,11 @@ void CRopeRenderNode::ResetPoints()
 void CRopeRenderNode::OnPhysicsPostStep()
 {
 	// Re-register entity.
-	if (m_bNeedToReRegister)
-	{
-		pe_status_pos sp;
-		sp.pGridRefEnt = WORLD_ENTITY;
-		m_pPhysicalEntity->GetStatus(&sp);
-		m_WSBBox = AABB(sp.pos + sp.BBox[0], sp.pos + sp.BBox[1]);
-		Get3DEngine()->RegisterEntity(this);
-	}
-	m_bNeedToReRegister = false;
+	pe_status_pos sp;
+	sp.pGridRefEnt = WORLD_ENTITY;
+	m_pPhysicalEntity->GetStatus(&sp);
+	m_WSBBox = AABB(sp.pos + sp.BBox[0], sp.pos + sp.BBox[1]);
+	Get3DEngine()->RegisterEntity(this);
 	m_bModified = true;
 
 	if (m_pIAudioObject != nullptr)

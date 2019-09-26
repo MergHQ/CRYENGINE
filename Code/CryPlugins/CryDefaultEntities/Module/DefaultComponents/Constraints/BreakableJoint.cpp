@@ -16,6 +16,7 @@ namespace Cry
 				pSignal->SetDescription("Sent when the joint breaks");
 				componentScope.Register(pSignal);
 			}
+
 		}
 
 		void CBreakableJointComponent::ReflectType(Schematyc::CTypeDesc<CBreakableJointComponent>& desc)
@@ -26,6 +27,9 @@ namespace Cry
 			desc.SetDescription("Holds parts of the entity together until broken");
 			//desc.SetIcon("icons:ObjectTypes/object.ico");
 			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+			// add dependency to static mesh to make sure it's initialized before the joint
+			desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, "{6DDD0033-6AAA-4B71-B8EA-108258205E29}"_cry_guid);
 
 			desc.AddMember(&CBreakableJointComponent::m_maxForcePush, 'push', "MaxPush", "Max Push Force", "Push force limit along the normal", 1e6f);
 			desc.AddMember(&CBreakableJointComponent::m_maxForcePull, 'pull', "MaxPull", "Max Pull Force", "Pull force limit along the normal", 1e6f);
@@ -48,7 +52,7 @@ namespace Cry
 			desc.SetGUID("{BA874580-D9CF-4db0-B4BB-8B4E95CF867D}"_cry_guid);
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_minAngle, 'cmin', "ConstrMinA", "Min Angle", nullptr, 0.0_degrees);
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_maxAngle, 'cmax', "ConstrMaxA", "Max Angle", nullptr, 0.0_degrees);
-			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_maxForce, 'clim', "ConstrLim", "Force Limit", "Bend torque limit for breaking the dynamic constraint", 0.0f);
+			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_maxForce, 'clim', "ConstrLim", "Force Limit", "Bend torque limit for breaking the dynamic constraint (0 mean the joint fully breaks at once)", 0.0f);
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_noColl, 'ccol', "ConstrNoColl", "Ignore Collisions", "Ignore collisions between the connected parts", false);
 			desc.AddMember(&CBreakableJointComponent::SDynConstraint::m_damping, 'cdmp', "ConstrDamping", "Damping", "Constraint-specific damping", 0.0f);
 		}
@@ -64,6 +68,7 @@ namespace Cry
 
 		void CBreakableJointComponent::Initialize()
 		{
+			Physicalize();
 		}
 
 		void CBreakableJointComponent::Physicalize()
@@ -134,9 +139,8 @@ namespace Cry
 
 		void CBreakableJointComponent::ProcessEvent(const SEntityEvent& event)
 		{
-			if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
+			if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{
-				m_pEntity->UpdateComponentEventMask(this);
 				Physicalize();
 			}
 			else if (event.event == ENTITY_EVENT_COLLISION)

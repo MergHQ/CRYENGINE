@@ -60,11 +60,11 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(EImplInfoFlags);
 
 struct SImplInfo final
 {
-	CryFixedStringT<CryAudio::MaxInfoStringLength> name;
-	CryFixedStringT<CryAudio::MaxInfoStringLength> folderName;
-	CryFixedStringT<CryAudio::MaxFilePathLength>   projectPath;
-	CryFixedStringT<CryAudio::MaxFilePathLength>   assetsPath;
-	CryFixedStringT<CryAudio::MaxFilePathLength>   localizedAssetsPath;
+	char           name[CryAudio::MaxInfoStringLength] = { '\0' };
+	char           folderName[CryAudio::MaxInfoStringLength] = { '\0' };
+	char           projectPath[CryAudio::MaxFilePathLength] = { '\0' };
+	char           assetsPath[CryAudio::MaxFilePathLength] = { '\0' };
+	char           localizedAssetsPath[CryAudio::MaxFilePathLength] = { '\0' };
 	EImplInfoFlags flags;
 };
 } // namespace ACE

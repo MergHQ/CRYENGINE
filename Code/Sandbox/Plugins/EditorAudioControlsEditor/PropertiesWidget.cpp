@@ -158,7 +158,7 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 
 			if (type != EAssetType::Switch)
 			{
-				m_pConnectionsWidget->SetControl(pControl, restoreSelection);
+				m_pConnectionsWidget->SetControl(pControl, restoreSelection, false);
 				m_pConnectionsWidget->setHidden(false);
 				m_pConnectionsLabel->setAlignment(Qt::AlignLeft);
 				m_pConnectionsLabel->setText(tr("Connections"));
@@ -166,7 +166,7 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 			else
 			{
 				m_pConnectionsWidget->setHidden(true);
-				m_pConnectionsWidget->SetControl(nullptr, restoreSelection);
+				m_pConnectionsWidget->SetControl(nullptr, restoreSelection, false);
 				m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 				m_pConnectionsLabel->setText(tr("Select a switch state to see its connections!"));
 			}
@@ -174,7 +174,7 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 		else
 		{
 			m_pConnectionsWidget->setHidden(true);
-			m_pConnectionsWidget->SetControl(nullptr, restoreSelection);
+			m_pConnectionsWidget->SetControl(nullptr, restoreSelection, false);
 			m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 			m_pConnectionsLabel->setText(*m_pUsageHint);
 		}
@@ -182,7 +182,7 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 	else
 	{
 		m_pConnectionsWidget->setHidden(true);
-		m_pConnectionsWidget->SetControl(nullptr, restoreSelection);
+		m_pConnectionsWidget->SetControl(nullptr, restoreSelection, false);
 		m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 		m_pConnectionsLabel->setText(*m_pUsageHint);
 	}

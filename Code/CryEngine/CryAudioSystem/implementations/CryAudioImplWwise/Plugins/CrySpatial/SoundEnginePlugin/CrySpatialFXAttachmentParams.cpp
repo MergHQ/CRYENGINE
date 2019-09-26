@@ -14,59 +14,59 @@ namespace Wwise
 namespace Plugins
 {
 //////////////////////////////////////////////////////////////////////////
-CrySpatialFXAttachmentParams::CrySpatialFXAttachmentParams(const CrySpatialFXAttachmentParams& in_rParams)
-	: m_rtpc(in_rParams.m_rtpc)
-	, m_nonRtpc(in_rParams.m_nonRtpc)
+CrySpatialFXAttachmentParams::CrySpatialFXAttachmentParams(const CrySpatialFXAttachmentParams& parameters)
+	: m_rtpc(parameters.m_rtpc)
+	, m_nonRtpc(parameters.m_nonRtpc)
 {
 	m_paramChangeHandler.SetAllParamChanges();
 }
 
 //////////////////////////////////////////////////////////////////////////
-AK::IAkPluginParam* CrySpatialFXAttachmentParams::Clone(AK::IAkPluginMemAlloc* in_pAllocator)
+AK::IAkPluginParam* CrySpatialFXAttachmentParams::Clone(AK::IAkPluginMemAlloc* pAllocator)
 {
-	return AK_PLUGIN_NEW(in_pAllocator, CrySpatialFXAttachmentParams(*this));
+	return AK_PLUGIN_NEW(pAllocator, CrySpatialFXAttachmentParams(*this));
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CrySpatialFXAttachmentParams::Init(AK::IAkPluginMemAlloc* in_pAllocator, const void* in_pParamsBlock, AkUInt32 in_ulBlockSize)
+AKRESULT CrySpatialFXAttachmentParams::Init(AK::IAkPluginMemAlloc* pAllocator, const void* pParameterBlock, AkUInt32 blockSize)
 {
-	if (in_ulBlockSize == 0)
+	if (blockSize == 0)
 	{
 		// Initialize default parameters here
 		m_paramChangeHandler.SetAllParamChanges();
 		return AK_Success;
 	}
 
-	return SetParamsBlock(in_pParamsBlock, in_ulBlockSize);
+	return SetParamsBlock(pParameterBlock, blockSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CrySpatialFXAttachmentParams::Term(AK::IAkPluginMemAlloc* in_pAllocator)
+AKRESULT CrySpatialFXAttachmentParams::Term(AK::IAkPluginMemAlloc* pAllocator)
 {
-	AK_PLUGIN_DELETE(in_pAllocator, this);
+	AK_PLUGIN_DELETE(pAllocator, this);
 	return AK_Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CrySpatialFXAttachmentParams::SetParamsBlock(const void* in_pParamsBlock, AkUInt32 in_ulBlockSize)
+AKRESULT CrySpatialFXAttachmentParams::SetParamsBlock(const void* pParameterBlock, AkUInt32 blockSize)
 {
 	AKRESULT result = AK_Success;
-	AkUInt8 const* pParamsBlock = static_cast<AkUInt8 const*>(in_pParamsBlock);
+	AkUInt8 const* pParamsBlock = static_cast<AkUInt8 const*>(pParameterBlock);
 
 	// Read bank data here
-	CHECKBANKDATASIZE(in_ulBlockSize, result);
+	CHECKBANKDATASIZE(blockSize, result);
 	m_paramChangeHandler.SetAllParamChanges();
 
 	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-AKRESULT CrySpatialFXAttachmentParams::SetParam(AkPluginParamID in_paramID, const void* in_pValue, AkUInt32 in_ulParamSize)
+AKRESULT CrySpatialFXAttachmentParams::SetParam(AkPluginParamID parameterId, const void* pValue, AkUInt32 parameterSize)
 {
 	AKRESULT result = AK_Success;
 
 	// Handle parameter change here
-	switch (in_paramID)
+	switch (parameterId)
 	{
 	case g_attachmentParamIDDummy:
 		{
@@ -82,7 +82,7 @@ AKRESULT CrySpatialFXAttachmentParams::SetParam(AkPluginParamID in_paramID, cons
 
 	return result;
 }
-}// namespace Plugins
-}// namespace Wwise
-}// namespace Impl
-}// namespace CryAudio
+} // namespace Plugins
+} // namespace Wwise
+} // namespace Impl
+} // namespace CryAudio

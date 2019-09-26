@@ -26,6 +26,7 @@ Objects g_objects;
 SampleDataMap g_sampleData;
 SampleNameMap g_samplePaths;
 TChannelQueue g_freeChannels;
+SampleChannels g_sampleChannels;
 SChannelData g_channels[g_numMixChannels];
 
 //////////////////////////////////////////////////////////////////////////

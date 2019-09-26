@@ -335,6 +335,13 @@ void C3DEngine::UnloadLevel()
 	m_bInUnload = true;
 	m_szLevelFolder[0] = 0;
 
+	if (gEnv->pCharacterManager)
+	{
+		CryComment("Flushing animation jobs contexts");
+		gEnv->pCharacterManager->SyncAllAnimations();
+		CryComment("done");
+	}
+
 	if (GetRenderer())
 	{
 		GetRenderer()->FlushRTCommands(true, true, true);

@@ -158,7 +158,16 @@ QVariant CContextModel::data(QModelIndex const& index, int role) const
 						{
 							if (pContext->IsActive())
 							{
-								variant = "Context is active";
+								QString const& name = QtUtil::ToQString(pContext->GetName());
+
+								if (pContext->GetId() != CryAudio::GlobalContextId)
+								{
+									variant = "Context \"" + name + "\" is active";
+								}
+								else
+								{
+									variant = "Context \"" + name + "\" is always active";
+								}
 							}
 
 							break;

@@ -47,54 +47,53 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 		m_pModelSkin=pCSkinModel;            //increase the Ref-Counter 		
 	}
 
-	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-	CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
-
-#ifdef EDITOR_PCDEBUGCODE
-	const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
-	const char* pSkinFilePath = m_pModelSkin->GetModelFilePath();
-#endif
-
-	uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
-	uint32 numJointsSkin = m_pModelSkin->m_arrModelJoints.size();
-
-	uint32 NotMatchingNames=0;
-	m_arrRemapTable.resize(numJointsSkin, 0);
-	for(uint32 js=0; js<numJointsSkin; js++) 
+	if (m_pAttachmentManager)
 	{
-		int32 nID;
-		if (m_pModelSkin->m_arrModelJoints[js].m_nJointCRC32Lower == -1)
-			nID = m_pModelSkin->m_arrModelJoints[js].m_nExtraJointID + numJointsSkel;
-		else
-			nID = pDefaultSkeleton->GetJointIDByCRC32(m_pModelSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
-
-		if (nID>=0)
-			m_arrRemapTable[js]=nID;
+		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
+		CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
 #ifdef EDITOR_PCDEBUGCODE
-		else
+		const char* pSkelFilePath = pDefaultSkeleton->GetModelFilePath();
+		const char* pSkinFilePath = m_pModelSkin->GetModelFilePath();
+#endif
+		uint32 numJointsSkel = pDefaultSkeleton->m_arrModelJoints.size();
+		uint32 numJointsSkin = m_pModelSkin->m_arrModelJoints.size();
+
+		uint32 NotMatchingNames = 0;
+		m_arrRemapTable.resize(numJointsSkin, 0);
+		for (uint32 js = 0; js < numJointsSkin; js++)
 		{
-			NotMatchingNames++;
-			if (nLogWarnings)
+			int32 nID;
+			if (m_pModelSkin->m_arrModelJoints[js].m_nJointCRC32Lower == -1)
+				nID = m_pModelSkin->m_arrModelJoints[js].m_nExtraJointID + numJointsSkel;
+			else
+				nID = pDefaultSkeleton->GetJointIDByCRC32(m_pModelSkin->m_arrModelJoints[js].m_nJointCRC32Lower);
+
+			if (nID >= 0)
+				m_arrRemapTable[js] = nID;
+#ifdef EDITOR_PCDEBUGCODE
+			else
 			{
-				g_pILog->LogWarning("Extending Skeleton, because the joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pModelSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+				NotMatchingNames++;
+				if (nLogWarnings)
+				{
+					g_pILog->LogWarning("Extending Skeleton, because the joint-name (%s) of SKIN (%s) was not found in SKEL:  %s", m_pModelSkin->m_arrModelJoints[js].m_NameModelSkin.c_str(), pSkinFilePath, pSkelFilePath);
+				}
 			}
-		}
 #endif
-	} //for loop
+		} //for loop
 
-	if (NotMatchingNames)
-	{
-		// For now limited to CharEdit
-		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
+		if (NotMatchingNames)
 		{
-			CRY_ASSERT(pInstanceSkel->m_CharEditMode);
-			CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
-			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
-		}
-		else
-		{
-			if (nLogWarnings)
+			// For now limited to CharEdit
+			if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
 			{
+				CRY_ASSERT(pInstanceSkel->m_CharEditMode);
+				CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
+				RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
+			}
+			else
+			{
+				if (nLogWarnings)
 				CryLogAlways("SKEL: %s",pDefaultSkeleton->GetModelFilePath() );
 				CryLogAlways("SKIN: %s",m_pModelSkin->GetModelFilePath() );
 
@@ -102,31 +101,37 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 				uint32 numJointCount = pDefaultSkeleton->GetJointCount();
 				for (uint32 i=0; i<numJointCount; i++)
 				{
-					const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
-					CryLogAlways("%03d JointName: %s",i,pJointName );
+					CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
+					CryLogAlways("SKIN: %s", m_pModelSkin->GetModelFilePath());
+					uint32 numJointCount = pDefaultSkeleton->GetJointCount();
+					for (uint32 i = 0; i < numJointCount; i++)
+					{
+						const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
+						CryLogAlways("%03d JointName: %s", i, pJointName);
+					}
 				}
+
+				// Free the new attachment as we cannot use it
+				SAFE_RELEASE(pIAttachmentObject);
+				return 0; //critical! incompatible skeletons. cant create skin-attachment
 #endif
 			}
-
-			// Free the new attachment as we cannot use it
-			SAFE_RELEASE(pIAttachmentObject);
-			return 0; //critical! incompatible skeletons. cant create skin-attachment
 		}
-	}
 
-	// Patch the remapping 
-	if (!(nLoadingFlags & CA_SkipBoneRemapping))
-	{
-		for (size_t i=0; i<m_pModelSkin->GetNumLODs(); i++)
+		// Patch the remapping 
+		if (!(nLoadingFlags & CA_SkipBoneRemapping))
 		{
-			CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(i);
-			IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
-			if (!pRenderMesh)
-				continue; 
-			pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
+			for (size_t i = 0; i < m_pModelSkin->GetNumLODs(); i++)
+			{
+				CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(i);
+				IRenderMesh* pRenderMesh = pModelMesh->m_pIRenderMesh;
+				if (!pRenderMesh)
+					continue;
+				pRenderMesh->CreateRemappedBoneIndicesPair(m_arrRemapTable, pDefaultSkeleton->GetGuid(), this);
+			}
 		}
 	}
-	
+
 	SAFE_RELEASE(m_pIAttachmentObject);
 	m_pIAttachmentObject = pIAttachmentObject;
 
@@ -146,20 +151,25 @@ void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
 
 		if (nLoadingFlags & CA_SkipSkelRecreation)
 			return;
-
-		// For now limited to CharEdit
-		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
+		
+		if (m_pAttachmentManager)
 		{
-			CRY_ASSERT(pInstanceSkel->m_CharEditMode);
-			CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
-			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
+			// For now limited to CharEdit
+			CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
+			if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
+			{
+				CRY_ASSERT(pInstanceSkel->m_CharEditMode);
+				CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
+				RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
+			}
 		}
 	}
 }; 
 
 void CAttachmentSKIN::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint32 loadingFlags) 
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
 	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
 	{
@@ -203,6 +213,8 @@ void CAttachmentSKIN::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint32 
 
 void CAttachmentSKIN::UpdateRemapTable() 
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	if (m_pModelSkin==0)
 		return;
 
@@ -238,8 +250,16 @@ void CAttachmentSKIN::UpdateRemapTable()
 
 void CAttachmentSKIN::ReleaseRemapTablePair()
 {
-	if (!m_pModelSkin)
+	if (!m_pAttachmentManager)
+	{
 		return;
+	}
+
+	if (!m_pModelSkin)
+	{
+		return;
+	}
+
 	CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 	CDefaultSkeleton* pModelSkel = pInstanceSkel->m_pDefaultSkeleton;
 	const uint skeletonGuid = pModelSkel->GetGuid();
@@ -297,6 +317,11 @@ void CAttachmentSKIN::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeo
 
 const QuatTS CAttachmentSKIN::GetAttWorldAbsolute() const 
 { 
+	if (!m_pAttachmentManager)
+	{
+		return QuatTS(IDENTITY);
+	}
+
 	QuatTS rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation;
 };
@@ -307,6 +332,7 @@ void CAttachmentSKIN::UpdateAttModelRelative()
 
 int CAttachmentSKIN::GetGuid() const
 {
+	CRY_ASSERT(m_pAttachmentManager);
 	return m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetGuid();
 }
 
@@ -478,6 +504,8 @@ void CAttachmentSKIN::CullVertexFrames(const SRenderingPassInfo& passInfo, float
 
 void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo)
 {
+	CRY_ASSERT(m_pAttachmentManager);
+
 	//-----------------------------------------------------------------------------
 	//---              map logical LOD to render LOD                            ---
 	//-----------------------------------------------------------------------------
@@ -858,6 +886,9 @@ void CAttachmentSKIN::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRend
 SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool useSwSkinningCpu, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
 {
 	DEFINE_PROFILER_FUNCTION();
+
+	CRY_ASSERT(m_pAttachmentManager);
+
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
 	if (pMaster==0)
 	{

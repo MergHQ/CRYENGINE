@@ -125,7 +125,7 @@ void CImpl::Initialize(
 
 	CryAudio::SImplInfo systemImplInfo;
 	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
-	m_implName = systemImplInfo.name.c_str();
+	m_implName = systemImplInfo.name;
 
 	SetImplInfo(implInfo);
 	extensionFilters = s_extensionFilters;
@@ -236,6 +236,19 @@ EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem)
 {
 	return static_cast<IConnection*>(new CEventConnection(pIItem->GetId()));
+}
+
+//////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	auto const pOldConnection = static_cast<CEventConnection*>(pIConnection);
+	auto const pNewConnection = new CEventConnection(pOldConnection->GetID());
+
+	pNewConnection->SetActionType(pOldConnection->GetActionType());
+	pNewConnection->SetLoopCount(pOldConnection->GetLoopCount());
+	pNewConnection->SetInfiniteLoop(pOldConnection->IsInfiniteLoop());
+
+	return static_cast<IConnection*>(pNewConnection);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -391,7 +404,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -403,7 +416,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -568,11 +581,12 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 {
 	SetLocalizedAssetsPath();
 
-	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::PortAudio::g_szImplFolderName;
-	implInfo.projectPath = m_assetAndProjectPath.c_str();
-	implInfo.assetsPath = m_assetAndProjectPath.c_str();
-	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
+	cry_strcpy(implInfo.name, m_implName.c_str());
+	cry_strcpy(implInfo.folderName, CryAudio::Impl::PortAudio::g_szImplFolderName, strlen(CryAudio::Impl::PortAudio::g_szImplFolderName));
+	cry_strcpy(implInfo.projectPath, m_assetAndProjectPath.c_str());
+	cry_strcpy(implInfo.assetsPath, m_assetAndProjectPath.c_str());
+	cry_strcpy(implInfo.localizedAssetsPath, m_localizedAssetsPath.c_str());
+
 	implInfo.flags = (
 		EImplInfoFlags::SupportsFileImport |
 		EImplInfoFlags::SupportsTriggers);

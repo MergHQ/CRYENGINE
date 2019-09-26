@@ -7,6 +7,7 @@
 #include "EventConnection.h"
 #include "ParameterConnection.h"
 #include "StateConnection.h"
+#include "PreloadConnection.h"
 #include "ProjectLoader.h"
 #include "DataPanel.h"
 #include "Utils.h"
@@ -29,6 +30,7 @@ constexpr uint32 g_itemPoolSize = 2048;
 constexpr uint32 g_eventConnectionPoolSize = 2048;
 constexpr uint32 g_parameterConnectionPoolSize = 256;
 constexpr uint32 g_stateConnectionPoolSize = 256;
+constexpr uint32 g_preloadConnectionPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
 void CountConnections(EAssetType const assetType, CryAudio::ContextId const contextId, bool const isAdvanced)
@@ -56,6 +58,11 @@ void CountConnections(EAssetType const assetType, CryAudio::ContextId const cont
 	case EAssetType::State:
 		{
 			++g_connections[contextId].switchStates;
+			break;
+		}
+	case EAssetType::Preload:
+		{
+			++g_connections[contextId].files;
 			break;
 		}
 	default:
@@ -152,6 +159,7 @@ CImpl::~CImpl()
 	CEventConnection::FreeMemoryPool();
 	CParameterConnection::FreeMemoryPool();
 	CStateConnection::FreeMemoryPool();
+	CPreloadConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -164,10 +172,11 @@ void CImpl::Initialize(
 	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
 	CStateConnection::CreateAllocator(g_stateConnectionPoolSize);
+	CPreloadConnection::CreateAllocator(g_preloadConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
 	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
-	m_implName = systemImplInfo.name.c_str();
+	m_implName = systemImplInfo.name;
 
 	SetImplInfo(implInfo);
 	extensionFilters = s_extensionFilters;
@@ -246,9 +255,10 @@ bool CImpl::IsTypeCompatible(EAssetType const assetType, IItem const* const pIIt
 	{
 	case EAssetType::Trigger:   // Intentional fall-through.
 	case EAssetType::Parameter: // Intentional fall-through.
-	case EAssetType::State:
+	case EAssetType::State:     // Intentional fall-through.
+	case EAssetType::Preload:
 		{
-			auto const pItem = static_cast<CItem const* const>(pIItem);
+			auto const pItem = static_cast<CItem const*>(pIItem);
 			isCompatible = (pItem->GetType() == EItemType::Event);
 			break;
 		}
@@ -266,7 +276,7 @@ bool CImpl::IsTypeCompatible(EAssetType const assetType, IItem const* const pIIt
 EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 {
 	EAssetType assetType = EAssetType::None;
-	auto const pItem = static_cast<CItem const* const>(pIItem);
+	auto const pItem = static_cast<CItem const*>(pIItem);
 
 	switch (pItem->GetType())
 	{
@@ -302,6 +312,11 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 			pIConnection = static_cast<IConnection*>(new CStateConnection(pIItem->GetId()));
 			break;
 		}
+	case EAssetType::Preload:
+		{
+			pIConnection = static_cast<IConnection*>(new CPreloadConnection(pIItem->GetId()));
+			break;
+		}
 	default:
 		{
 			pIConnection = static_cast<IConnection*>(new CEventConnection(pIItem->GetId()));
@@ -310,6 +325,73 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 	}
 
 	return pIConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
+IConnection* CImpl::DuplicateConnection(EAssetType const assetType, IConnection* const pIConnection)
+{
+	IConnection* pNewIConnection = nullptr;
+
+	switch (assetType)
+	{
+	case EAssetType::Trigger:
+		{
+			auto const pOldConnection = static_cast<CEventConnection*>(pIConnection);
+			auto const pNewConnection = new CEventConnection(pOldConnection->GetID());
+
+			pNewConnection->SetActionType(pOldConnection->GetActionType());
+			pNewConnection->SetVolume(pOldConnection->GetVolume());
+			pNewConnection->SetFadeInTime(pOldConnection->GetFadeInTime());
+			pNewConnection->SetFadeOutTime(pOldConnection->GetFadeOutTime());
+			pNewConnection->SetMinAttenuation(pOldConnection->GetMinAttenuation());
+			pNewConnection->SetMaxAttenuation(pOldConnection->GetMaxAttenuation());
+			pNewConnection->SetPanningEnabled(pOldConnection->IsPanningEnabled());
+			pNewConnection->SetAttenuationEnabled(pOldConnection->IsAttenuationEnabled());
+			pNewConnection->SetInfiniteLoop(pOldConnection->IsInfiniteLoop());
+			pNewConnection->SetLoopCount(pOldConnection->GetLoopCount());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EAssetType::Parameter:
+		{
+			auto const pOldConnection = static_cast<CParameterConnection*>(pIConnection);
+			auto const pNewConnection = new CParameterConnection(
+				pOldConnection->GetID(),
+				pOldConnection->IsAdvanced(),
+				pOldConnection->GetMultiplier(),
+				pOldConnection->GetShift());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EAssetType::State:
+		{
+			auto const pOldConnection = static_cast<CStateConnection*>(pIConnection);
+			auto const pNewConnection = new CStateConnection(pOldConnection->GetID(), pOldConnection->GetValue());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	case EAssetType::Preload:
+		{
+			auto const pOldConnection = static_cast<CPreloadConnection*>(pIConnection);
+			auto const pNewConnection = new CPreloadConnection(pOldConnection->GetID());
+
+			pNewIConnection = static_cast<IConnection*>(pNewConnection);
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+
+	return pNewIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -450,6 +532,12 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 						node->getAttr(CryAudio::Impl::SDL_mixer::g_szValueAttribute, value);
 
 						pIConnection = static_cast<IConnection*>(new CStateConnection(pItem->GetId(), value));
+
+						break;
+					}
+				case EAssetType::Preload:
+					{
+						pIConnection = static_cast<IConnection*>(new CPreloadConnection(pItem->GetId()));
 
 						break;
 					}
@@ -631,6 +719,30 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 				break;
 			}
+		case EAssetType::Preload:
+			{
+				auto const pPreloadConnection = static_cast<CPreloadConnection const*>(pIConnection);
+
+				if (pPreloadConnection != nullptr)
+				{
+					node = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
+					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+
+					string const& path = pItem->GetPath();
+
+					if (!path.IsEmpty())
+					{
+						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
+					}
+
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
+					{
+						node->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
+					}
+				}
+
+				break;
+			}
 		default:
 			{
 				break;
@@ -671,6 +783,11 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const
 		{
 			node->setAttr(CryAudio::Impl::SDL_mixer::g_szSwitchStatesAttribute, g_connections[contextId].switchStates);
 		}
+
+		if (g_connections[contextId].files > 0)
+		{
+			node->setAttr(CryAudio::Impl::SDL_mixer::g_szFilesAttribute, g_connections[contextId].files);
+		}
 	}
 
 	return node;
@@ -689,7 +806,7 @@ void CImpl::OnAfterWriteLibrary()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::EnableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -701,7 +818,7 @@ void CImpl::EnableConnection(IConnection const* const pIConnection, bool const i
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection)
 {
 	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
@@ -866,17 +983,19 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 {
 	SetLocalizedAssetsPath();
 
-	implInfo.name = m_implName.c_str();
-	implInfo.folderName = CryAudio::Impl::SDL_mixer::g_szImplFolderName;
-	implInfo.projectPath = m_assetAndProjectPath.c_str();
-	implInfo.assetsPath = m_assetAndProjectPath.c_str();
-	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
+	cry_strcpy(implInfo.name, m_implName.c_str());
+	cry_strcpy(implInfo.folderName, CryAudio::Impl::SDL_mixer::g_szImplFolderName, strlen(CryAudio::Impl::SDL_mixer::g_szImplFolderName));
+	cry_strcpy(implInfo.projectPath, m_assetAndProjectPath.c_str());
+	cry_strcpy(implInfo.assetsPath, m_assetAndProjectPath.c_str());
+	cry_strcpy(implInfo.localizedAssetsPath, m_localizedAssetsPath.c_str());
+
 	implInfo.flags = (
 		EImplInfoFlags::SupportsFileImport |
 		EImplInfoFlags::SupportsTriggers |
 		EImplInfoFlags::SupportsParameters |
 		EImplInfoFlags::SupportsSwitches |
-		EImplInfoFlags::SupportsStates);
+		EImplInfoFlags::SupportsStates |
+		EImplInfoFlags::SupportsPreloads);
 }
 
 //////////////////////////////////////////////////////////////////////////

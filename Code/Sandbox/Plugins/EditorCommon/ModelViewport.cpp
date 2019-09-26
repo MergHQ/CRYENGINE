@@ -7,8 +7,6 @@
 #include "RenderLock.h"
 #include "Controls/QuestionDialog.h"
 
-#include <CryAudio/IListener.h>
-#include <CryAudio/IAudioSystem.h>
 #include <CryPhysics/IPhysics.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/IStatObj.h>
@@ -182,7 +180,6 @@ CModelViewport::CModelViewport(const char* settingsPath)
 		gEnv->pInput->AddEventListener(this);
 	}
 
-	m_pIAudioListener = gEnv->pAudioSystem->CreateListener(m_viewTM, "ModelViewport");
 	m_AABB.Reset();
 }
 
@@ -396,12 +393,6 @@ CModelViewport::~CModelViewport()
 	GetIEditor()->GetIUndoManager()->Flush();
 
 	SaveDebugOptions();
-
-	if (m_pIAudioListener != nullptr)
-	{
-		gEnv->pAudioSystem->ReleaseListener(m_pIAudioListener);
-		m_pIAudioListener = nullptr;
-	}
 
 	// Remove input event listener
 	GetISystem()->GetIInput()->RemoveEventListener(this);
@@ -717,11 +708,6 @@ void CModelViewport::Update()
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	CRenderViewport::Update();
-
-	if (m_pIAudioListener != nullptr)
-	{
-		m_pIAudioListener->SetTransformation(m_viewTM);
-	}
 
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{

@@ -185,8 +185,8 @@ void CDataPanel::PlayEvent()
 
 	if ((pItem != nullptr) && (pItem->GetType() == EItemType::Event))
 	{
-		g_previewTriggerInfo.name = pItem->GetName().c_str();
-		g_previewTriggerInfo.path = pItem->GetPath().c_str();
+		cry_strcpy(g_previewTriggerInfo.name, pItem->GetName().c_str());
+		cry_strcpy(g_previewTriggerInfo.path, pItem->GetPath().c_str());
 		g_previewTriggerInfo.isLocalized = (pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None;
 
 		gEnv->pAudioSystem->ExecutePreviewTriggerEx(g_previewTriggerInfo);

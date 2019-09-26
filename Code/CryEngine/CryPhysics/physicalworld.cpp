@@ -596,6 +596,7 @@ void CPhysicalWorld::Shutdown(int bDeleteGeometries)
 
 	for(int i=m_nWorkerThreads-1;i>=0;i--) {
 		m_threads[i]->bStop=1,m_threadStart[i].Set(),m_threadDone[i].Wait();
+		gEnv->pThreadManager->JoinThread(m_threads[i], eJM_Join);
 		delete m_threads[i]; m_threads[i] = NULL;
 	}
 	int i; CPhysicalEntity *pent,*pent_next;
@@ -2417,6 +2418,7 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 	if (m_vars.numThreads!=m_nWorkerThreads+FIRST_WORKER_THREAD) {
 		for(i=m_nWorkerThreads-1;i>=0;i--) {
 			m_threads[i]->bStop=1,m_threadStart[i].Set(), m_threadDone[i].Wait();
+			gEnv->pThreadManager->JoinThread(m_threads[i], eJM_Join);
 			delete m_threads[i]; m_threads[i] = NULL;
 		}
 
@@ -4316,9 +4318,10 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 		m_pwiQueue[m_pwiQueueHead].pForeignData = pp.pForeignData;
 		m_pwiQueue[m_pwiQueueHead].iForeignData = pp.iForeignData;
 		m_pwiQueue[m_pwiQueueHead].OnEvent = pp.OnEvent;
-		m_pwiQueue[m_pwiQueueHead].nSkipEnts = min((int)(sizeof(m_pwiQueue[0].idSkipEnts)/sizeof(m_pwiQueue[0].idSkipEnts[0])),pp.nSkipEnts);
+		m_pwiQueue[m_pwiQueueHead].nSkipEnts = pp.nSkipEnts;
+		int *idSkipEnts = pp.nSkipEnts>CRY_ARRAY_COUNT(m_pwiQueue[0].idSkipEnts) ? (int*)(m_pwiQueue[m_pwiQueueHead].pSkipEnts = new IPhysicalEntity*[pp.nSkipEnts]) : m_pwiQueue[m_pwiQueueHead].idSkipEnts;
 		for(i=0;i<m_pwiQueue[m_pwiQueueHead].nSkipEnts;i++)
-			m_pwiQueue[m_pwiQueueHead].idSkipEnts[i] = pp.pSkipEnts[i] ? GetPhysicalEntityId(pp.pSkipEnts[i]):-3;
+			idSkipEnts[i] = pp.pSkipEnts[i] ? GetPhysicalEntityId(pp.pSkipEnts[i]):-3;
 		m_pwiQueueSz++;
 		return 1;
 	}

@@ -38,7 +38,7 @@ class CEngineModule_CryAudioImplSDLMixer : public IImplModule
 	virtual char const* GetCategory() const override { return "CryAudio"; }
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
+	virtual bool Initialize(SSystemGlobalEnvironment& env, SSystemInitParams const& initParams) override
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplSDLMixer::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);

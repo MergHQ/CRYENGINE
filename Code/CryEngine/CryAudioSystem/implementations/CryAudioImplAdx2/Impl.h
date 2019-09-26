@@ -47,7 +47,6 @@ public:
 	virtual void                    UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus          ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo) override;
 	virtual void                    DestructFile(IFile* const pIFile) override;
-	virtual char const* const       GetFileLocation(SFileInfo* const pFileInfo) override;
 	virtual void                    GetInfo(SImplInfo& implInfo) const override;
 	virtual ITriggerConnection*     ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius) override;
 	virtual ITriggerConnection*     ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo) override;
@@ -87,7 +86,7 @@ private:
 	bool InitializeLibrary();
 	bool AllocateVoicePool();
 	bool CreateDbas();
-	bool RegisterAcf();
+	void RegisterAcf();
 	void UnregisterAcf();
 	void InitializeFileSystem();
 

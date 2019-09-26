@@ -9,7 +9,7 @@
 #include "GameObjects/GameObject.h"
 #include "IGameSessionHandler.h"
 #include "ViewSystem.h"
-#include <DefaultComponents/Audio/DefaultListenerComponent.h>
+#include <DefaultComponents/Audio/ListenerComponent.h>
 
 namespace Cry
 {
@@ -509,9 +509,9 @@ void CView::CubeInterpolateVector(float t, SShake* pShake)
 	Vec3 v1 = pShake->goalShakeVectorSpeed * 0.8f;
 
 	pShake->shakeVector = (((p0 * 2.f + p1 * -2.f + v0 + v1) * t
-							+ (p0 * -3.f + p1 * 3.f + v0 * -2.f - v1)) * t
-							+ (v0)) * t
-							+ p0;
+	                        + (p0 * -3.f + p1 * 3.f + v0 * -2.f - v1)) * t
+	                       + (v0)) * t
+	                      + p0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -789,7 +789,7 @@ void CView::CreateAudioListener()
 			gEnv->pEntitySystem->AddEntityEventListener(m_pAudioListenerEntity->GetId(), ENTITY_EVENT_DONE, this);
 			m_pAudioListenerEntity->SetName(pIEntity->GetName());
 
-			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CDefaultListenerComponent>();
+			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
 			CRY_ASSERT(m_pAudioListenerComponent != nullptr);
 			m_pAudioListenerComponent->SetComponentFlags(m_pAudioListenerComponent->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
 		}
@@ -812,10 +812,5 @@ void CView::SetActive(bool const bActive)
 	{
 		// Make sure we have a valid audio listener entity on an active view!
 		CreateAudioListener();
-	}
-
-	if (m_pAudioListenerComponent != nullptr)
-	{
-		m_pAudioListenerComponent->SetActive(bActive);
 	}
 }

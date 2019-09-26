@@ -125,12 +125,6 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
-	pFileInfo->memoryBlockAlignment = 0;
-	pFileInfo->size = 0;
-	pFileInfo->bLocalized = false;
-	pFileInfo->pFileData = nullptr;
-	pFileInfo->pImplData = nullptr;
-	pFileInfo->szFileName = nullptr;
 	return ERequestStatus::Failure; // This is the correct behavior: the NULL implementation does not recognize any file nodes.
 }
 
@@ -140,16 +134,10 @@ void CImpl::DestructFile(IFile* const pIFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
-{
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
-	implInfo.name = "null-impl";
-	implInfo.folderName = "";
+	cry_fixed_size_strcpy(implInfo.name, "null-impl");
+	implInfo.folderName[0] = '\0';
 }
 
 ///////////////////////////////////////////////////////////////////////////

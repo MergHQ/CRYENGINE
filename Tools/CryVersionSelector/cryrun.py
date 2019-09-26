@@ -299,7 +299,19 @@ def generate_project_solution(project_path, cmakelists_dir, open_cmake=False):
                 'reg_key': winreg.HKEY_CLASSES_ROOT,
                 'key_path': r'\VisualStudio.DTE.15.0'
             }
-        }
+        },
+
+        # Visual Studio 16 2019
+        {
+            'title': 'Visual Studio 2019 Win64',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 16 2019',
+            'cmake_builddir': 'solutions/win64',
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.16.0'
+            }
+        },
     ]
 
     # Run the GUI to select a config for CMake.
@@ -337,7 +349,7 @@ def generate_engine_solution(engine_path):
             'title': 'Visual Studio 2015 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
-            'cmake_builddir': 'solutions_cmake/win64',
+            'cmake_builddir': 'solutions/win64',
             'compiler': {
                 'reg_key': winreg.HKEY_CLASSES_ROOT,
                 'key_path': r'\VisualStudio.DTE.14.0'
@@ -349,12 +361,24 @@ def generate_engine_solution(engine_path):
             'title': 'Visual Studio 2017 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017 Win64',
-            'cmake_builddir': 'solutions_cmake/win64',
+            'cmake_builddir': 'solutions/win64',
             'compiler': {
                 'reg_key': winreg.HKEY_CLASSES_ROOT,
                 'key_path': r'\VisualStudio.DTE.15.0'
             }
-        }
+        },
+
+        # Visual Studio 16 2019
+        {
+            'title': 'Visual Studio 2019 Win64',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 16 2019',
+            'cmake_builddir': 'solutions/win64',
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.16.0'
+            }
+        },
     ]
 
     # Run the GUI to select a config for CMake.
@@ -614,7 +638,7 @@ def cmd_upgrade(args):
         error_project_not_found(args.project_file)
 
     try:
-        file = open(args.project_file, 'r')
+        file = open(args.project_file, 'r', encoding="utf-8")
         project = configparser.ConfigParser()
         project.read_string('[project]\n' + file.read())
         file.close()
@@ -759,7 +783,7 @@ def cmd_require(args):
     if os.path.isfile(plugin_path):
         os.remove(plugin_path)
 
-    plugin_file = open(plugin_path, 'w')
+    plugin_file = open(plugin_path, 'w', encoding="utf-8")
     for k in plugin_list:
         project_file = cryregistry.project_file(registry, k)
         project_path = os.path.dirname(project_file)

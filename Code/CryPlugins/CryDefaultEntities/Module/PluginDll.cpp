@@ -4,7 +4,6 @@
 #include "PluginDll.h"
 
 #include "DefaultComponents/Audio/AreaComponent.h"
-#include "DefaultComponents/Audio/DefaultListenerComponent.h"
 #include "DefaultComponents/Audio/DefaultTriggerComponent.h"
 #include "DefaultComponents/Audio/EnvironmentComponent.h"
 #include "DefaultComponents/Audio/ListenerComponent.h"
@@ -92,15 +91,10 @@ bool CPlugin_CryDefaultEntities::Initialize(SSystemGlobalEnvironment& env, const
 void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& registrar)
 {
 	Schematyc::CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
-	{ 
+	{
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CAreaComponent));
-			Cry::Audio::DefaultComponents::CAreaComponent::Register(componentScope);
-		}
-		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CDefaultListenerComponent));
-			Cry::Audio::DefaultComponents::CDefaultListenerComponent::Register(componentScope);
-		}
+			Cry::Audio::DefaultComponents::CAreaComponent::Register(componentScope); }
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CDefaultTriggerComponent));
 			Cry::Audio::DefaultComponents::CDefaultTriggerComponent::Register(componentScope);

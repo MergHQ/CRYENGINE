@@ -27,12 +27,12 @@ void CFileMonitorMiddleware::Enable()
 		m_monitorFolders.clear();
 		GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
-		m_monitorFolders.push_back(g_implInfo.assetsPath.c_str());
-		m_monitorFolders.push_back(g_implInfo.localizedAssetsPath.c_str());
+		m_monitorFolders.push_back(g_implInfo.assetsPath);
+		m_monitorFolders.push_back(g_implInfo.localizedAssetsPath);
 
 		if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != EImplInfoFlags::None)
 		{
-			m_monitorFolders.push_back(g_implInfo.projectPath.c_str());
+			m_monitorFolders.push_back(g_implInfo.projectPath);
 		}
 
 		for (auto const& folder : m_monitorFolders)

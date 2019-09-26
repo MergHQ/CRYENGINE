@@ -4,7 +4,7 @@
 #include "DeviceCommandListCommon_D3D12.h"
 #include "DevicePSO_D3D12.h"
 
-#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_WINDOWS && WIN_PIX_AVAILABLE
 #	ifdef ENABLE_PROFILING_CODE
 #		define USE_PIX
 #	endif
@@ -110,14 +110,14 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CDeviceCommandListImpl::SetProfilerMarker(const char* label)
 {
-#if defined(ENABLE_FRAME_PROFILER_LABELS)
+#if defined(ENABLE_FRAME_PROFILER_LABELS) && WIN_PIX_AVAILABLE
 	PIXSetMarker(GetDX12CommandList()->GetD3D12CommandList(), 0, label);
 #endif
 }
 
 void CDeviceCommandListImpl::BeginProfilerEvent(const char* label)
 {
-#if defined(ENABLE_FRAME_PROFILER_LABELS)
+#if defined(ENABLE_FRAME_PROFILER_LABELS) && WIN_PIX_AVAILABLE
 	m_profilerEventStack.push_back(label);
 	PIXBeginEvent(GetDX12CommandList()->GetD3D12CommandList(), 0, label);
 #endif
@@ -125,7 +125,7 @@ void CDeviceCommandListImpl::BeginProfilerEvent(const char* label)
 
 void CDeviceCommandListImpl::EndProfilerEvent(const char* label)
 {
-#if defined(ENABLE_FRAME_PROFILER_LABELS)
+#if defined(ENABLE_FRAME_PROFILER_LABELS) && WIN_PIX_AVAILABLE
 	PIXEndEvent(GetDX12CommandList()->GetD3D12CommandList());
 	m_profilerEventStack.pop_back();
 #endif
@@ -147,7 +147,7 @@ void CDeviceCommandListImpl::CeaseCommandListEvent(int nPoolId)
 	CRY_ASSERT(m_sharedState.pCommandList == pCommandList || m_sharedState.pCommandList == nullptr);
 	m_sharedState.pCommandList = nullptr;
 
-#if defined(ENABLE_FRAME_PROFILER_LABELS)
+#if defined(ENABLE_FRAME_PROFILER_LABELS) && WIN_PIX_AVAILABLE
 	for (size_t num = m_profilerEventStack.size(), i = 0; i < num; ++i)
 	{
 		PIXEndEvent(pCommandList->GetD3D12CommandList());
@@ -166,7 +166,7 @@ void CDeviceCommandListImpl::ResumeCommandListEvent(int nPoolId)
 	CRY_ASSERT(m_sharedState.pCommandList == nullptr);
 	m_sharedState.pCommandList = pCommandList;
 
-#if defined(ENABLE_FRAME_PROFILER_LABELS)
+#if defined(ENABLE_FRAME_PROFILER_LABELS) && WIN_PIX_AVAILABLE
 	for (auto pEventLabel : m_profilerEventStack)
 	{
 		PIXBeginEvent(pCommandList->GetD3D12CommandList(), 0, pEventLabel);

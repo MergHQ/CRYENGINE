@@ -692,6 +692,9 @@ void CSystem::ShutDown()
 	if (m_env.pEntitySystem)
 		m_env.pEntitySystem->Unload();
 
+	if (m_env.pMonoRuntime)
+		m_env.pMonoRuntime->Shutdown();
+
 	if (m_env.pPhysicalWorld)
 	{
 		m_env.pPhysicalWorld->SetPhysicsStreamer(0);
@@ -705,11 +708,6 @@ void CSystem::ShutDown()
 	SAFE_DELETE(m_pPluginManager);
 
 	m_pPlatformOS.reset();
-
-	if (gEnv->pMonoRuntime != nullptr)
-	{
-		gEnv->pMonoRuntime->Shutdown();
-	}
 
 	SAFE_DELETE(m_pUserAnalyticsSystem);
 	if (m_sys_dll_response_system != nullptr)

@@ -29,7 +29,7 @@ public:
 	explicit CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
-	void SetControl(CControl* const pControl, bool const restoreSelection);
+	void SetControl(CControl* const pControl, bool const restoreSelection, bool const isForced);
 	void Reset();
 	void OnBeforeReload();
 	void OnAfterReload();
@@ -52,6 +52,7 @@ private:
 	void       UpdateSelectedConnections();
 	void       ResizeColumns();
 	void       ExecuteConnection();
+	void       RenameControl(string const& newName);
 	XmlNodeRef ConstructTemporaryTriggerConnections(CControl const* const pControl);
 
 	CControl*                         m_pControl;

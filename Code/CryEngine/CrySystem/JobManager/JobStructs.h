@@ -23,10 +23,10 @@ enum
 // configuration for job queue sizes:
 // we have two types of backends, threads and blocking threads
 // each jobqueue has three priority levels, the first value is high priority, then regular, followed by low priority
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_HighPriority = 2048;
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_RegularPriority = 2048;
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_LowPriority = 2048;
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_StreamPriority = 2048;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_HighPriority = 4096;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_RegularPriority = 4096;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_LowPriority = 4096;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_StreamPriority = 4096;
 
 static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_HighPriority = 512;
 static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_RegularPriority = 512;

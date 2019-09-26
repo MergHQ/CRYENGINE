@@ -3376,7 +3376,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		Cry::Audio::Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_implInfo.name.c_str());
+		Cry::Audio::Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", g_implInfo.name);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 		// There's no need to call Shutdown when the initialization failed as

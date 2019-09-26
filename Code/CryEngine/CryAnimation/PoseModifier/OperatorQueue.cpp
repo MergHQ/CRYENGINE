@@ -14,10 +14,12 @@ CRYREGISTER_CLASS(COperatorQueue)
 //
 
 COperatorQueue::COperatorQueue()
+	: m_ops()
+	, m_current(0)
+	, m_lastPushFrameId(0)
 {
 	m_ops[0].reserve(8);
 	m_ops[1].reserve(8);
-	m_current = 0;
 };
 
 //
@@ -32,7 +34,7 @@ void COperatorQueue::PushPosition(uint32 jointIndex, EOp eOp, const Vec3& value)
 	op.value.n[1] = value.y;
 	op.value.n[2] = value.z;
 	op.value.n[3] = 0.0f;
-	m_ops[m_current].push_back(op);
+	PushOp(op);
 }
 
 void COperatorQueue::PushOrientation(uint32 jointIndex, EOp eOp, const Quat& value)
@@ -45,7 +47,7 @@ void COperatorQueue::PushOrientation(uint32 jointIndex, EOp eOp, const Quat& val
 	op.value.n[1] = value.v.y;
 	op.value.n[2] = value.v.z;
 	op.value.n[3] = value.w;
-	m_ops[m_current].push_back(op);
+	PushOp(op);
 }
 
 void COperatorQueue::PushStoreRelative(uint32 jointIndex, QuatT& output)
@@ -56,7 +58,7 @@ void COperatorQueue::PushStoreRelative(uint32 jointIndex, QuatT& output)
 	// NOTE: A direct pointer is stored for now. This should be ideally
 	// double-buffered and updated upon syncing.
 	op.value.p = &output;
-	m_ops[m_current].push_back(op);
+	PushOp(op);
 }
 
 void COperatorQueue::PushStoreAbsolute(uint32 jointIndex, QuatT& output)
@@ -67,7 +69,7 @@ void COperatorQueue::PushStoreAbsolute(uint32 jointIndex, QuatT& output)
 	// NOTE: A direct pointer is stored for now. This should be ideally
 	// double-buffered and updated upon syncing.
 	op.value.p = &output;
-	m_ops[m_current].push_back(op);
+	PushOp(op);
 }
 
 void COperatorQueue::PushStoreWorld(uint32 jointIndex, QuatT& output)
@@ -78,7 +80,7 @@ void COperatorQueue::PushStoreWorld(uint32 jointIndex, QuatT& output)
 	// NOTE: A direct pointer is stored for now. This should be ideally
 	// double-buffered and updated upon syncing.
 	op.value.p = &output;
-	m_ops[m_current].push_back(op);
+	PushOp(op);
 }
 
 void COperatorQueue::PushComputeAbsolute()
@@ -86,7 +88,7 @@ void COperatorQueue::PushComputeAbsolute()
 	OperatorQueue::SOp op;
 	op.joint = 0;
 	op.op = eOpInternal_ComputeAbsolute;
-	m_ops[m_current].push_back(op);
+	PushOp(op);
 }
 
 void COperatorQueue::Clear()
@@ -310,4 +312,17 @@ bool COperatorQueue::Execute(const SAnimationPoseModifierParams& params)
 void COperatorQueue::Synchronize()
 {
 	m_ops[(m_current + 1) & 1].clear();
+}
+
+void COperatorQueue::PushOp(OperatorQueue::SOp op)
+{
+	if (m_lastPushFrameId != gEnv->nMainFrameID)
+	{
+		// This is an emergency cleanup step introduced to prevent operations from being accumulated over multiple frames when the pose modifier is not being executed.
+		// It can happen, for example, when animation updates are being culled by the engine while the game code driving this COperatorQueue is not aware of it and continues to push operations.
+		m_lastPushFrameId = gEnv->nMainFrameID;
+		m_ops[m_current].clear();
+	}
+
+	m_ops[m_current].push_back(op);
 }

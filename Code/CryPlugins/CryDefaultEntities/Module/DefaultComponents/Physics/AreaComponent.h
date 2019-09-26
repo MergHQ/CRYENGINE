@@ -45,7 +45,9 @@ namespace Cry
 				Box,
 				Sphere,
 				Cylinder,
-				Capsule
+				Capsule,
+				Geometry,
+				Spline
 			};
 
 			struct SShapeParameters
@@ -63,6 +65,7 @@ namespace Cry
 
 				CAreaComponent* pComponent;
 				Vec3 size = Vec3(1, 1, 1);
+				Schematyc::GeomFileName geomPath;
 			};
 
 			struct SBuoyancyParameters
@@ -114,6 +117,8 @@ namespace Cry
 				desc.AddMember(&CAreaComponent::m_bCustomGravity, 'apgr', "ApplyGravity", "Custom Gravity", "Whether to apply custom gravity in this area", false);
 				desc.AddMember(&CAreaComponent::m_gravity, 'grav', "Gravity", "Gravity", "The gravity value to use", ZERO);
 				desc.AddMember(&CAreaComponent::m_buoyancyParameters, 'buoy', "Buoyancy", "Buoyancy Parameters", "Fluid behavior of the area", SBuoyancyParameters());
+				desc.AddMember(&CAreaComponent::m_bUniform, 'unif', "Uniform", "Uniform", "Flow and/or gravity is uniform rather than based on the position relative to the shape", true);
+				desc.AddMember(&CAreaComponent::m_falloff0, 'fof0', "Falloff0", "Falloff Start", "For non-uniform shapes, start of falloff (1 = shape boundary)", 1.0f);
 			}
 
 			CAreaComponent();
@@ -127,11 +132,14 @@ namespace Cry
 		protected:
 			EType m_type;
 			SShapeParameters m_shapeParameters;
+			_smart_ptr<IStatObj> m_pCachedGeom;
 
 			bool m_bCustomGravity = false;
 			Vec3 m_gravity = ZERO;
 
 			SBuoyancyParameters m_buoyancyParameters;
+			bool  m_bUniform = true;
+			float m_falloff0 = 1.0f;
 		};
 
 		static void ReflectType(Schematyc::CTypeDesc<CAreaComponent::EType>& desc)
@@ -144,6 +152,8 @@ namespace Cry
 			desc.AddConstant(CAreaComponent::EType::Sphere, "Sphere", "Sphere");
 			desc.AddConstant(CAreaComponent::EType::Cylinder, "Cylinder", "Cylinder");
 			desc.AddConstant(CAreaComponent::EType::Capsule, "Capsule", "Capsule");
+			desc.AddConstant(CAreaComponent::EType::Geometry, "Geometry", "Geometry");
+			desc.AddConstant(CAreaComponent::EType::Spline, "Spline(from AreaShape)", "Spline(from AreaShape)");
 		}
 
 		static void ReflectType(Schematyc::CTypeDesc<CAreaComponent::SBuoyancyParameters::EType>& desc)

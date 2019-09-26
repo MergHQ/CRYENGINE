@@ -728,6 +728,7 @@ private:
 	bool                m_bUsedRecently         : 1;
 	bool                m_bStatTracked          : 1;
 	bool                m_bStreamHighPriority   : 1;
+	bool                m_bDiscarded            : 1;
 
 	uint8               m_nStreamFormatCode;
 
@@ -968,6 +969,7 @@ public:
 	const int8                       StreamGetActiveMip() const                  { return m_nMinMipVidActive; }
 	const int                        StreamGetPriority() const                   { return m_nStreamingPriority; }
 	const bool                       IsResolved() const                          { return m_bResolved; }
+	const bool                       IsDiscarded() const                         { return m_bDiscarded; }
 	void                             SetUseMultisampledRTV(bool bSet)            { m_bUseMultisampledRTV = bSet; }
 	const bool                       UseMultisampledRTV() const                  { return m_bUseMultisampledRTV; }
 	const bool                       IsVertexTexture() const                     { return m_bVertexTexture; }
@@ -986,6 +988,7 @@ public:
 	virtual bool                     IsStreamedIn(const int nMinPrecacheRoundIds[MAX_STREAM_PREDICTION_ZONES]) const;
 	virtual const int                GetAccessFrameId() const              final { return m_nAccessFrameID; }
 	void                             SetResolved(bool bResolved)                 { m_bResolved = bResolved; }
+	void                             SetDiscarded(bool bDiscarded)               { m_bDiscarded = bDiscarded; }
 	virtual const int                GetCustomID() const                   final { return m_nCustomID; }
 	virtual void                     SetCustomID(int nID)                  final { m_nCustomID = nID; }
 	const bool                       UseDecalBorderCol() const                   { return m_bUseDecalBorderCol; }

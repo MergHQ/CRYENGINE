@@ -36,7 +36,7 @@ public:
 	virtual ~CKeyConnection() override = default;
 
 	// CBaseConnection
-	virtual ControlId GetID() const override final   { return m_id; }
+	virtual ControlId GetID() const override         { return m_id; }
 	virtual bool      HasProperties() const override { return true; }
 	virtual void      Serialize(Serialization::IArchive& ar) override;
 	// ~CBaseConnection

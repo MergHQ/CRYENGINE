@@ -16,12 +16,14 @@ DECLARE_JOB("CWaterVolume_Render", TCWaterVolume_Render, CWaterVolumeRenderNode:
 
 inline static Vec3 MapVertexToFogPlane(const Vec3& v, const Plane& p)
 {
-	const Vec3 projDir(0, 0, 1);
+	// turns out projection to plane is not necessary, since both render and physics support 3d shapes just fine
+	return v;
+	/*const Vec3 projDir(0, 0, 1);
 	float perpdist = p | v;
 	float cosine = p.n | projDir;
 	assert(fabs(cosine) > 1e-4);
 	float pd_c = -perpdist / cosine;
-	return v + projDir * pd_c;
+	return v + projDir * pd_c;*/
 }
 
 //////////////////////////////////////////////////////////////////////////
