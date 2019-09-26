@@ -167,14 +167,12 @@ void CEnvironmentEditor::OnDiscardAssetChanges(CEditableAsset& editAsset)
 	OnOpenAsset(pAsset);
 }
 
-bool CEnvironmentEditor::event(QEvent* event)
+void CEnvironmentEditor::OnFocus()
 {
-	if (event->type() == QEvent::WindowActivate)
+	CAssetEditor::OnFocus();
+
+	if (!m_presetFileName.empty())
 	{
-		if (!m_presetFileName.empty())
-		{
-			GetTimeOfDay()->PreviewPreset(m_presetFileName);
-		}
+		GetTimeOfDay()->PreviewPreset(m_presetFileName);
 	}
-	return CAssetEditor::event(event);
 }

@@ -18,11 +18,11 @@ public:
 	static ITimeOfDay*   GetTimeOfDay();
 
 private:
-	void RegisterActions();
-	bool OnUndo() { return false; }
-	bool OnRedo() { return false; }
+	void                                          RegisterActions();
+	bool                                          OnUndo()                       { return false; }
+	bool                                          OnRedo()                       { return false; }
 
-	virtual const char*                           GetEditorName() const override        { return "Environment Editor"; }
+	virtual const char*                           GetEditorName() const override { return "Environment Editor"; }
 
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
@@ -30,8 +30,7 @@ private:
 	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 	virtual void                                  OnInitialize() override;
 	virtual void                                  OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
-
-	virtual bool                                  event(QEvent* event) override;
+	virtual void                                  OnFocus() override;
 
 private:
 	ITimeOfDay::IPreset* m_pPreset;
