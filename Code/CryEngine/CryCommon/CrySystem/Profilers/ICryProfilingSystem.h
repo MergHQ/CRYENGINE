@@ -142,7 +142,7 @@ struct SProfilingMarker
 	static_assert(szName != nullptr, "Only use string literals as the name of a profiling section!"); \
 	static_assert(subsystem >= EProfiledSubsystem(0) || true, "The subsystem cannot be set dynamically!"); \
 	static_assert(isWaiting || true, "The waiting status cannot be set dynamically!"); \
-	const static SProfilingDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, szName, __LINE__, isWaiting, subsystem); \
+	const static SProfilingDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, szName, uint16(__LINE__), isWaiting, subsystem); \
 	SProfilingSection CRYPROF_CAT(profSection, __LINE__)(&CRYPROF_CAT(profEventDesc, __LINE__), szArg);
 
 #define CRY_PROFILE_FUNCTION(subsystem)               CRY_PROFILE_SECTION_FULL(subsystem, __FUNC__, nullptr, false)
