@@ -330,7 +330,7 @@ Vec4_tpl<Real> grad4(Real j, Vec4_tpl<Real> ip)
 }
 
 template<typename Real>
-ILINE Real SNoise(Vec4_tpl<Real> v, Vec4_tpl<Real>* pGrad = nullptr)
+Real SNoise(Vec4_tpl<Real> v, Vec4_tpl<Real>* pGrad = nullptr)
 {
 	using namespace crydetail;
 
