@@ -2230,7 +2230,14 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::PreloadSingleRequest:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const*>(request.GetData());
-			result = g_fileCacheManager.TryLoadRequest(pRequestData->preloadRequestId, ((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None), pRequestData->bAutoLoadOnly);
+			result = g_fileCacheManager.TryLoadRequest(
+				pRequestData->preloadRequestId,
+				((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None),
+				pRequestData->bAutoLoadOnly,
+				request.flags,
+				request.pOwner,
+				request.pUserData,
+				request.pUserDataOwner);
 
 			break;
 		}
@@ -2802,6 +2809,7 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 	case ECallbackRequestType::ReportFinishedTriggerInstance: // Intentional fall-through.
 	case ECallbackRequestType::ReportContextActivated:        // Intentional fall-through.
 	case ECallbackRequestType::ReportContextDeactivated:      // Intentional fall-through.
+	case ECallbackRequestType::ReportFinishedPreload:         // Intentional fall-through.
 	case ECallbackRequestType::None:
 		{
 			result = ERequestStatus::Success;
@@ -3225,6 +3233,14 @@ void CSystem::NotifyListener(CRequest const& request)
 			case ECallbackRequestType::ReportContextDeactivated:
 				{
 					systemEvent = ESystemEvents::ContextDeactivated;
+
+					break;
+				}
+			case ECallbackRequestType::ReportFinishedPreload:
+				{
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportFinishedPreload> const*>(pBase);
+					controlID = static_cast<ControlId>(pRequestData->preloadRequestId);
+					systemEvent = pRequestData->isFullSuccess ? ESystemEvents::PreloadFinishedSuccess : ESystemEvents::PreloadFinishedFailure;
 
 					break;
 				}
