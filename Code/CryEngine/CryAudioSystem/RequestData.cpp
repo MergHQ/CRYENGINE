@@ -164,6 +164,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportVirtualizedObject)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportContextActivated)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportContextDeactivated)
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedPreload)
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown callback request type (%u) during %s", pBase->callbackRequestType, __FUNCTION__);

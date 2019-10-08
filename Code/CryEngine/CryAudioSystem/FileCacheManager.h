@@ -29,10 +29,17 @@ public:
 
 	// Public methods
 	void           Initialize();
-	FileId         TryAddFileCacheEntry(XmlNodeRef const& fileNode, ContextId const contextId, bool const bAutoLoad);
+	FileId         TryAddFileCacheEntry(XmlNodeRef const& fileNode, ContextId const contextId, bool const isAutoLoad);
 	bool           TryRemoveFileCacheEntry(FileId const id, ContextId const contextId);
 	void           UpdateLocalizedFileCacheEntries();
-	ERequestStatus TryLoadRequest(PreloadRequestId const preloadRequestId, bool const bLoadSynchronously, bool const bAutoLoadOnly);
+	ERequestStatus TryLoadRequest(
+		PreloadRequestId const preloadRequestId,
+		bool const loadSynchronously,
+		bool const autoLoadOnly,
+		ERequestFlags const flags = ERequestFlags::None,
+		void* const pOwner = nullptr,
+		void* const pUserData = nullptr,
+		void* const pUserDataOwner = nullptr);
 	ERequestStatus TryUnloadRequest(PreloadRequestId const preloadRequestId);
 	ERequestStatus UnloadDataByContext(ContextId const contextId);
 
@@ -53,13 +60,20 @@ private:
 	// ~IStreamCallback
 
 	// Internal methods
-	bool UncacheFileCacheEntryInternal(CFile* const pFile, bool const bNow, bool const bIgnoreUsedCount = false);
+	bool UncacheFileCacheEntryInternal(CFile* const pFile, bool const uncacheImmediately, bool const ignoreUsedCount = false);
 	bool FinishStreamInternal(IReadStreamPtr const pStream, int unsigned const error);
 	bool AllocateMemoryBlockInternal(CFile* const __restrict pFile);
 	void UncacheFile(CFile* const pFile);
 	void TryToUncacheFiles();
 	void UpdateLocalizedFileData(CFile* const pFile);
-	bool TryCacheFileCacheEntryInternal(CFile* const pFile, FileId const id, bool const bLoadSynchronously, bool const bOverrideUseCount = false, size_t const useCount = 0);
+	bool TryCacheFileCacheEntryInternal(CFile* const pFile, FileId const id, bool const loadSynchronously, bool const overrideUseCount = false, size_t const useCount = 0);
+	void SendFinishedPreloadRequest(
+		PreloadRequestId const preloadRequestId,
+		bool const isFullSuccess,
+		ERequestFlags const flags,
+		void* const pOwner,
+		void* const pUserData,
+		void* const pUserDataOwner);
 
 	// Internal members
 	Files                           m_files;
