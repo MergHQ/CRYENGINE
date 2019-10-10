@@ -1174,7 +1174,12 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 	const bool editorBackgroundThreadRunning = m_pEditorBackgroundUpdate->IsRunning();
 	if (editorBackgroundThreadRunning)
 	{
-		AIError("NavigationSystem - Editor background thread is still running, while the main thread is updating, skipping update");
+		// TODO: This shouldn't happen.
+		// CCryEditApp::IdleProcessing(...) sends a system event ESYSTEM_EVENT_CHANGE_FOCUS when the application loses focus with a flag bActive = false.
+		// NavigationSystemBackgroundUpdate::OnSystemEvent receives the event and starts the NavMesh regeneration in a background thread.
+		// CCryEditApp::IdleProcessing(...) then may set flag bActive to true (if BackgroundSchedulerManager has pending tasks or the main thread can execute the next task).
+		// If the bActive flag is true, the main engine loop will be executed. Therefore, both main and background thread would be running.
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "NavigationSystem - Editor background thread is still running, while the main thread is updating, skipping update");
 		return;
 	}
 

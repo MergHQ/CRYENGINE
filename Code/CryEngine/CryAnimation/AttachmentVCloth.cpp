@@ -2687,6 +2687,17 @@ void CClothSimulator::GenerateMetaData(mesh_data* pMesh, CSkin* pSimSkin, float*
 	}
 }
 
+CClothPiece::~CClothPiece()
+{
+	WaitForJob(false);
+	if (m_poolIdx >= 0)
+	{
+		m_clothGeom->ReleaseBuffers(m_poolIdx);
+		m_buffers = nullptr;
+		m_poolIdx = -1;
+	}
+}
+
 bool CClothPiece::Initialize(const CAttachmentVCLOTH* pVClothAttachment)
 {
 	if (m_initialized)

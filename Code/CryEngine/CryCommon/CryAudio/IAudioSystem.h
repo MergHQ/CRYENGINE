@@ -47,6 +47,8 @@ struct ITriggerInfo;
  * @var CryAudio::ESystemEvents::ImplSet
  * @var CryAudio::ESystemEvents::TriggerExecuted
  * @var CryAudio::ESystemEvents::TriggerFinished
+ * @var CryAudio::ESystemEvents::PreloadFinishedSuccess
+ * @var CryAudio::ESystemEvents::PreloadFinishedFailure
  * @var CryAudio::ESystemEvents::ContextActivated
  * @var CryAudio::ESystemEvents::ContextDeactivated
  * @var CryAudio::ESystemEvents::OnBar
@@ -59,19 +61,21 @@ struct ITriggerInfo;
  */
 enum class ESystemEvents : EnumFlagsType
 {
-	None               = 0,          /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
-	ImplSet            = BIT(0),     /**< Invoked once the audio middleware implementation has been set. */
-	TriggerExecuted    = BIT(1),     /**< Invoked once a trigger finished starting all of its event connections. */
-	TriggerFinished    = BIT(2),     /**< Invoked once all of the spawned event instances finished playing. */
-	ContextActivated   = BIT(3),     /**< Invoked once a context got activated. */
-	ContextDeactivated = BIT(4),     /**< Invoked once a context got deactivated. */
-	OnBar              = BIT(5),     /**< Invoked on every music bar if supported by the used middleware. */
-	OnBeat             = BIT(6),     /**< Invoked on every music beat if supported by the used middleware. */
-	OnEntry            = BIT(7),     /**< Invoked on music entry point if supported by the used middleware. */
-	OnExit             = BIT(8),     /**< Invoked on music exit point if supported by the used middleware. */
-	OnGrid             = BIT(9),     /**< Invoked on every music grid if supported by the used middleware. */
-	OnSyncPoint        = BIT(10),    /**< Invoked on every synchronization point if supported by the used middleware. */
-	OnUserMarker       = BIT(11),    /**< Invoked on every user marker if supported by the used middleware. */
+	None                   = 0,              /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	ImplSet                = BIT(0),         /**< Invoked once the audio middleware implementation has been set. */
+	TriggerExecuted        = BIT(1),         /**< Invoked once a trigger finished starting all of its event connections. */
+	TriggerFinished        = BIT(2),         /**< Invoked once all of the spawned event instances finished playing. */
+	PreloadFinishedSuccess = BIT(3),         /**< Invoked once a preload finished loading successfully. */
+	PreloadFinishedFailure = BIT(4),         /**< Invoked once a preload failed to finish loading or was only partially successful. */
+	ContextActivated       = BIT(5),         /**< Invoked once a context got activated. */
+	ContextDeactivated     = BIT(6),         /**< Invoked once a context got deactivated. */
+	OnBar                  = BIT(7),         /**< Invoked on every music bar if supported by the used middleware. */
+	OnBeat                 = BIT(8),         /**< Invoked on every music beat if supported by the used middleware. */
+	OnEntry                = BIT(9),         /**< Invoked on music entry point if supported by the used middleware. */
+	OnExit                 = BIT(10),        /**< Invoked on music exit point if supported by the used middleware. */
+	OnGrid                 = BIT(11),        /**< Invoked on every music grid if supported by the used middleware. */
+	OnSyncPoint            = BIT(12),        /**< Invoked on every synchronization point if supported by the used middleware. */
+	OnUserMarker           = BIT(13),        /**< Invoked on every user marker if supported by the used middleware. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemEvents);
 

@@ -39,29 +39,8 @@ float RandomExp(float fMaxExp)
 	float f = pow(10.0f, MathRand.GetRandom(-fMaxExp, fMaxExp));
 	if (MathRand.GetRandom(0, 1))
 		f = -f;
-	assert(IsValid(f));
+	CRY_ASSERT(IsValid(f));
 	return f;
-}
-
-template<typename Real, typename S>
-void TestFunction(Real(*func)(Real), S in, S res)
-{
-	Real out = func(convert<Real>(in));
-	REQUIRE(All(out == convert<Real>(res)));
-}
-
-template<typename Real, typename S>
-void TestFunction(Real(*func)(Real, Real), S a, S b, S res)
-{
-	Real out = func(convert<Real>(a), convert<Real>(b));
-	REQUIRE(All(out == convert<Real>(res)));
-}
-
-template<typename Real, typename S>
-void TestFunction(Real(*func)(Real, Real, Real), S a, S b, S c, S res)
-{
-	Real out = func(convert<Real>(a), convert<Real>(b), convert<Real>(c));
-	REQUIRE(All(out == convert<Real>(res)));
 }
 
 template<typename Real, typename S>
@@ -70,33 +49,21 @@ bool IsEquiv(Real a, Real b, S epsilon)
 	return NumberValid(a) && NumberValid(b) && IsEquivalent(a, b, -epsilon); // Relative comparison
 }
 
-template<typename Real, typename S>
-void TestFunction(Real(*func)(Real), S in, S res, S epsilon)
-{
-	Real out = func(convert<Real>(in));
-	REQUIRE(IsEquiv(out, convert<Real>(res), epsilon));
-}
+#define REQUIRE_EQUAL(T, res, func, a) \
+	REQUIRE(All(func(convert<T>(a)) == convert<T>(res)));
+#define REQUIRE_EQUAL2(T, res, func, a, b) \
+	REQUIRE(All(func(convert<T>(a), convert<T>(b)) == convert<T>(res)));
 
-template<typename Real, typename S>
-void TestFunction(Real(*func)(Real, Real), S a, S b, S res, S epsilon)
-{
-	Real out = func(convert<Real>(a), convert<Real>(b));
-	REQUIRE(IsEquiv(out, convert<Real>(res), epsilon));
-}
+#define REQUIRE_EQUIVALENT(T, epsilon, res, func, a) \
+	REQUIRE(IsEquiv(func(convert<T>(a)), convert<T>(res), epsilon));
+#define REQUIRE_EQUIVALENT2(T, epsilon, res, func, a, b) \
+	REQUIRE(IsEquiv(func(convert<T>(a), convert<T>(b)), convert<T>(res), epsilon));
+#define REQUIRE_EQUIVALENT3(T, epsilon, res, func, a, b, c) \
+	REQUIRE(IsEquiv(func(convert<T>(a), convert<T>(b), convert<T>(c)), convert<T>(res), epsilon));
 
-template<typename Real, typename S>
-void TestFunction(Real(*func)(Real, Real, Real), S a, S b, S c, S res, S epsilon)
-{
-	Real out = func(convert<Real>(a), convert<Real>(b), convert<Real>(c));
-	REQUIRE(IsEquiv(out, convert<Real>(res), epsilon));
-}
-
-template<typename Real, typename S>
-void FunctionApproxTest(Real(*func)(Real), Real(*func_fast)(Real), S in, S res)
-{
-	TestFunction(func, in, res, FLT_EPSILON * 2.0f);
-	TestFunction(func_fast, in, res, HALF_EPSILON * 2.0f);
-}
+#define REQUIRE_EQUIVALENT_FAST(T, res, func, a) \
+	REQUIRE_EQUIVALENT(T, FLT_EPSILON * 2.0f, res, func, a) \
+	REQUIRE_EQUIVALENT(T, HALF_EPSILON * 2.0f, res, func##_fast, a) \
 
 template<typename Real, typename Int, typename Uint>
 void FunctionTest()
@@ -109,37 +76,37 @@ void FunctionTest()
 		float res;
 
 		res = float(int(f));
-		TestFunction<Real>(trunc, f, res);
+		REQUIRE_EQUAL(Real, res, trunc, f);
 
 		res = std::floor(f);
-		TestFunction<Real>(floor, f, res);
+		REQUIRE_EQUAL(Real, res, floor, f);
 
 		res = std::ceil(f);
-		TestFunction<Real>(ceil, f, res);
+		REQUIRE_EQUAL(Real, res, ceil, f);
 
-		res = f<0.0f ? 0.0f : f> 1.0f ? 1.0f : f;
-		TestFunction<Real>(saturate, f, res);
+		res = f < 0.0f ? 0.0f : f > 1.0f ? 1.0f : f;
+		REQUIRE_EQUAL(Real, res, saturate, f);
 
 		res = f < 0.0f ? -f : f;
-		TestFunction<Real>(abs, f, res);
+		REQUIRE_EQUAL(Real, res, abs, f);
 
 		res = f < 0.0f ? -1.0f : 1.0f;
-		TestFunction<Real>(signnz, f, res);
+		REQUIRE_EQUAL(Real, res, signnz, f);
 
 		res = f<0.0f ? -1.0f : f> 0.0f ? 1.0f : 0.0f;
-		TestFunction<Real>(sign, f, res);
+		REQUIRE_EQUAL(Real, res, sign, f);
 
-		FunctionApproxTest<Real>(sqrt, sqrt_fast, f * f, abs(f));
+		REQUIRE_EQUIVALENT_FAST(Real, abs(f), sqrt, f * f);
 
 		if (f != 0.0f)
 		{
-			FunctionApproxTest<Real>(rcp, rcp_fast, f, 1.0f / f);
-			FunctionApproxTest<Real>(rsqrt, rsqrt_fast, 1.0f / (f * f), abs(f));
+			REQUIRE_EQUIVALENT_FAST(Real, 1.0f / f, rcp, f);
+			REQUIRE_EQUIVALENT_FAST(Real, abs(f), rsqrt, 1.0f / (f * f));
 		}
 	}
 
-	TestFunction<Real>(max, 257.35f, 510.0f, 510.0f);
-	TestFunction<Real>(max, -102.0f, -201.4f, -102.0f);
+	REQUIRE_EQUAL2(Real, 510.0f, max, 510.0f, 257.35f);
+	REQUIRE_EQUAL2(Real, -102.0f, max, -201.4f, -102.0f);
 
 	//Disabled until fixing bug for mod under linux fast math
 	//https://jira.cryengine.com/browse/DEV-8389
@@ -148,17 +115,17 @@ void FunctionTest()
 	//TestFunction<Real>(mod, -0.6f, 0.5f, -0.1f, FLT_EPSILON * 4);
 	//TestFunction<Real>(mod, -0.2f, -0.3f, -0.2f, FLT_EPSILON * 4);
 
-	TestFunction<Real>(wrap, -6.0f, -1.0f, 3.0f, 2.0f, FLT_EPSILON * 4);
-	TestFunction<Real>(wrap, -6.3f, 0.0f, 1.0f, 0.7f, FLT_EPSILON * 4);
-	TestFunction<Real>(wrap, 4.8f, -1.0f, 1.0f, 0.8f, FLT_EPSILON * 4);
+	REQUIRE_EQUIVALENT3(Real, FLT_EPSILON * 4, 2.0f, wrap, -6.0f, -1.0f, 3.0f);
+	REQUIRE_EQUIVALENT3(Real, FLT_EPSILON * 4, 0.7f, wrap, -6.3f, 0.0f, 1.0f);
+	REQUIRE_EQUIVALENT3(Real, FLT_EPSILON * 4, 0.8f, wrap, 4.8f, -1.0f, 1.0f);
 
-	TestFunction<Int>(min, -3, 1, -3);
-	TestFunction<Int>(max, -3, 1, 1);
+	REQUIRE_EQUAL2(Int, -3, min, -3, 1);
+	REQUIRE_EQUAL2(Int, 1, max, -3, 1);
 
-	TestFunction<Uint>(min, 8u, 3u, 3u);
-	TestFunction<Uint>(min, 8u, 0x9FFFFFFFu, 8u);
-	TestFunction<Uint>(max, 8u, 0x9FFFFFFFu, 0x9FFFFFFFu);
-	TestFunction<Uint>(max, 0x90000000u, 0xA0000000u, 0xA0000000u);
+	REQUIRE_EQUAL2(Uint, 3u, min, 8u, 3u);
+	REQUIRE_EQUAL2(Uint, 8u, min, 8u, 0x9FFFFFFFu);
+	REQUIRE_EQUAL2(Uint, 0x9FFFFFFFu, max, 8u, 0x9FFFFFFFu);
+	REQUIRE_EQUAL2(Uint, 0xA0000000u, max, 0x90000000u, 0xA0000000u);
 }
 
 #if CRY_PLATFORM_SSE2
@@ -558,13 +525,7 @@ TEST(CryMathTest, Vector)
 #if CRY_COMPILER_MSVC
 
 template<typename Real>
-NO_INLINE Real SNoiseNoInline(Vec4_tpl<Real> v)
-{
-	return SNoise(v);
-}
-
-template<typename Real>
-void SnoiseTest()
+NO_INLINE void SnoiseTest()
 {
 	using namespace crydetail;
 	const Vec4_tpl<Real> s0 = ToVec4(convert<Real>(0.0f));
@@ -572,11 +533,11 @@ void SnoiseTest()
 	const Vec4_tpl<Real> s2 = Vec4_tpl<Real>(convert<Real>(-104.2f), convert<Real>(504.85f), convert<Real>(-32.0f), convert<Real>(1.25f));
 	const Vec4_tpl<Real> s3 = Vec4_tpl<Real>(convert<Real>(-257.07f), convert<Real>(-25.85f), convert<Real>(-0.5f), convert<Real>(105.5f));
 	const Vec4_tpl<Real> s4 = Vec4_tpl<Real>(convert<Real>(104.2f), convert<Real>(1504.85f), convert<Real>(78.57f), convert<Real>(-0.75f));
-	Real p0 = SNoiseNoInline(s0);
-	Real p1 = SNoiseNoInline(s1);
-	Real p2 = SNoiseNoInline(s2);
-	Real p3 = SNoiseNoInline(s3);
-	Real p4 = SNoiseNoInline(s4);
+	Real p0 = SNoise(s0);
+	Real p1 = SNoise(s1);
+	Real p2 = SNoise(s2);
+	Real p3 = SNoise(s3);
+	Real p4 = SNoise(s4);
 
 	REQUIRE(All(p0 == convert<Real>(0.0f)));
 	REQUIRE(All(p1 == convert<Real>(-0.291425288f)));

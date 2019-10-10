@@ -13,7 +13,7 @@ struct CNodeCGF;
 class CPhysicsInterface;
 struct ICryXML;
 class CLoaderCGF;
-class ILoaderCGFListener;
+struct ILoaderCGFListener;
 struct CMaterialCGF;
 struct CSkinningInfo;
 struct SVClothInfoCGF;

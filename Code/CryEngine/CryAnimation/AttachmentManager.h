@@ -11,6 +11,10 @@
 #include "AttachmentSkin.h"
 #include "AttachmentProxy.h"
 #include <CryMath/GeomQuery.h>
+#include <CryEntitySystem/IEntity.h>
+#include <unordered_map>
+#include <CryCore/RingBuffer.h>
+#include <queue>
 
 struct CharacterAttachment;
 namespace Command {
@@ -181,29 +185,45 @@ public:
 	//! Returns a list of all character instances attached directly to this attachment manager.
 	//! This method does not perform a full traversal of the attachment hierarchy - only the very first level will be inspected.
 	const std::vector<CCharInstance*>& GetAttachedCharacterInstances();
-
+	void ProcessAttachedCharactersChanges() { m_attachedCharactersCache.ProcessChanges(); }
 private:
-
-	//! Performs rebuild of m_attachedCharactersCache, if necessary.
-	void RebuildAttachedCharactersCache();
-
-	struct sAttachedCharactersCache
+	struct SAttachedCharacterCache : public IEntityEventListener
 	{
-		void Push(CCharInstance* character, IAttachment* attachment);
-		void Clear();
-		void Erase(IAttachment* attachment);
-		uint32 FrameId() const { return m_frameId; }
-		void SetFrameId(uint32 frameId) { m_frameId = frameId; }
-		const std::vector<CCharInstance*>& Characters() const { return m_characters; }
-		const std::vector<IAttachment*>& Attachments() const { return m_attachments; }
-		IAttachment* Attachment(int idx) const { return m_attachments[idx]; }
-		CCharInstance* Characters(int idx) const { return m_characters[idx]; }
+		SAttachedCharacterCache() = default;
+		~SAttachedCharacterCache();
+		SAttachedCharacterCache(const SAttachedCharacterCache&) = delete;
+		SAttachedCharacterCache& operator=(const SAttachedCharacterCache&) = delete;
+
+		virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) override;
+
+		void                               Insert(IAttachment* pAttachment);
+		void                               Erase(IAttachment* pAttachment);
+		const std::unordered_multimap<uint32, CCharInstance*>& GetAttachmentToCharacterMap() const { return m_attachmentCRCToCharacterMap; }
+		const std::vector<CCharInstance*>& GetCharacters() const { return m_charactersCache; }
+
+		void ProcessChanges();
 	private:
-		std::vector<CCharInstance*> m_characters;                 //!< List of character instances attached directly to this attachment manager.
-		std::vector<IAttachment*> m_attachments;                  //!< List of attachments containing character instances stored in the characters vector above. These two vectors match by index.
-		uint32 m_frameId = 0xffffffff;                            //!< Frame identifier of the last update, used to determine if a cache rebuild is needed.
+		void QueueInsert(uint32 attachmentCRC, CCharInstance* pCharInstance);
+		void QueueErase(uint32 attachmentCRC);
+		void InsertEntityCharactersIntoCache(IEntity* pEntity);
+		void RemoveEntityCharactersFromCache(EntityId entityId);
+		void UpdateEntityCharactersInCache(IEntity* pEntity);
+
+		std::unordered_multimap<uint32, CCharInstance*> m_attachmentCRCToCharacterMap;
+		std::unordered_map<EntityId, uint32> m_entityToAttachmentCRCMap;
+		std::vector<CCharInstance*> m_charactersCache;
+
+		struct SCommand 
+		{
+			uint32 attachmentCRC = 0;
+			CCharInstance* pChildInstance = nullptr;
+		};
+
+		CRingBuffer<SCommand, 8> m_commandQueue;
+		std::queue<SCommand> m_fallbackCommandQueue;
 	};
-	sAttachedCharactersCache m_attachedCharactersCache;
+	
+	SAttachedCharacterCache m_attachedCharactersCache; //!< Contains all of the characters that are attached to this character, either through bone attachments or the Entity system.
 
 	class CModificationCommand
 	{

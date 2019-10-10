@@ -112,6 +112,9 @@ public:
 	CAbstractMenu* GetMenu(const char* menuName);
 	CAbstractMenu* GetMenu(MenuItems menuItem);
 
+	// Panel or widget descendant is focused
+	virtual void   OnFocus() {}
+
 protected:
 	void        customEvent(QEvent* pEvent) override;
 	void        resizeEvent(QResizeEvent* pEvent) override;

@@ -188,7 +188,6 @@ using std::atan2;
 template<typename T> ILINE void sincos(T angle, T* pSin, T* pCos) { *pSin = sin(angle); *pCos = cos(angle); }
 
 using std::exp;
-using std::exp;
 using std::log;
 using std::pow;
 using std::sqrt;
@@ -197,7 +196,8 @@ using std::sqrt;
 // Define rcp, rsqrt, etc for different platforms.
 //
 
-#if CRY_PLATFORM_SSE2
+// _MSC_VER check is a temporary workaround for apparent compiler bug in VS 16.3: SSE version of rsqrt_fast generates incorrect code
+#if CRY_PLATFORM_SSE2 && (!defined(_MSC_VER) || _MSC_VER < 1923)
 
 ILINE f32 rcp_fast(f32 op)   { return _mm_cvtss_f32(_mm_rcp_ss(_mm_set_ss(op))); }
 ILINE f32 rcp(f32 op)        { float r = rcp_fast(op); return r * (2.0f - op * r); }

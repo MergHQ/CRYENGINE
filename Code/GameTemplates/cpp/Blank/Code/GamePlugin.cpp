@@ -80,7 +80,7 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 		}
 		break;
 		
-		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
+		case ESYSTEM_EVENT_LEVEL_UNLOAD:
 		{
 			m_players.clear();
 		}

@@ -7,8 +7,8 @@
 #include <CryCore/StlUtils.h>    // stl::less_stricmp
 
 struct IResourceCompiler;
-class ISubstanceInstanceRenderer;
-class ISubstancePreset;
+struct ISubstanceInstanceRenderer;
+struct ISubstancePreset;
 
 class CSubstanceConverter
 	: public IConverter

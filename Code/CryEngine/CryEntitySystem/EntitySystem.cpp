@@ -41,6 +41,7 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryGame/IGameFramework.h>
+#include <CryAnimation/ICryAnimation.h>
 
 #include "EntityComponentsCache.h"
 
@@ -800,6 +801,17 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 			entevent.event = ENTITY_EVENT_DONE;
 			entevent.nParam[0] = pEntity->GetId();
 			pEntity->SendEventInternal(entevent);
+
+			// Mark all characters owned by this entity's slots as garbage.
+			// (necessary to prevent dangling character updates)
+			// TODO : move this into common cleanup functionality for Slots
+			for (int i = 0; i < pEntity->GetSlotCount(); ++i)
+			{
+				if (ICharacterInstance* pCharInst = pEntity->GetCharacter(i))
+				{
+					pCharInst->SetFlags(pCharInst->GetFlags() | CS_FLAG_MARKED_GARBAGE);
+				}
+			}
 
 			pEntity->PrepareForDeletion();
 

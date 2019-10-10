@@ -1,14 +1,16 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+
+#include "StdAfx.h"
 #include "EventLoopHandler.h"
+#include "EditorFramework/Editor.h"
+#include "EditorFramework/Events.h"
 
 #include <QApplication>
 #include <QWidget>
 
-#include "Events.h"
-
 CEventLoopHandler::CEventLoopHandler()
 	: m_pDefaultHandler(nullptr)
+	, m_pFocusedEditor(nullptr)
 {
 	qApp->installEventFilter(this);
 	qApp->installNativeEventFilter(this);
@@ -25,8 +27,8 @@ bool CEventLoopHandler::eventFilter(QObject* object, QEvent* event)
 	//Custom events are only sent to the target widget and not propagated to parent.
 	//This is an acceptable way to reimplement the event loop for all of our custom events
 
-	const int type = event->type();
-	if (type > SandboxEvent::First && type < SandboxEvent::Max)
+	const int eventType = event->type();
+	if (eventType > SandboxEvent::First && eventType < SandboxEvent::Max)
 	{
 		SandboxEvent* sandboxEvent = static_cast<SandboxEvent*>(event);
 		if (sandboxEvent->m_fallbackToParent && !sandboxEvent->m_beingHandled && object->isWidgetType())
@@ -52,6 +54,24 @@ bool CEventLoopHandler::eventFilter(QObject* object, QEvent* event)
 				}
 				w = w->parentWidget();
 			}
+		}
+	}
+	else if (eventType == QEvent::FocusIn)
+	{
+		CEditor* pEditor = qobject_cast<CEditor*>(object);
+		while (!pEditor)
+		{
+			object = object->parent();
+			if (!object)
+				break;
+
+			pEditor = qobject_cast<CEditor*>(object);
+		}
+
+		if (pEditor && pEditor != m_pFocusedEditor)
+		{
+			pEditor->OnFocus();
+			m_pFocusedEditor = pEditor;
 		}
 	}
 

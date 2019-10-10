@@ -55,18 +55,16 @@ public:
 			InputPortConfig<string>("audioPreloadRequest_PreloadRequest7", _HELP("name of preload request"),                "Preload Request"),
 			InputPortConfig_Void("Load",                                   _HELP("loads all supplied preload requests")),
 			InputPortConfig_Void("Unload",                                 _HELP("unloads all supplied preload requests")),
-			{ 0 }
-		};
+			{ 0 } };
 
 		static const SOutputPortConfig outputs[] =
 		{
-			{ 0 }
-		};
+			{ 0 } };
 
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
 		config.sDescription = _HELP("Node that allows for handling audio preload requests.");
-		config.SetCategory(EFLN_APPROVED);
+		config.SetCategory(EFLN_OBSOLETE);
 	}
 
 	void Enable(SActivationInfo* pActInfo, bool bEnable)
@@ -80,7 +78,7 @@ public:
 				if (!preloadName.empty())
 				{
 					CryAudio::PreloadRequestId const preloadRequestId = CryAudio::StringToId(preloadName.c_str());
-					
+
 					if (bEnable)
 					{
 						gEnv->pAudioSystem->PreloadSingleRequest(preloadRequestId, false);

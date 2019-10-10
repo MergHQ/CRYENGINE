@@ -25,6 +25,7 @@ enum class ECallbackRequestType : EnumFlagsType
 	ReportVirtualizedObject,
 	ReportContextActivated,
 	ReportContextDeactivated,
+	ReportFinishedPreload,
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -204,5 +205,27 @@ struct SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> final
 	virtual ~SCallbackRequestData() override = default;
 
 	Impl::IObject* const pIObject;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SCallbackRequestData<ECallbackRequestType::ReportFinishedPreload> final : public SCallbackRequestDataBase
+{
+	explicit SCallbackRequestData(PreloadRequestId const preloadRequestId_, bool const isFullSuccess_)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedPreload)
+		, preloadRequestId(preloadRequestId_)
+		, isFullSuccess(isFullSuccess_)
+	{}
+
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedPreload> const* const pCRData)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedPreload)
+		, preloadRequestId(pCRData->preloadRequestId)
+		, isFullSuccess(pCRData->isFullSuccess)
+	{}
+
+	virtual ~SCallbackRequestData() override = default;
+
+	PreloadRequestId const preloadRequestId;
+	bool const             isFullSuccess;
 };
 } // namespace CryAudio

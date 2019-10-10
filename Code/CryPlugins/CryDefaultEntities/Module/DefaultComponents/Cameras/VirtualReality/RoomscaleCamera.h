@@ -7,6 +7,7 @@
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/ICryPluginManager.h>
+#include "../ICameraManager.h"
 
 namespace Cry
 {

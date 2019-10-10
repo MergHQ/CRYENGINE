@@ -771,7 +771,7 @@ private:
 		return ::SNoise(static_cast<const Vec4f&>(v));
 	}
 
-	ILINE static Vec3 Potential(const Vec4 sample)
+	static Vec3 Potential(const Vec4 sample)
 	{
 		const Vec4 offy = Vec4(149, 311, 191, 491);
 		const Vec4 offz = Vec4(233, 197, 43, 59);

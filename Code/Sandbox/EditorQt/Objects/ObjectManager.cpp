@@ -601,11 +601,12 @@ private:
 class CUndoBaseObjectSelect : public IUndoObject
 {
 public:
-	CUndoBaseObjectSelect(CBaseObject* pObj)
+	CUndoBaseObjectSelect(CBaseObject* pObject)
 	{
-		CRY_ASSERT(pObj != 0);
-		m_objectsGuids = { pObj->GetId() };
-		m_bUndoSelect = !pObj->IsSelected();
+		CRY_ASSERT(pObject != 0);
+		m_objectsGuids = { pObject->GetId() };
+		m_bUndoSelect = !pObject->IsSelected(); 
+		m_objectName = pObject->GetName();
 	}
 
 	CUndoBaseObjectSelect(bool select, const std::vector<CBaseObject*>& objects = {})
@@ -616,22 +617,22 @@ public:
 		{
 			m_objectsGuids.push_back(pObject->GetId());
 		}
+
+		if (objects.size() > 1)
+		{
+			m_objectName.Format("%d objects", objects.size());
+		}
+		else
+		{
+			m_objectName = objects[0]->GetName();
+		}
 	}
 protected:
 	virtual void        Release()                 { delete this; }
 	virtual const char* GetDescription() override { return "Select Objects"; }
 	virtual const char* GetObjectName() override
 	{
-		if (m_objectsGuids.size() == 1)
-		{
-			CBaseObject* pObject = GetIEditorImpl()->GetObjectManager()->FindObject(m_objectsGuids[0]);
-			if (pObject)
-				return pObject->GetName();
-		}
-
-		string str;
-		str.Format("%d objects", m_objectsGuids.size());
-		return str.c_str();
+		return m_objectName.c_str();
 	}
 
 	virtual void Undo(bool bUndo) override
@@ -686,6 +687,7 @@ private:
 	std::vector<CryGUID> m_objectsGuids;
 	bool                 m_bUndoSelect;
 	bool                 m_bRedoSelect;
+	string               m_objectName;
 };
 
 CBatchProcessDispatcher::~CBatchProcessDispatcher()

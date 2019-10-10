@@ -3,15 +3,17 @@
 #include "stdafx.h"
 #include "AttachmentManager.h"
 
+#include <memory>
+#include <CrySystem/ISystem.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <Cry3DEngine/ISurfaceType.h>
+
 #include "ModelMesh.h"
 #include "SocketSimulation.h"
 #include "AttachmentPRow.h"
 #include "AttachmentVCloth.h"
 #include "CharacterInstance.h"
 #include "CharacterManager.h"
-#include <memory>
 #include "Command_Commands.h"
 #include "Command_Buffer.h"
 #include "DrawHelper.h"
@@ -758,6 +760,7 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 
 void CAttachmentManager::UpdateBindings()
 {
+	DEFINE_PROFILER_FUNCTION();
 	m_modificationCommandBuffer.Execute();
 }
 
@@ -1195,43 +1198,16 @@ int32 CAttachmentManager::RemoveAttachmentByNameCRC(uint32 nameCRC, uint32 loadi
 	return 1;
 };
 
-void CAttachmentManager::sAttachedCharactersCache::Push(CCharInstance* character, IAttachment* attachment)
-{
-	m_attachments.push_back(attachment);
-	m_characters.push_back(character);
-}
-
-void CAttachmentManager::sAttachedCharactersCache::Clear()
-{
-	m_characters.clear();
-	m_attachments.clear();
-}
-
-void CAttachmentManager::sAttachedCharactersCache::Erase(IAttachment* attachment)
-{
-	const int s = m_attachments.size();
-	for (int idx = 0; idx < s; ++idx)
-	{
-		if (m_attachments[idx] == attachment)
-		{
-			m_attachments.erase(m_attachments.begin() + idx);
-			m_characters.erase(m_characters.begin() + idx);
-			break;
-		}
-	}
-}
-
 void CAttachmentManager::RemoveAttachmentByIndex(uint32 index, uint32 loadingFlags)
 {
 	IAttachment* const pAttachment = GetInterfaceByIndex(index);
 	CRY_ASSERT(pAttachment);
 	CRY_ASSERT(pAttachment->GetType() == CA_BONE || pAttachment->GetType() == CA_FACE || pAttachment->GetType() == CA_SKIN || pAttachment->GetType() == CA_PROW || pAttachment->GetType() == CA_VCLOTH);
-
-	// Erase also in cache
-	m_attachedCharactersCache.Erase(pAttachment);
-
+	
 	if (pAttachment->GetIAttachmentObject())
 	{
+		// Erase also in cache
+		m_attachedCharactersCache.Erase(pAttachment);
 		pAttachment->GetIAttachmentObject()->OnRemoveAttachment(this, index);
 	}
 
@@ -1549,109 +1525,45 @@ void CAttachmentManager::CreateCommands(Command::CBuffer& buffer)
 	}
 }
 
-void CAttachmentManager::RebuildAttachedCharactersCache()
-{
-	if (m_attachedCharactersCache.FrameId() != g_pCharacterManager->m_nUpdateCounter)
-	{
-		m_attachedCharactersCache.Clear();
-
-		if (m_TypeSortingRequired)
-		{
-			SortByType();
-		}
-
-		// Inspects an IAttachment instance and registers characters owned by it in the cache.
-		const auto registerAttachedCharacters = [&](IAttachment& attachment)
-		{
-			IAttachmentObject& attachmentObject = *attachment.GetIAttachmentObject();
-
-			switch (attachmentObject.GetAttachmentType())
-			{
-
-			case IAttachmentObject::eAttachment_Skeleton:
-				{
-					if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(attachmentObject.GetICharacterInstance()))
-					{
-						m_attachedCharactersCache.Push(pChildInstance, &attachment);
-					}
-				}
-
-			case IAttachmentObject::eAttachment_Entity:
-				{
-					const auto entityId = static_cast<CEntityAttachment&>(attachmentObject).GetEntityId();
-					if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId))
-					{
-						for (int i = 0, limit = pEntity->GetSlotCount(); i < limit; ++i)
-						{
-							if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(pEntity->GetCharacter(i)))
-							{
-								m_attachedCharactersCache.Push(pChildInstance, &attachment);
-							}
-						}
-					}
-				}
-
-			default:
-				break;
-			}
-		};
-
-		for (uint32 i = m_sortedRanges[eRange_BoneAttached].begin; i < m_sortedRanges[eRange_BoneAttached].end; ++i)
-		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-			CRY_ASSERT(pIAttachment);
-			CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
-			CRY_ASSERT(pIAttachment->GetIAttachmentObject());
-			if (static_cast<CAttachmentBONE*>(pIAttachment)->m_nJointID < 0)
-				continue;
-
-			registerAttachedCharacters(*pIAttachment);
-		}
-
-		for (uint32 i = m_sortedRanges[eRange_FaceAttached].begin; i < m_sortedRanges[eRange_FaceAttached].end; ++i)
-		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-			CRY_ASSERT(pIAttachment);
-			CRY_ASSERT(pIAttachment->GetType() == CA_FACE);
-			CRY_ASSERT(pIAttachment->GetIAttachmentObject());
-
-			registerAttachedCharacters(*pIAttachment);
-		}
-
-		m_attachedCharactersCache.SetFrameId( g_pCharacterManager->m_nUpdateCounter );
-	}
-}
-
 const std::vector<CCharInstance*>& CAttachmentManager::GetAttachedCharacterInstances()
 {
-	RebuildAttachedCharactersCache();
-	return m_attachedCharactersCache.Characters();
+	return m_attachedCharactersCache.GetCharacters();
 }
 
 int CAttachmentManager::GenerateAttachedCharactersContexts()
 {
 	CRY_ASSERT(m_pSkelInstance->GetProcessingContext());
 
-	RebuildAttachedCharactersCache();
-
 	int generatedContextsCount = 0;
 
-	CRY_ASSERT(m_attachedCharactersCache.Attachments().size() == m_attachedCharactersCache.Characters().size());
-	for (size_t i = 0, limit = m_attachedCharactersCache.Characters().size(); i < limit; ++i)
+	for (auto& kvpair : m_attachedCharactersCache.GetAttachmentToCharacterMap())
 	{
-		IAttachment* pAttachment = m_attachedCharactersCache.Attachment(i);
-		CCharInstance* pCharacter = m_attachedCharactersCache.Characters(i);
+		uint32 attachmentCRC = kvpair.first;
+		CCharInstance* pCharacter = kvpair.second;
+		IAttachment* pAttachment = GetInterfaceByNameCRC(attachmentCRC);
 
-		CRY_ASSERT(!pCharacter->GetProcessingContext());
+		if (pAttachment)
+		{
+			CRY_ASSERT(pCharacter);
+			if (!CRY_VERIFY(!pCharacter->GetProcessingContext()))
+			{
+				CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "[%s] Initializing a processing context on a child character that already has a processing context. Skipping animation update.", pCharacter->GetFilePath());
+				continue;
+			}
 
-		CharacterInstanceProcessing::CContextQueue& queue = g_pCharacterManager->GetContextSyncQueue();
-		CharacterInstanceProcessing::SContext& ctx = queue.AppendContext();
-		pCharacter->SetProcessingContext(ctx);
-		generatedContextsCount += 1;
+			CharacterInstanceProcessing::CContextQueue& queue = g_pCharacterManager->GetContextSyncQueue();
+			CharacterInstanceProcessing::SContext& ctx = queue.AppendContext();
+			pCharacter->SetProcessingContext(ctx);
+			generatedContextsCount += 1;
 
-		const int numChildren = pCharacter->m_AttachmentManager.GenerateAttachedCharactersContexts();
-		ctx.Initialize(pCharacter, pAttachment, m_pSkelInstance->GetProcessingContext()->slot, numChildren);
-		generatedContextsCount += numChildren;
+			const int numChildren = pCharacter->m_AttachmentManager.GenerateAttachedCharactersContexts();
+			ctx.Initialize(pCharacter, pAttachment, m_pSkelInstance->GetProcessingContext()->slot, numChildren);
+			generatedContextsCount += numChildren;
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "Encountered invalid attachment CRC '%d' while generating attached character contexts for character '%s'. Animation update will proceed by skipping this attachment.", attachmentCRC, m_pSkelInstance->GetFilePath());
+		}
 	}
 
 	return generatedContextsCount;
@@ -1659,6 +1571,8 @@ int CAttachmentManager::GenerateAttachedCharactersContexts()
 
 void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	if (m_TypeSortingRequired)
 	{
 		SortByType();
@@ -1679,6 +1593,8 @@ void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 
 void CAttachmentManager::UpdateAttachedObjects()
 {
+	DEFINE_PROFILER_FUNCTION();
+
 	if (m_TypeSortingRequired)
 	{
 		SortByType();
@@ -2455,6 +2371,7 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			if (pParentRenderNode)
 			{
 				pRenderNode->m_nHUDSilhouettesParam = pParentRenderNode->m_nHUDSilhouettesParam;
+				pRenderNode->m_fWSMaxViewDist = pParentRenderNode->m_fWSMaxViewDist;
 			}
 		}
 
@@ -2706,4 +2623,225 @@ void CAttachmentManager::SwapAttachmentObject(SAttachmentBase* pAttachment, IAtt
 		_smart_ptr<IAttachment> m_pNewAttachment;
 	};
 	CMD_BUF_PUSH_COMMAND(m_modificationCommandBuffer, CSwapAttachmentObject, pAttachment, pNewAttachment);
+}
+
+
+void CAttachmentManager::SAttachedCharacterCache::Insert(IAttachment* pAttachment)
+{
+	CRY_ASSERT(pAttachment);
+	uint32 attachmentCRC = pAttachment->GetNameCRC();
+	IAttachmentObject* pAttachmentObject = pAttachment->GetIAttachmentObject();
+	CRY_ASSERT(pAttachmentObject);
+	switch (pAttachmentObject->GetAttachmentType())
+	{
+	case IAttachmentObject::eAttachment_Skeleton:
+	{
+		if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(pAttachmentObject->GetICharacterInstance()))
+		{
+			QueueInsert(attachmentCRC, pChildInstance);
+		}
+	}
+	break;
+	case IAttachmentObject::eAttachment_Entity:
+	{
+		const EntityId entityId = static_cast<CEntityAttachment*>(pAttachmentObject)->GetEntityId();
+		
+		if (gEnv->pEntitySystem)
+		{
+			gEnv->pEntitySystem->AddEntityEventListener(entityId, EEntityEvent::SlotChanged, this);
+			gEnv->pEntitySystem->AddEntityEventListener(entityId, EEntityEvent::Remove, this);
+		}
+
+		CRY_ASSERT(m_entityToAttachmentCRCMap.end() == m_entityToAttachmentCRCMap.find(entityId));
+		m_entityToAttachmentCRCMap.emplace(entityId, attachmentCRC);
+
+		IEntity* pEntity = gEnv->pEntitySystem
+			? gEnv->pEntitySystem->GetEntity(entityId)
+			: nullptr;
+
+		if (pEntity && !pEntity->IsGarbage())
+		{
+			InsertEntityCharactersIntoCache(pEntity);
+		}
+	}
+	break;
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::Erase(IAttachment* pAttachment)
+{
+	CRY_ASSERT(pAttachment);
+	const uint32 attachmentCRC = pAttachment->GetNameCRC();
+	IAttachmentObject* const pAttachmentObject = pAttachment->GetIAttachmentObject();
+	CRY_ASSERT(pAttachmentObject);
+
+	switch (pAttachmentObject->GetAttachmentType())
+	{
+	case IAttachmentObject::eAttachment_Skeleton:
+	{
+		CRY_ASSERT(!pAttachmentObject->GetICharacterInstance() || m_attachmentCRCToCharacterMap.find(attachmentCRC) != m_attachmentCRCToCharacterMap.end());
+
+		QueueErase(attachmentCRC);
+	}
+	break;
+	case IAttachmentObject::eAttachment_Entity:
+	{
+		const EntityId entityId = static_cast<CEntityAttachment*>(pAttachmentObject)->GetEntityId();
+		
+		if (gEnv->pEntitySystem)
+		{
+			gEnv->pEntitySystem->RemoveEntityEventListener(entityId, EEntityEvent::SlotChanged, this);
+			gEnv->pEntitySystem->RemoveEntityEventListener(entityId, EEntityEvent::Remove, this);
+		}
+
+		RemoveEntityCharactersFromCache(entityId);
+
+		stl::member_find_and_erase(m_entityToAttachmentCRCMap, entityId);
+	}
+	break;
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::ProcessChanges()
+{
+	auto processCommand = [this](const SCommand& cmd) {
+		if (cmd.pChildInstance) // Insert command
+		{
+			m_attachmentCRCToCharacterMap.emplace(cmd.attachmentCRC, cmd.pChildInstance);
+			m_charactersCache.push_back(cmd.pChildInstance);
+		}
+		else // Erase command
+		{
+			auto foundRange = m_attachmentCRCToCharacterMap.equal_range(cmd.attachmentCRC);
+			if (foundRange.first != foundRange.second)
+			{
+				for (auto itrPtrCharacter = m_charactersCache.begin(); itrPtrCharacter != m_charactersCache.end();)
+				{
+					using TKeyValuePair = decltype(m_attachmentCRCToCharacterMap)::value_type;
+					auto foundItrKvpair = std::find_if(foundRange.first, foundRange.second, [&](TKeyValuePair& kvpair) { return *itrPtrCharacter == kvpair.second; });
+					if (foundRange.second != foundItrKvpair)
+					{
+						itrPtrCharacter = m_charactersCache.erase(itrPtrCharacter);
+					}
+					else { ++itrPtrCharacter; }
+				}
+				m_attachmentCRCToCharacterMap.erase(foundRange.first, foundRange.second);
+			}
+		}
+	};
+
+	SCommand cmd;
+	while (m_commandQueue.try_pop_front(cmd))
+	{
+		processCommand(cmd);
+	}
+
+	while (!m_fallbackCommandQueue.empty())
+	{
+		cmd = m_fallbackCommandQueue.front();
+		m_fallbackCommandQueue.pop();
+		processCommand(cmd);
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::QueueInsert(uint32 attachmentCRC, CCharInstance* pCharInstance)
+{
+	CRY_ASSERT(pCharInstance);
+	SCommand cmd;
+	cmd.attachmentCRC = attachmentCRC;
+	cmd.pChildInstance = pCharInstance;
+
+	bool success = m_commandQueue.push_back(cmd);
+	if (!success)
+	{
+		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "Overflow of the attached characters cache command queue! Using fallback queue with dynamic allocation.");
+		m_fallbackCommandQueue.push(cmd);
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::QueueErase(uint32 attachmentCRC)
+{
+	SCommand cmd;
+	cmd.attachmentCRC = attachmentCRC;
+	cmd.pChildInstance = nullptr;
+
+	bool success = m_commandQueue.push_back(cmd);
+	if (!success)
+	{
+		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "Overflow of the attached characters cache command queue! Using fallback queue with dynamic allocation.");
+		m_fallbackCommandQueue.push(cmd);
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::InsertEntityCharactersIntoCache(IEntity* pEntity)
+{
+	CRY_ASSERT(pEntity);
+	auto itrKvpair = m_entityToAttachmentCRCMap.find(pEntity->GetId());
+	if (CRY_VERIFY(itrKvpair != m_entityToAttachmentCRCMap.end()))
+	{
+		uint32 attachmentCRC = itrKvpair->second;
+
+		for (int i = 0; i < pEntity->GetSlotCount(); ++i)
+		{
+			if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(pEntity->GetCharacter(i)))
+			{
+				QueueInsert(attachmentCRC, pChildInstance);
+			}
+		}
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::RemoveEntityCharactersFromCache(EntityId entityId)
+{
+	auto itrKvpair = m_entityToAttachmentCRCMap.find(entityId);
+	if (CRY_VERIFY(itrKvpair != m_entityToAttachmentCRCMap.end()))
+	{
+		uint32 attachmentCRC = itrKvpair->second;
+		QueueErase(attachmentCRC);
+	}
+}
+
+void CAttachmentManager::SAttachedCharacterCache::UpdateEntityCharactersInCache(IEntity* pEntity)
+{
+	CRY_ASSERT(pEntity);
+	RemoveEntityCharactersFromCache(pEntity->GetId());
+	InsertEntityCharactersIntoCache(pEntity);
+}
+
+CAttachmentManager::SAttachedCharacterCache::~SAttachedCharacterCache()
+{
+	for (auto itrKvpair = m_entityToAttachmentCRCMap.begin(); itrKvpair != m_entityToAttachmentCRCMap.end();)
+	{
+		const EntityId entityId = itrKvpair->first;
+
+		if (gEnv->pEntitySystem)
+		{
+			gEnv->pEntitySystem->RemoveEntityEventListener(entityId, EEntityEvent::SlotChanged, this);
+			gEnv->pEntitySystem->RemoveEntityEventListener(entityId, EEntityEvent::Remove, this);
+		}
+
+		RemoveEntityCharactersFromCache(entityId);
+
+		itrKvpair = m_entityToAttachmentCRCMap.erase(itrKvpair);
+	}
+	
+	ProcessChanges();
+
+	CRY_ASSERT(m_charactersCache.empty());
+	CRY_ASSERT(m_attachmentCRCToCharacterMap.empty());
+	CRY_ASSERT(m_entityToAttachmentCRCMap.empty());
+}
+
+void CAttachmentManager::SAttachedCharacterCache::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
+{
+	CRY_ASSERT(pEntity);
+	switch (event.event)
+	{
+	case EEntityEvent::SlotChanged:
+		UpdateEntityCharactersInCache(pEntity);
+		break;
+	case EEntityEvent::Remove:
+		RemoveEntityCharactersFromCache(pEntity->GetId());
+		break;
+	}
 }

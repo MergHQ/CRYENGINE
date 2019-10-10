@@ -1,6 +1,7 @@
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryRenderer/IRenderer.h>
 
 class CLateCameraInjectionEventComponent final : public IEntityComponent
 {

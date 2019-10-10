@@ -65,6 +65,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CConnectionsWidget::OnContextMenu);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]()
 		{
+			StopConnectionExecution();
 			RefreshConnectionProperties();
 			UpdateSelectedConnections();
 		});
@@ -100,6 +101,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 
 	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
+			StopConnectionExecution();
 			m_pTreeView->selectionModel()->clear();
 			RefreshConnectionProperties();
 		}, reinterpret_cast<uintptr_t>(this));
@@ -115,6 +117,8 @@ CConnectionsWidget::~CConnectionsWidget()
 	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalControlsDuplicated.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+
+	StopConnectionExecution();
 
 	m_pConnectionModel->DisconnectSignals();
 	m_pConnectionModel->deleteLater();
@@ -296,6 +300,12 @@ void CConnectionsWidget::ExecuteConnection()
 	{
 		CAudioControlsEditorPlugin::ExecuteTriggerEx(m_pControl->GetName(), ConstructTemporaryTriggerConnections(m_pControl));
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::StopConnectionExecution()
+{
+	CAudioControlsEditorPlugin::StopTriggerExecution();
 }
 
 //////////////////////////////////////////////////////////////////////////

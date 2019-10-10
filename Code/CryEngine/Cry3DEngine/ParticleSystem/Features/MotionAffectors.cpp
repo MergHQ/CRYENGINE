@@ -174,7 +174,7 @@ private:
 		}
 	}
 
-	ILINE static Vec3v Potential(const Vec4v sample)
+	static Vec3v Potential(const Vec4v sample)
 	{
 		const Vec4v offy = ToVec4v(Vec4(149, 311, 191, 491));
 		const Vec4v offz = ToVec4v(Vec4(233, 197, 43, 59));
@@ -185,7 +185,7 @@ private:
 		return potential;
 	}
 
-	ILINE static Vec3v Curl(const Vec4v sample)
+	static Vec3v Curl(const Vec4v sample)
 	{
 		Vec4v gradX, gradY, gradZ;
 		const Vec4v offy = ToVec4v(Vec4(149, 311, 191, 491));
@@ -305,7 +305,7 @@ public:
 
 private:
 	template<const bool useAxis>
-	ILINE void ComputeGravity(CParticleComponentRuntime& runtime, IOVec3Stream localAccelerations)
+	void ComputeGravity(CParticleComponentRuntime& runtime, IOVec3Stream localAccelerations)
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
