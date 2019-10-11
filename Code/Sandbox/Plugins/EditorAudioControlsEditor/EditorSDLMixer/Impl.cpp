@@ -123,7 +123,18 @@ void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos
 		{
 			if (fileInfo.isFile())
 			{
-				fileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive), parentFolderName);
+				bool isSupportedType = false;
+
+				for (auto const& pair : CryAudio::Impl::SDL_mixer::g_supportedExtensions)
+				{
+					if (fileInfo.suffix().compare(pair.first, Qt::CaseInsensitive) == 0)
+					{
+						isSupportedType = true;
+						break;
+					}
+				}
+
+				fileImportInfos.emplace_back(fileInfo, isSupportedType, parentFolderName);
 			}
 		}
 
@@ -179,8 +190,12 @@ void CImpl::Initialize(
 	m_implName = systemImplInfo.name;
 
 	SetImplInfo(implInfo);
-	extensionFilters = s_extensionFilters;
-	supportedFileTypes = s_supportedFileTypes;
+
+	for (auto const& pair : CryAudio::Impl::SDL_mixer::g_supportedExtensions)
+	{
+		extensionFilters.push_back({ pair.second, pair.first });
+		supportedFileTypes.push_back(pair.first);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -901,8 +916,18 @@ bool CImpl::CanDropExternalData(QMimeData const* const pData) const
 		for (auto const& filePath : allFiles)
 		{
 			QFileInfo const& fileInfo(filePath);
+			bool isSupportedType = false;
 
-			if (fileInfo.isFile() && s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive))
+			for (auto const& pair : CryAudio::Impl::SDL_mixer::g_supportedExtensions)
+			{
+				if (fileInfo.suffix().compare(pair.first, Qt::CaseInsensitive) == 0)
+				{
+					isSupportedType = true;
+					break;
+				}
+			}
+
+			if (fileInfo.isFile() && isSupportedType)
 			{
 				hasValidData = true;
 				break;
@@ -946,7 +971,18 @@ bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& file
 
 				if (fileInfo.isFile())
 				{
-					fileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
+					bool isSupportedType = false;
+
+					for (auto const& pair : CryAudio::Impl::SDL_mixer::g_supportedExtensions)
+					{
+						if (fileInfo.suffix().compare(pair.first, Qt::CaseInsensitive) == 0)
+						{
+							isSupportedType = true;
+							break;
+						}
+					}
+
+					fileImportInfos.emplace_back(fileInfo, isSupportedType);
 				}
 				else
 				{

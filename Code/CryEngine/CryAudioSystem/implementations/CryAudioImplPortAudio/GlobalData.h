@@ -30,6 +30,10 @@ constexpr char const* g_szTrueValue = "true";
 constexpr char const* g_szStartValue = "start";
 constexpr char const* g_szStopValue = "stop";
 
+static std::unordered_map<char const*, char const*> const g_supportedExtensions
+{
+	{ "wav", "Wave (Microsoft)" } };
+
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
 {
