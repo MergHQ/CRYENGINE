@@ -3752,17 +3752,17 @@ bool CD3D9Renderer::RT_ReadTexture(void* pDst, int destinationWidth, int destina
 
 		for (unsigned int i = 0; i < destinationHeight; ++i)
 		{
-			uint8* pSrc(static_cast<uint8*>(pData) + i * rowPitch);
-			uint8* pDst(static_cast<uint8*>(pDst)  + i * destinationWidth * dstStride);
+			uint8* pLocalSrc(static_cast<uint8*>(pData) + i * rowPitch);
+			uint8* pLocalDst(static_cast<uint8*>(pDst)  + i * destinationWidth * dstStride);
 
-			for (unsigned int j = 0; j < destinationWidth; ++j, pSrc += srcStride, pDst += dstStride)
+			for (unsigned int j = 0; j < destinationWidth; ++j, pLocalSrc += srcStride, pLocalDst += dstStride)
 			{
-				pDst[0] = pSrc[0];
-				pDst[1] = pSrc[1];
-				pDst[2] = pSrc[2];
+				pLocalDst[0] = pLocalSrc[0];
+				pLocalDst[1] = pLocalSrc[1];
+				pLocalDst[2] = pLocalSrc[2];
 
 				if (dstFormat == EReadTextureFormat::RGBA8)
-					pDst[3] = 255;
+					pLocalDst[3] = 255;
 			}
 		}
 

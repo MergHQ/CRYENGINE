@@ -69,12 +69,12 @@ public:
 		{
 			{ 
 				// Plug-ins made default with version 1
-				{ 1, Cry::SPluginDefinition { EType::Native, "CryDefaultEntities" } },
-				{ 1, Cry::SPluginDefinition { EType::Native, "CrySensorSystem" } },
-				{ 1, Cry::SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
+				{ 1, Cry::SPluginDefinition(EType::Native, "CryDefaultEntities") },
+				{ 1, Cry::SPluginDefinition(EType::Native, "CrySensorSystem") },
+				{ 1, Cry::SPluginDefinition(EType::Native, "CryPerceptionSystem") },
 				// Plug-ins made default with version 3
-				{ 3, Cry::SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::PS4 } } },
-				{ 3, Cry::SPluginDefinition { EType::Native, "CryGamePlatformPSN", { EPlatform::PS4 } } },
+				{ 3, Cry::SPluginDefinition(EType::Native, "CryGamePlatform", EPlatform::PS4) },
+				{ 3, Cry::SPluginDefinition(EType::Native, "CryGamePlatformPSN", EPlatform::PS4) },
 			}
 		};
 	}
