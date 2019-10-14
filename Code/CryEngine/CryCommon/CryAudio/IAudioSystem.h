@@ -439,13 +439,6 @@ struct IAudioSystem
 	virtual void UnloadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Reloads all of the audio controls and their connections.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 */
-	virtual void ReloadControlsData(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Used to register a callback function that is called whenever a given event occurred.
 	 * @param func - address of the function to be called.
 	 * @param pObjectToListenTo - address of the object in which events one is interested. If set to nullptr events of the given type produced by any object will be listened to.

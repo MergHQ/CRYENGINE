@@ -1080,6 +1080,14 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
+	case ESYSTEM_EVENT_AUDIO_RELOAD_CONTROLS_DATA:
+		{
+			SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData;
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 	default:
 		{
@@ -1645,16 +1653,6 @@ void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequ
 	PushRequest(request);
 }
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::ReloadControlsData(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData;
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-#endif  // CRY_AUDIO_USE_DEBUG_CODE
-}
 
 ///////////////////////////////////////////////////////////////////////////
 char const* CSystem::GetConfigPath() const

@@ -46,7 +46,6 @@ public:
 	virtual void        DeactivateContext(ContextId const contextId) override;
 	virtual void        LoadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        UnloadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void        ReloadControlsData(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override;
 	virtual void        RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void        ExternalUpdate() override;
