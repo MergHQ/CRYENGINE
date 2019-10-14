@@ -72,7 +72,7 @@ CDataPanel::CDataPanel(CImpl const& impl, QWidget* const pParent)
 
 	QObject::connect(m_pImportButton, &QPushButton::clicked, this, &CDataPanel::OnImportFiles);
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CDataPanel::OnContextMenu);
-	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataPanel::StopEvent);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CDataPanel::StopEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
