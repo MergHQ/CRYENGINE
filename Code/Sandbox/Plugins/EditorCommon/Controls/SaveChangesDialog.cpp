@@ -3,38 +3,50 @@
 #include "StdAfx.h"
 #include "SaveChangesDialog.h"
 
-#include <QLabel>
-#include <QGridLayout>
-#include <QAbstractButton>
-
 #include "CryIcon.h"
+
+#include <QAbstractButton>
+#include <QGridLayout>
+#include <QLabel>
+#include <QScrollArea>
 
 CSaveChangesDialog::CSaveChangesDialog()
 	: CEditorDialog(QStringLiteral("SaveChangesDialog"), nullptr, false)
+	, m_buttonPressed(QDialogButtonBox::StandardButton::Cancel)
 {
-	setWindowTitle(tr("Unsaved changes."));
-
-	m_buttonPressed = QDialogButtonBox::StandardButton::Cancel;
-	auto grid = new QGridLayout(this);
+	setWindowTitle(tr("Unsaved changes"));
 
 	const int iconSize = 48;
-	m_iconLabel = new QLabel(this);
-	m_iconLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	m_iconLabel->setPixmap(CryIcon("icons:Dialogs/dialog-warning.ico").pixmap(iconSize, iconSize, QIcon::Normal, QIcon::On));
+	m_pIconLabel = new QLabel(this);
+	m_pIconLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	m_pIconLabel->setPixmap(CryIcon("icons:Dialogs/dialog-warning.ico").pixmap(iconSize, iconSize, QIcon::Normal, QIcon::On));
 
-	m_buttons = new QDialogButtonBox(this);
-	m_buttons->setStandardButtons(QDialogButtonBox::Discard | QDialogButtonBox::Cancel);
+	m_pSummaryLabel = new QLabel(this);
 
-	m_display = new QLabel();
+	QScrollArea* pScrollArea = new QScrollArea(this);
+	m_pFileListLabel = new QLabel(pScrollArea);
+	pScrollArea->setWidget(m_pFileListLabel);
 
-	grid->addWidget(m_iconLabel, 0, 0, Qt::AlignRight | Qt::AlignVCenter);
-	grid->addWidget(m_display, 0, 1, -1, -1);
-	grid->addWidget(m_buttons, 1, 0, -1, -1, Qt::AlignRight);
-	grid->setVerticalSpacing(20);
+	m_pButtons = new QDialogButtonBox(this);
+	m_pButtons->setStandardButtons(QDialogButtonBox::Discard | QDialogButtonBox::Cancel);
 
-	connect(m_buttons, &QDialogButtonBox::clicked, this, &CSaveChangesDialog::ButtonClicked);
+	QVBoxLayout* pMainLayout = new QVBoxLayout(this);
+	QHBoxLayout* pUpperLayout = new QHBoxLayout();
+	pUpperLayout->addWidget(m_pSummaryLabel);
+	pMainLayout->addLayout(pUpperLayout);
+
+	QHBoxLayout* pMidLayout = new QHBoxLayout;
+	pMidLayout->addWidget(m_pIconLabel);
+	pMidLayout->addWidget(pScrollArea);
+	pMainLayout->addLayout(pMidLayout);
+
+	pMainLayout->addWidget(m_pButtons, 0, Qt::AlignRight);
+	pMainLayout->setSpacing(20);
+
+	connect(m_pButtons, &QDialogButtonBox::clicked, this, &CSaveChangesDialog::ButtonClicked);
 
 	SetResizable(true);
+	resize(500, 270);
 }
 
 void CSaveChangesDialog::AddChangeList(const string& name, const std::vector<string>& changes)
@@ -44,22 +56,29 @@ void CSaveChangesDialog::AddChangeList(const string& name, const std::vector<str
 
 void CSaveChangesDialog::FillText()
 {
-	QString text = "There are unsaved changes of the following files:\n\n";
+	int totalChanges = 0;
+	QString warningBodyText;
 	for (const auto& changeList : m_changeLists)
 	{
-		text += changeList.m_name + "\n";
+		warningBodyText += changeList.m_name + "\n";
 		for (const auto& file : changeList.m_changes)
 		{
-			text.append(QString("    %1\n").arg(file.c_str()));
+			warningBodyText.append(QString("    %1\n").arg(file.c_str()));
+			++totalChanges;
 		}
-		text += "\n";
+		warningBodyText += "\n";
 	}
-	m_display->setText(text);
+
+	QString headerText = QString("There are %1 unsaved changes of the following files:").arg(totalChanges);
+	m_pSummaryLabel->setText(headerText);
+
+	m_pFileListLabel->setText(warningBodyText);
+	m_pFileListLabel->adjustSize();
 }
 
 void CSaveChangesDialog::ButtonClicked(QAbstractButton* button)
 {
-	m_buttonPressed = m_buttons->standardButton(button);
+	m_buttonPressed = m_pButtons->standardButton(button);
 	accept();
 }
 
