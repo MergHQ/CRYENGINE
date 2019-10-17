@@ -25,7 +25,7 @@ namespace Cry
 			{
 				switch (event.event)
 				{
-					case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED: m_pEntity->UpdateComponentEventMask(this); break;
+					case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED: m_pEntity->UpdateComponentEventMask(this); Physicalize(); break;
 					case ENTITY_EVENT_PHYS_POSTSTEP: OnPostStep(event.fParam[0]); break;
 				}
 			}
@@ -51,6 +51,7 @@ namespace Cry
 				desc.AddMember(&CSampleActorComponent::m_friction, 'fric', "Friction", "Friction", "Ground friction when standing still", 1.0f);
 				desc.AddMember(&CSampleActorComponent::m_minMass, 'gmas', "MinGroundMass", "MinGroundMass", "Only check ground colliders with this or higher masses", 1.0f);
 				desc.AddMember(&CSampleActorComponent::m_legStiffness, 'stif', "LegStiffness", "LegStiffness", "Leg stiffness", 10.0f);
+				desc.AddMember(&CSampleActorComponent::m_skelStiffness, 'kstf', "SkelStiffness", "SkelStiffness", "Defines stiffness of the attached alive skeleton of animated mesh components", 80.0f);
 			}
 
 
@@ -78,6 +79,7 @@ namespace Cry
 			float m_friction     = 1.0f;
 			float m_minMass      = 1.0f;
 			float m_legStiffness = 10.0f;
+			float m_skelStiffness= 80.0f;
 
 		protected:
 			Vec3  m_velMove = Vec3(ZERO);

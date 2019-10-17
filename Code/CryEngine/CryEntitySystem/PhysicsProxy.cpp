@@ -783,7 +783,7 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 		}
 
 		previousPhysType = m_pPhysicalEntity->GetType();
-		if (params.type == PE_ARTICULATED && previousPhysType == PE_LIVING)
+		if (params.type == PE_ARTICULATED && (previousPhysType == PE_LIVING || previousPhysType == PE_WALKINGRIGID))
 		{
 			pe_status_dynamics sd;
 			m_pPhysicalEntity->GetStatus(&sd);
@@ -819,7 +819,7 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 		break;
 	case PE_ARTICULATED:
 		// Check for Special case, converting from living characters to the rag-doll.
-		if (previousPhysType != PE_LIVING)
+		if (previousPhysType != PE_LIVING && previousPhysType != PE_WALKINGRIGID)
 		{
 			CreatePhysicalEntity(params);
 #if defined(USE_GEOM_CACHES)
@@ -1068,7 +1068,7 @@ void CEntityPhysics::PhysicalizeSimple(SEntityPhysicalizeParams& params)
 		AddSlotGeometry(params.nSlot, params);
 	}
 
-	if ((params.type == PE_RIGID || params.type == PE_LIVING) && m_pPhysicalEntity)
+	if ((params.type == PE_RIGID || params.type == PE_LIVING || params.type == PE_WALKINGRIGID) && m_pPhysicalEntity)
 	{
 		// Rigid bodies should report at least one collision per frame.
 		pe_simulation_params sp;
@@ -1174,6 +1174,11 @@ void CEntityPhysics::RemoveSlotGeometry(int nSlot)
 		pe_action_move_parts amp;
 		if (pSlot->GetCharacter() && pSlot->GetCharacter()->GetObjectType() != CGA)
 		{
+			if (m_pPhysicalEntity->GetType() == PE_LIVING || m_pPhysicalEntity->GetType() == PE_WALKINGRIGID)
+			{
+				pSlot->GetCharacter()->GetISkeletonPose()->DestroyCharacterPhysics();
+				return;
+			}
 			amp.idEnd = EntityPhysicsUtils::PARTID_MAX_SLOTS - 1;
 		}
 		else
@@ -1714,7 +1719,7 @@ bool CEntityPhysics::PhysicalizeCharacter(SEntityPhysicalizeParams& params)
 	pfd.iForeignData = PHYS_FOREIGN_ID_ENTITY;
 	pfd.iForeignFlagsOR = PFF_UNIMPORTANT;
 
-	if (!m_pPhysicalEntity || params.type == PE_LIVING)
+	if (!m_pPhysicalEntity || params.type == PE_LIVING || params.type == PE_WALKINGRIGID)
 	{
 		if (params.fStiffnessScale < 0)
 			params.fStiffnessScale = 1.0f;

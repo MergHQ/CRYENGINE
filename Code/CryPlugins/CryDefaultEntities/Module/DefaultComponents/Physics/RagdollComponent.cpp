@@ -86,7 +86,10 @@ CBaseMeshComponent *CRagdollComponent::GetCharMesh() const
 void CRagdollComponent::Physicalize()
 {
 	if (CBaseMeshComponent *pMesh = GetCharMesh())
+	{
+		pMesh->m_ragdollLod = 1;
 		pMesh->m_ragdollStiffness = m_stiffness * (m_extraStiff ? -1 : 1);
+	}
 
 	CRigidBodyComponent::Physicalize();
 }

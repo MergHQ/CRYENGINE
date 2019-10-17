@@ -79,6 +79,11 @@ namespace Cry
 					if (ISurfaceType* pSurfaceType = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(surfaceType))
 					{
 						pGeomParams->surface_idx = pSurfaceType->GetId();
+						if (pSurfaceType->GetPhyscalParams().collType >= 0)
+						{
+							pGeomParams->flags &= ~(geom_collides | geom_floats);
+							pGeomParams->flags |= pSurfaceType->GetPhyscalParams().collType;
+						}
 					}
 					else
 					{

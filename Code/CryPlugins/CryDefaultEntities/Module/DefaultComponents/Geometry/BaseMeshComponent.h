@@ -256,7 +256,7 @@ protected:
 					SEntityPhysicalizeParams physParams;
 					physParams.nSlot = GetEntitySlotId();
 					physParams.type = pPhysicalEntity->GetType();
-					physParams.nLod = 1; // used for ragdolls
+					physParams.nLod = m_ragdollLod;
 					physParams.fStiffnessScale = m_ragdollStiffness;
 
 					switch (m_physics.m_weightType)
@@ -299,6 +299,7 @@ public:
 	virtual SPhysicsParameters& GetPhysicsParameters()       { return m_physics; }
 	const SPhysicsParameters&   GetPhysicsParameters() const { return m_physics; }
 
+	int   m_ragdollLod       = 1;
 	float m_ragdollStiffness = 0;
 
 protected:

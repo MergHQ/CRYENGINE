@@ -1,5 +1,7 @@
 #include "StdAfx.h"
 
+#include "../Geometry/AnimatedMeshComponent.h"
+#include "../Geometry/AdvancedAnimationComponent.h"
 #include "SampleRigidbodyActorComponent.h"
 #include <CryPhysics/IPhysics.h>
 
@@ -107,6 +109,17 @@ void CSampleActorComponent::Physicalize()
 	SEntityPhysicalizeParams epp;
 	epp.type = PE_NONE;
 	m_pEntity->Physicalize(epp);
+
+	CBaseMeshComponent *pSkelMesh = nullptr;
+	if (IEntityComponent *pChar = GetEntity()->GetComponent<CAdvancedAnimationComponent>())
+		pSkelMesh = static_cast<CAdvancedAnimationComponent*>(pChar);
+	if (IEntityComponent *pChar = GetEntity()->GetComponent<CAnimatedMeshComponent>())
+		pSkelMesh = static_cast<CAnimatedMeshComponent*>(pChar);
+	if (pSkelMesh)
+	{
+		pSkelMesh->m_ragdollStiffness = m_skelStiffness;
+		pSkelMesh->m_ragdollLod = 0;
+	}
 
 	IPhysicalEntity *pent = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_WALKINGRIGID);
 	m_pEntity->AssignPhysicalEntity(pent);
