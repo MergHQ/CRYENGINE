@@ -751,14 +751,7 @@ bool CSystemSourceModel::setData(QModelIndex const& index, QVariant const& value
 				{
 					if (value.canConvert<QString>())
 					{
-						string const& oldName = pAsset->GetName();
-						string const& newName = QtUtil::ToString(value.toString());
-
-						if (!newName.empty() && newName.compareNoCase(oldName) != 0)
-						{
-							pAsset->SetName(AssetUtils::GenerateUniqueLibraryName(newName));
-						}
-
+						pAsset->SetName(QtUtil::ToString(value.toString()));
 						wasDataChanged = true;
 					}
 

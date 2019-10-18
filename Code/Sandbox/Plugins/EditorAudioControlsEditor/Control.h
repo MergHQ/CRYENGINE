@@ -61,8 +61,7 @@ public:
 
 private:
 
-	void SignalOnBeforeControlModified();
-	void SignalOnAfterControlModified();
+	void SignalControlModified();
 	void SignalConnectionAdded();
 	void SignalConnectionRemoved();
 	void SignalConnectionModified();

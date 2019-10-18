@@ -64,8 +64,7 @@ public:
 
 	void             ChangeContext(CryAudio::ContextId const oldContextId, CryAudio::ContextId const newContextId);
 
-	void             OnBeforeControlModified(CControl* const pControl);
-	void             OnAfterControlModified(CControl* const pControl);
+	void             OnControlModified(CControl* const pControl);
 	void             OnConnectionAdded(CControl* const pControl);
 	void             OnConnectionRemoved(CControl* const pControl);
 	void             OnAssetRenamed(CAsset* const pAsset);

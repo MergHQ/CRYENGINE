@@ -30,21 +30,24 @@ void CControl::SetName(string const& name)
 
 	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == EAssetFlags::None) && g_nameValidator.IsValid(fixedName))
 	{
-		SignalOnBeforeControlModified();
+		string const oldName = m_name;
 
 		if (m_type != EAssetType::State)
 		{
-			m_name = AssetUtils::GenerateUniqueControlName(fixedName, m_type);
+			m_name = AssetUtils::GenerateUniqueControlName(fixedName, m_type, this);
 			m_id = AssetUtils::GenerateUniqueAssetId(m_name, m_type);
 		}
 		else
 		{
-			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, m_pParent);
+			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, this, m_pParent);
 			m_id = AssetUtils::GenerateUniqueStateId(m_pParent->GetName(), m_name);
 		}
 
-		SignalOnAfterControlModified();
-		g_assetsManager.OnAssetRenamed(this);
+		if (m_name != oldName)
+		{
+			SignalControlModified();
+			g_assetsManager.OnAssetRenamed(this);
+		}
 	}
 }
 
@@ -53,9 +56,8 @@ void CControl::SetDescription(string const& description)
 {
 	if (description != m_description)
 	{
-		SignalOnBeforeControlModified();
 		m_description = description;
-		SignalOnAfterControlModified();
+		SignalControlModified();
 	}
 }
 
@@ -131,9 +133,8 @@ void CControl::SetContextId(CryAudio::ContextId const contextId)
 {
 	if (m_contextId != contextId)
 	{
-		SignalOnBeforeControlModified();
 		m_contextId = contextId;
-		SignalOnAfterControlModified();
+		SignalControlModified();
 	}
 }
 
@@ -142,9 +143,8 @@ void CControl::SetAutoLoad(bool const isAutoLoad)
 {
 	if (isAutoLoad != m_isAutoLoad)
 	{
-		SignalOnBeforeControlModified();
 		m_isAutoLoad = isAutoLoad;
-		SignalOnAfterControlModified();
+		SignalControlModified();
 	}
 }
 
@@ -189,7 +189,7 @@ void CControl::AddConnection(IConnection* const pIConnection)
 		pIConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
 		m_connections.push_back(pIConnection);
 		SignalConnectionAdded();
-		SignalOnAfterControlModified();
+		SignalControlModified();
 	}
 }
 
@@ -212,7 +212,7 @@ void CControl::RemoveConnection(Impl::IItem* const pIItem)
 
 			m_connections.erase(iter);
 			SignalConnectionRemoved();
-			SignalOnAfterControlModified();
+			SignalControlModified();
 			break;
 		}
 
@@ -235,7 +235,7 @@ void CControl::ClearConnections()
 		}
 
 		m_connections.clear();
-		SignalOnAfterControlModified();
+		SignalControlModified();
 	}
 }
 
@@ -274,21 +274,12 @@ void CControl::ReloadConnections()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SignalOnAfterControlModified()
+void CControl::SignalControlModified()
 {
 	if (!g_assetsManager.IsLoading())
 	{
-		g_assetsManager.OnAfterControlModified(this);
+		g_assetsManager.OnControlModified(this);
 		SetModified(true);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CControl::SignalOnBeforeControlModified()
-{
-	if (!g_assetsManager.IsLoading())
-	{
-		g_assetsManager.OnBeforeControlModified(this);
 	}
 }
 
@@ -307,7 +298,7 @@ void CControl::SignalConnectionRemoved()
 //////////////////////////////////////////////////////////////////////////
 void CControl::SignalConnectionModified()
 {
-	SignalOnAfterControlModified();
+	SignalControlModified();
 }
 
 //////////////////////////////////////////////////////////////////////////

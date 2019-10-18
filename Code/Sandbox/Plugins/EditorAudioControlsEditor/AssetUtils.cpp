@@ -14,7 +14,7 @@ namespace ACE
 namespace AssetUtils
 {
 //////////////////////////////////////////////////////////////////////////
-string GenerateUniqueName(string const& name, EAssetType const type, CAsset* const pParent)
+string GenerateUniqueName(string const& name, EAssetType const type, CAsset* const pAsset, CAsset* const pParent)
 {
 	string finalName = name;
 
@@ -28,7 +28,7 @@ string GenerateUniqueName(string const& name, EAssetType const type, CAsset* con
 		{
 			CAsset const* const pChild = pParent->GetChild(i);
 
-			if ((pChild != nullptr) && (pChild->GetType() == type))
+			if ((pChild->GetType() == type) && (pChild != pAsset))
 			{
 				names.emplace_back(pChild->GetName());
 			}
@@ -41,7 +41,7 @@ string GenerateUniqueName(string const& name, EAssetType const type, CAsset* con
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GenerateUniqueLibraryName(string const& name)
+string GenerateUniqueLibraryName(string const& name, CAsset* const pAsset)
 {
 	size_t const numLibraries = g_assetsManager.GetLibraryCount();
 	AssetNames names;
@@ -51,7 +51,7 @@ string GenerateUniqueLibraryName(string const& name)
 	{
 		CLibrary const* const pLibrary = g_assetsManager.GetLibrary(i);
 
-		if (pLibrary != nullptr)
+		if (pLibrary != pAsset)
 		{
 			names.emplace_back(pLibrary->GetName());
 		}
@@ -61,17 +61,17 @@ string GenerateUniqueLibraryName(string const& name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GenerateUniqueControlName(string const& name, EAssetType const type)
+string GenerateUniqueControlName(string const& name, EAssetType const type, CControl* const pControl)
 {
 	Controls const& controls(g_assetsManager.GetControls());
 	AssetNames names;
 	names.reserve(controls.size());
 
-	for (auto const* const pControl : controls)
+	for (auto const* const pOtherControl : controls)
 	{
-		if (type == pControl->GetType())
+		if ((type == pOtherControl->GetType()) && (pControl != pOtherControl))
 		{
-			names.emplace_back(pControl->GetName());
+			names.emplace_back(pOtherControl->GetName());
 		}
 	}
 

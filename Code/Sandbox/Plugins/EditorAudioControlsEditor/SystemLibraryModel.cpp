@@ -472,39 +472,7 @@ bool CSystemLibraryModel::setData(QModelIndex const& index, QVariant const& valu
 				{
 					if (value.canConvert<QString>())
 					{
-						string const& oldName = pAsset->GetName();
-						string const& newName = QtUtil::ToString(value.toString());
-
-						if (!newName.empty() && newName.compareNoCase(oldName) != 0)
-						{
-							EAssetType const assetType = pAsset->GetType();
-
-							switch (assetType)
-							{
-							case EAssetType::Preload:     // Intentional fall-through.
-							case EAssetType::Parameter:   // Intentional fall-through.
-							case EAssetType::Switch:      // Intentional fall-through.
-							case EAssetType::Trigger:     // Intentional fall-through.
-							case EAssetType::Environment: // Intentional fall-through.
-							case EAssetType::Setting:
-								{
-									pAsset->SetName(AssetUtils::GenerateUniqueControlName(newName, assetType));
-									break;
-								}
-							case EAssetType::State: // Intentional fall-through.
-							case EAssetType::Folder:
-								{
-									pAsset->SetName(AssetUtils::GenerateUniqueName(newName, assetType, pAsset->GetParent()));
-									break;
-								}
-							default:
-								{
-									CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The item type '%d' is not handled!)", assetType);
-									break;
-								}
-							}
-						}
-
+						pAsset->SetName(QtUtil::ToString(value.toString()));
 						wasDataChanged = true;
 					}
 

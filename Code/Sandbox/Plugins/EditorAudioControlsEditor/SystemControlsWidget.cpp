@@ -245,7 +245,7 @@ void CSystemControlsWidget::InitAddControlWidget(QVBoxLayout* const pLayout)
 	pAddButtonMenu->addAction(GetAssetIcon(EAssetType::Library), tr("Library"), [&]()
 		{
 			m_isCreatedFromMenu = true;
-			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library"));
+			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library", nullptr));
 		});
 
 	pAddButtonMenu->addSeparator();
@@ -370,11 +370,11 @@ CControl* CSystemControlsWidget::CreateControl(string const& name, EAssetType co
 
 	if (type != EAssetType::State)
 	{
-		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueControlName(name, type), type, pParent);
+		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueControlName(name, type, nullptr), type, pParent);
 	}
 	else
 	{
-		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueName(name, type, pParent), type, pParent);
+		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueName(name, type, nullptr, pParent), type, pParent);
 	}
 
 	return pControl;
@@ -384,7 +384,7 @@ CControl* CSystemControlsWidget::CreateControl(string const& name, EAssetType co
 CAsset* CSystemControlsWidget::CreateFolder(CAsset* const pParent)
 {
 	m_isCreatedFromMenu = true;
-	return g_assetsManager.CreateFolder(AssetUtils::GenerateUniqueName("new_folder", EAssetType::Folder, pParent), pParent);
+	return g_assetsManager.CreateFolder(AssetUtils::GenerateUniqueName("new_folder", EAssetType::Folder, nullptr, pParent), pParent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -435,7 +435,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 	pAddMenu->addAction(GetAssetIcon(EAssetType::Library), tr("Library"), [&]()
 		{
 			m_isCreatedFromMenu = true;
-			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library"));
+			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library", nullptr));
 		});
 
 	pAddMenu->addSeparator();
