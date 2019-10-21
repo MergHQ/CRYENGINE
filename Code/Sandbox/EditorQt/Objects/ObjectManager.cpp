@@ -430,31 +430,31 @@ public:
 		}
 	}
 protected:
-	virtual const char* GetDescription() override 
-	{ 
+	virtual const char* GetDescription() override
+	{
 		string description = "";
 		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_objectGUID);
 		if (pObject)
 		{
 			description.Format("New object %s", pObject->GetName());
 		}
-		return  description;
+		return description;
 	}
-	virtual const char* GetObjectName()  override 
-	{ 
+	virtual const char* GetObjectName()  override
+	{
 		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_objectGUID);
-		if(pObject)
+		if (pObject)
 		{
 			return pObject->GetName();
 		}
-		return ""; 
+		return "";
 	}
 
-	virtual void        Undo(bool bUndo) override
+	virtual void Undo(bool bUndo) override
 	{
 		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_objectGUID);
 		//if the object does not exist it means it has been deleted after creation and no undo for that deletion has been registered
-		//This happens in one specific case which is the deletion of a prefab item asset. 
+		//This happens in one specific case which is the deletion of a prefab item asset.
 		//The item deletion causes all it's instanced CPrefabObjects to be deleted without an undo
 		if (!pObject)
 		{
@@ -464,7 +464,7 @@ protected:
 			return;
 		}
 
-		//If m_object was a prefab child and the prefab parent was then deleted the prefab delete undo will create a NEW object. 
+		//If m_object was a prefab child and the prefab parent was then deleted the prefab delete undo will create a NEW object.
 		//m_object will point to a stale object (with an id that's still the ID in prefab), this means that we need to reassign the object pointer on undo to the new one recreated by the prefab
 		m_object = pObject;
 
@@ -605,7 +605,7 @@ public:
 	{
 		CRY_ASSERT(pObject != 0);
 		m_objectsGuids = { pObject->GetId() };
-		m_bUndoSelect = !pObject->IsSelected(); 
+		m_bUndoSelect = !pObject->IsSelected();
 		m_objectName = pObject->GetName();
 	}
 
@@ -700,7 +700,17 @@ void CBatchProcessDispatcher::Start(const CBaseObjectsArray& objects, bool force
 	if (objects.size() > 1 || force)
 	{
 		m_shouldDispatch = true;
-		GetIEditorImpl()->GetObjectManager()->signalBatchProcessStarted(objects);
+		GetIEditorImpl()->GetObjectManager()->signalBatchProcessStarted(objects, {});
+	}
+}
+
+void CBatchProcessDispatcher::Start(const CBaseObjectsArray& objects, const std::vector<CObjectLayer*>& layers, bool force /*= false*/)
+{
+	if (objects.size() > 1 || layers.size() > 0 || force)
+	{
+		m_shouldDispatch = true;
+		IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+		pObjectManager->signalBatchProcessStarted(objects, pObjectManager->GetUniqueLayersRelatedToObjects(objects, layers));
 	}
 }
 
@@ -1487,18 +1497,20 @@ void CObjectManager::GetObjects(CBaseObjectsArray& objects, const AABB& box) con
 	}
 }
 
-std::vector<CObjectLayer*> CObjectManager::GetUniqueLayersRelatedToObjects(const std::vector<CBaseObject*>& objects) const
+std::vector<CObjectLayer*> CObjectManager::GetUniqueLayersRelatedToObjects(const std::vector<CBaseObject*>& objects, const std::vector<CObjectLayer*>& layers) const
 {
-	std::vector<CObjectLayer*> layers;
+	std::vector<CObjectLayer*> uniqueLayers = layers;
+
 	for (CBaseObject* pObj : objects)
 	{
-		if (std::find(layers.cbegin(), layers.cend(), pObj->GetLayer()) == layers.cend())
-		{
-			CObjectLayer* pLayer = static_cast<CObjectLayer*>(pObj->GetLayer());
-			layers.push_back(pLayer);
-		}
+		CObjectLayer* pLayer = static_cast<CObjectLayer*>(pObj->GetLayer());
+		uniqueLayers.push_back(pLayer);
 	}
-	return layers;
+
+	sort(uniqueLayers.begin(), uniqueLayers.end());
+	uniqueLayers.erase(std::unique(uniqueLayers.begin(), uniqueLayers.end()), uniqueLayers.end());
+
+	return uniqueLayers;
 }
 
 void CObjectManager::GetObjectsRepeatFast(CBaseObjectsArray& objects, const AABB& box)

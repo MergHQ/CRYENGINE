@@ -71,7 +71,7 @@ public:
 	//! @param filter The filter functor, return true if you want to get the certain obj, return false if want to skip it.
 	void                               GetObjects(CBaseObjectsArray& objects, BaseObjectFilterFunctor const& filter) const;
 
-	virtual std::vector<CObjectLayer*> GetUniqueLayersRelatedToObjects(const std::vector<CBaseObject*>& objects) const override;
+	virtual std::vector<CObjectLayer*> GetUniqueLayersRelatedToObjects(const std::vector<CBaseObject*>& objects, const std::vector<CObjectLayer*>& layers) const override;
 
 	//! Keep only top-most parents in the resulting array of objects
 	void FilterParents(const CBaseObjectsArray& objects, CBaseObjectsArray& out) const;

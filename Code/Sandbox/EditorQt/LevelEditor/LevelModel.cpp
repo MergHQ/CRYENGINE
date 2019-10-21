@@ -832,6 +832,9 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 			IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 			pObjectManager->UnselectObjects(objects);
 
+			CBatchProcessDispatcher batchProcessDispatcher;
+			batchProcessDispatcher.Start(objects, { targetLayer }, true);
+
 			for (auto& object : objects)
 			{
 				if (object->GetLayer() != targetLayer)
@@ -866,6 +869,8 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 					}
 				}
 			}
+
+			batchProcessDispatcher.Finish();
 			// Re-select all objects
 			pObjectManager->AddObjectsToSelection(objects);
 			return true;
