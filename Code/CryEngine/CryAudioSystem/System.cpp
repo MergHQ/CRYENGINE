@@ -4385,7 +4385,7 @@ void CSystem::HandleDrawDebug()
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
 			auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-			Debug::FormatMemoryString(memAllocSizeString, memAllocSize - totalPoolSize);
+			Debug::FormatMemoryString(memAllocSizeString, memAllocSize);
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
 			Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
@@ -4393,7 +4393,7 @@ void CSystem::HandleDrawDebug()
 			size_t const totalFileSize = g_fileCacheManager.GetTotalCachedFileSize();
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
-			size_t const totalMemSize = memAllocSize + totalFileSize;
+			size_t const totalMemSize = memAllocSize + totalPoolSize + totalFileSize;
 			Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
 			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != ESystemStates::None) ? " - Muted" : "";

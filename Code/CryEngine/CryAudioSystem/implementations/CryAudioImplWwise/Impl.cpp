@@ -1882,7 +1882,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
 	auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-	Debug::FormatMemoryString(memAllocSizeString, memAllocSize - totalPoolSize);
+	Debug::FormatMemoryString(memAllocSizeString, memAllocSize);
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
 	Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
@@ -1891,7 +1891,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	Debug::FormatMemoryString(initBankSizeString, m_initBankSize);
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
-	size_t const totalMemSize = memAllocSize + m_initBankSize;
+	size_t const totalMemSize = memAllocSize + totalPoolSize + m_initBankSize;
 	Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
 	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s (System: %s | Pools: %s | Init Bank: %s | Total: %s)",
