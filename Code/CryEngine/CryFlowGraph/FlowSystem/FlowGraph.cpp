@@ -388,7 +388,10 @@ void CFlowGraphBase::CreateDebugName()
 	case eFGT_AIAction:
 		{
 			sType = "AI Action";
-			sExtra.Format(" '%s'", m_pAIAction->GetName());
+			if (m_pAIAction)
+			{
+				sExtra.Format(" '%s'", m_pAIAction->GetName());
+			}
 			break;
 		}
 	case eFGT_UIAction: sType = "UI Action"; break;
@@ -396,7 +399,10 @@ void CFlowGraphBase::CreateDebugName()
 	case eFGT_CustomAction:
 		{
 			sType = "Custom Action";
-			sExtra.Format(" '%s'", m_pCustomAction->GetCustomActionGraphName());
+			if (m_pCustomAction)
+			{
+				sExtra.Format(" '%s'", m_pCustomAction->GetCustomActionGraphName());
+			}
 			break;
 		}
 	case eFGT_MaterialFx: sType = "Material FX"; break;
