@@ -196,7 +196,7 @@ void CFileImporterDialog::OnCreateFolderSelector()
 //////////////////////////////////////////////////////////////////////////
 void CFileImporterDialog::OnActionChanged(Qt::CheckState const isChecked)
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(static_cast<int>(CFileImporterModel::EColumns::Import));
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(static_cast<int>(CFileImporterModel::EColumns::Import));
 
 	if (selection.size() > 1)
 	{
@@ -302,8 +302,8 @@ void CFileImporterDialog::OnApplyImport()
 				{
 					if (m_getImplItemIds)
 					{
-						QString const& absPath = fileInfo.targetInfo.absolutePath();
-						QString const& path = m_isLocalized ? absPath.mid(m_localizedAssetsPath.size() + 1) : absPath.mid(m_assetsPath.size() + 1);
+						QString const absPath = fileInfo.targetInfo.absolutePath();
+						QString const path = m_isLocalized ? absPath.mid(m_localizedAssetsPath.size() + 1) : absPath.mid(m_assetsPath.size() + 1);
 						g_importedItemIds.emplace_back(g_pIImpl->GenerateItemId(fileInfo.targetInfo.fileName(), path, m_isLocalized));
 					}
 				}

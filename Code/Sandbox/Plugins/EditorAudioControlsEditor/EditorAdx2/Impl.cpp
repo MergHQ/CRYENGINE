@@ -912,7 +912,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 		{
 		case EItemType::Cue:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 				auto const pCueConnection = static_cast<CCueConnection const*>(pIConnection);
 
 				string cueSheetName = Utils::FindCueSheetName(pItem, m_rootItem);
@@ -922,7 +922,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 					cueSheetName = pCueConnection->GetCueSheetName();
 				}
 
-				node->setAttr(CryAudio::Impl::Adx2::g_szCueSheetAttribute, cueSheetName);
+				node->setAttr(CryAudio::Impl::Adx2::g_szCueSheetAttribute, cueSheetName.c_str());
 
 				switch (pCueConnection->GetActionType())
 				{
@@ -953,7 +953,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 		case EItemType::Category:     // Intentional fall-through.
 		case EItemType::GameVariable:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				switch (assetType)
 				{
@@ -1029,10 +1029,10 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				if (pParent != nullptr)
 				{
 					XmlNodeRef const switchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
-					switchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName());
+					switchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName().c_str());
 
 					XmlNodeRef const stateNode = switchNode->createNode(CryAudio::Impl::Adx2::g_szSelectorLabelTag);
-					stateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					stateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 					switchNode->addChild(stateNode);
 
 					node = switchNode;
@@ -1043,13 +1043,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 		case EItemType::DspBusSetting: // Intentional fall-through.
 		case EItemType::Bus:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				break;
 			}
 		case EItemType::Snapshot:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				auto const pSnapshotConnection = static_cast<CSnapshotConnection const*>(pIConnection);
 
@@ -1067,7 +1067,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		case EItemType::Binary:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 				{

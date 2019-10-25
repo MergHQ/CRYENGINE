@@ -51,7 +51,7 @@ void CSystemLibraryModel::ConnectSignals()
 				}
 			  else
 			  {
-			    QModelIndex const& parent = IndexFromItem(pAsset);
+			    QModelIndex const parent = IndexFromItem(pAsset);
 			    beginInsertRows(parent, row, row);
 				}
 			}
@@ -88,7 +88,7 @@ void CSystemLibraryModel::ConnectSignals()
 							}
 			        else
 			        {
-			          QModelIndex const& parent = IndexFromItem(pParent);
+			          QModelIndex const parent = IndexFromItem(pParent);
 			          beginRemoveRows(parent, index, index);
 							}
 

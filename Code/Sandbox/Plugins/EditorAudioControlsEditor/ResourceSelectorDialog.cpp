@@ -160,7 +160,7 @@ CResourceSelectorDialog::SResourceSelectionDialogResult CResourceSelectorDialog:
 	// Automatically select the previous control
 	if ((m_pFilterProxyModel != nullptr) && !s_previousControlName.empty())
 	{
-		QModelIndex const& index = FindItem(s_previousControlName);
+		QModelIndex const index = FindItem(s_previousControlName);
 
 		if (index.isValid())
 		{
@@ -190,7 +190,7 @@ CResourceSelectorDialog::SResourceSelectionDialogResult CResourceSelectorDialog:
 //////////////////////////////////////////////////////////////////////////
 void CResourceSelectorDialog::OnUpdateSelectedControl()
 {
-	QModelIndex const& index = m_pTreeView->currentIndex();
+	QModelIndex const index = m_pTreeView->currentIndex();
 
 	if (index.isValid())
 	{
@@ -230,7 +230,7 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& controlName)
 
 		SplitSwitchStateName(controlName, switchName, stateName);
 
-		auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(stateName), -1, Qt::MatchRecursive);
+		QModelIndexList const matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(stateName), -1, Qt::MatchRecursive);
 
 		if (!matches.empty())
 		{
@@ -256,7 +256,7 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& controlName)
 	}
 	else
 	{
-		auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(controlName), 1, Qt::MatchRecursive);
+		QModelIndexList const matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(controlName), 1, Qt::MatchRecursive);
 
 		if (!matches.empty())
 		{
@@ -294,7 +294,7 @@ bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 
 		if ((pKeyEvent != nullptr) && (pKeyEvent->key() == Qt::Key_Space))
 		{
-			QModelIndex const& index = m_pTreeView->currentIndex();
+			QModelIndex const index = m_pTreeView->currentIndex();
 
 			if (index.isValid())
 			{
@@ -354,8 +354,8 @@ void CResourceSelectorDialog::OnItemDoubleClicked(QModelIndex const& modelIndex)
 //////////////////////////////////////////////////////////////////////////
 void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 {
-	QMenu* const pContextMenu = new QMenu(this);
-	QModelIndex const& index = m_pTreeView->currentIndex();
+	auto const pContextMenu = new QMenu(this);
+	QModelIndex const index = m_pTreeView->currentIndex();
 
 	if (index.isValid())
 	{

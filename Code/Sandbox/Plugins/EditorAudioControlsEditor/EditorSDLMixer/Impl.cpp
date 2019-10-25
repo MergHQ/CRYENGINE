@@ -83,7 +83,7 @@ bool HasDirValidData(QDir const& dir)
 
 		while (itFiles.hasNext())
 		{
-			QFileInfo const& fileInfo(itFiles.next());
+			QFileInfo const fileInfo(itFiles.next());
 
 			if (fileInfo.isFile())
 			{
@@ -98,7 +98,7 @@ bool HasDirValidData(QDir const& dir)
 
 			while (itDirs.hasNext())
 			{
-				QDir const& folder(itDirs.next());
+				QDir const folder(itDirs.next());
 
 				if (HasDirValidData(folder))
 				{
@@ -140,7 +140,7 @@ void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos
 
 		for (auto const& fileInfo : dir.entryInfoList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot))
 		{
-			QDir const& folder(fileInfo.absoluteFilePath());
+			QDir const folder(fileInfo.absoluteFilePath());
 			GetFilesFromDir(folder, parentFolderName, fileImportInfos);
 		}
 	}
@@ -591,13 +591,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				if (pEventConnection != nullptr)
 				{
 					node = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
-					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
+						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, path.c_str());
 					}
 
 					switch (pEventConnection->GetActionType())
@@ -678,13 +678,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 					isAdvanced = pParameterConnection->IsAdvanced();
 
 					node = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
-					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
+						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, path.c_str());
 					}
 
 					if (isAdvanced)
@@ -715,13 +715,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				if (pStateConnection != nullptr)
 				{
 					node = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
-					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
+						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, path.c_str());
 					}
 
 					node->setAttr(CryAudio::Impl::SDL_mixer::g_szValueAttribute, pStateConnection->GetValue());
@@ -741,13 +741,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				if (pPreloadConnection != nullptr)
 				{
 					node = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
-					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 					string const& path = pItem->GetPath();
 
 					if (!path.IsEmpty())
 					{
-						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
+						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, path.c_str());
 					}
 
 					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
@@ -911,11 +911,11 @@ bool CImpl::CanDropExternalData(QMimeData const* const pData) const
 
 	if (pDragDropData->HasFilePaths())
 	{
-		QStringList& allFiles = pDragDropData->GetFilePaths();
+		QStringList const allFiles = pDragDropData->GetFilePaths();
 
 		for (auto const& filePath : allFiles)
 		{
-			QFileInfo const& fileInfo(filePath);
+			QFileInfo const fileInfo(filePath);
 			bool isSupportedType = false;
 
 			for (auto const& pair : CryAudio::Impl::SDL_mixer::g_supportedExtensions)
@@ -938,7 +938,7 @@ bool CImpl::CanDropExternalData(QMimeData const* const pData) const
 		{
 			for (auto const& filePath : allFiles)
 			{
-				QDir const& folder(filePath);
+				QDir const folder(filePath);
 
 				if (HasDirValidData(folder))
 				{
@@ -963,11 +963,11 @@ bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& file
 
 		if (pDragDropData->HasFilePaths())
 		{
-			QStringList const& allFiles = pDragDropData->GetFilePaths();
+			QStringList const allFiles = pDragDropData->GetFilePaths();
 
 			for (auto const& filePath : allFiles)
 			{
-				QFileInfo const& fileInfo(filePath);
+				QFileInfo const fileInfo(filePath);
 
 				if (fileInfo.isFile())
 				{
@@ -986,7 +986,7 @@ bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& file
 				}
 				else
 				{
-					QDir const& folder(filePath);
+					QDir const folder(filePath);
 					GetFilesFromDir(folder, "", fileImportInfos);
 				}
 			}

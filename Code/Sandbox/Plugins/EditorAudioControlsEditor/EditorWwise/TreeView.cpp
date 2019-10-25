@@ -171,7 +171,7 @@ void CTreeView::BackupSelection()
 {
 	m_selectionBackup.clear();
 
-	QModelIndexList const& selectedList = selectionModel()->selectedRows();
+	QModelIndexList const selectedList = selectionModel()->selectedRows();
 
 	for (QModelIndex const& index : selectedList)
 	{

@@ -38,7 +38,7 @@ void OpenFileSelectorFromImpl(QString const& targetFolderName, bool const isLoca
 
 		for (auto const& filePath : importedFiles)
 		{
-			QFileInfo const& fileInfo(filePath);
+			QFileInfo const fileInfo(filePath);
 
 			if (fileInfo.isFile())
 			{
@@ -67,7 +67,7 @@ void OpenFileSelector(EImportTargetType const type, CAsset* const pAsset)
 
 		for (auto const& filePath : importedFiles)
 		{
-			QFileInfo const& fileInfo(filePath);
+			QFileInfo const fileInfo(filePath);
 
 			if (fileInfo.isFile())
 			{

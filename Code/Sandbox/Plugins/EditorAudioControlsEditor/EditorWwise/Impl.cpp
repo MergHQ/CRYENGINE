@@ -751,10 +751,10 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				if (pParent != nullptr)
 				{
 					XmlNodeRef const switchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
-					switchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName());
+					switchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName().c_str());
 
 					XmlNodeRef const stateNode = switchNode->createNode(CryAudio::Impl::Wwise::g_szValueTag);
-					stateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					stateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 					switchNode->addChild(stateNode);
 
 					node = switchNode;
@@ -766,7 +766,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			{
 				XmlNodeRef connectionNode;
 				connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
 				{
@@ -805,7 +805,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			{
 				XmlNodeRef connectionNode;
 				connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 				node = connectionNode;
 
 				break;
@@ -813,7 +813,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 		case EItemType::SoundBank:
 			{
 				XmlNodeRef connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 				{

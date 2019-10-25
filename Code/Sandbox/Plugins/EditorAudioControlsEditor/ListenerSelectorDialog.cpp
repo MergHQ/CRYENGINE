@@ -97,7 +97,7 @@ CListenerSelectorDialog::SResourceSelectionDialogResult CListenerSelectorDialog:
 	// Automatically select the previous listener
 	if ((m_pAttributeFilterProxyModel != nullptr) && !s_previousListenerName.empty())
 	{
-		QModelIndex const& index = FindListenerIndex(s_previousListenerName);
+		QModelIndex const index = FindListenerIndex(s_previousListenerName);
 
 		if (index.isValid())
 		{
@@ -119,7 +119,7 @@ CListenerSelectorDialog::SResourceSelectionDialogResult CListenerSelectorDialog:
 //////////////////////////////////////////////////////////////////////////
 void CListenerSelectorDialog::OnUpdateSelectedListener()
 {
-	QModelIndex const& index = m_pTreeView->currentIndex();
+	QModelIndex const index = m_pTreeView->currentIndex();
 
 	if (index.isValid())
 	{
@@ -140,7 +140,7 @@ QModelIndex CListenerSelectorDialog::FindListenerIndex(string const& listenerNam
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	auto const& matches = m_pAttributeFilterProxyModel->match(m_pAttributeFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(listenerName), 1, Qt::MatchRecursive);
+	QModelIndexList const matches = m_pAttributeFilterProxyModel->match(m_pAttributeFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(listenerName), 1, Qt::MatchRecursive);
 
 	if (!matches.empty())
 	{

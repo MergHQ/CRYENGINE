@@ -872,7 +872,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 		{
 		case EItemType::Event:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem).c_str());
 				auto const pEventConnection = static_cast<CEventConnection const*>(pIConnection);
 
 				if (pEventConnection != nullptr)
@@ -907,7 +907,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		case EItemType::Key:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem).c_str());
 				auto const pKeyConnection = static_cast<CKeyConnection const*>(pIConnection);
 
 				if (pKeyConnection != nullptr)
@@ -919,7 +919,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		case EItemType::Snapshot:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem).c_str());
 				auto const pEventConnection = static_cast<CSnapshotConnection const*>(pIConnection);
 
 				if ((pEventConnection != nullptr) && (pEventConnection->GetActionType() == CSnapshotConnection::EActionType::Stop))
@@ -931,13 +931,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		case EItemType::Return:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem).c_str());
 
 				break;
 			}
 		case EItemType::Parameter:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+				node->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem).c_str());
 
 				switch (assetType)
 				{
@@ -983,7 +983,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		case EItemType::VCA:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				switch (assetType)
 				{
@@ -1024,7 +1024,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		case EItemType::Bank:
 			{
-				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 				{

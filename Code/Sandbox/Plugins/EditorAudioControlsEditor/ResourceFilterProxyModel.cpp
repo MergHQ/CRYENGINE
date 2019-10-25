@@ -16,7 +16,7 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 
 	if (QDeepFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent))
 	{
-		QModelIndex const& index = sourceModel()->index(sourceRow, 0, sourceParent);
+		QModelIndex const index = sourceModel()->index(sourceRow, 0, sourceParent);
 
 		if (index.isValid())
 		{
@@ -54,8 +54,8 @@ bool CResourceFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex co
 		}
 		else
 		{
-			QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
-			QVariant const& valueRight = sourceModel()->data(right, Qt::DisplayRole);
+			QVariant const valueLeft = sourceModel()->data(left, Qt::DisplayRole);
+			QVariant const valueRight = sourceModel()->data(right, Qt::DisplayRole);
 			isLessThan = valueLeft < valueRight;
 		}
 	}

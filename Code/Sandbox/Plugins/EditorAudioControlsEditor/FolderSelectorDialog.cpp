@@ -42,8 +42,8 @@ CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QSt
 	m_pFileSystemModel->setFilter(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
 
 	m_pFilterProxyModel->setSourceModel(m_pFileSystemModel);
-	QModelIndex const& targetDirIndex = m_pFileSystemModel->index(m_targetPath);
-	QModelIndex const& implFolderIndex = m_pFileSystemModel->index(implFolderPath);
+	QModelIndex const targetDirIndex = m_pFileSystemModel->index(m_targetPath);
+	QModelIndex const implFolderIndex = m_pFileSystemModel->index(implFolderPath);
 	m_pFilterProxyModel->SetSourceRootIndex(implFolderIndex);
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -57,7 +57,7 @@ CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QSt
 	m_pTreeView->header()->setContextMenuPolicy(Qt::PreventContextMenu);
 	m_pTreeView->setRootIndex(m_pFilterProxyModel->mapFromSource(implFolderIndex));
 
-	QModelIndex const& selectedIndex = m_pFilterProxyModel->mapFromSource(targetDirIndex);
+	QModelIndex const selectedIndex = m_pFilterProxyModel->mapFromSource(targetDirIndex);
 	m_pTreeView->setCurrentIndex(selectedIndex);
 	m_pTreeView->scrollTo(selectedIndex);
 
@@ -128,8 +128,8 @@ void CFolderSelectorDialog::OnCreateFolder(QString const& folderName)
 		targetFolder.mkpath(targetFolderPath);
 	}
 
-	QModelIndex const& targetDirIndex = m_pFileSystemModel->index(targetFolderPath);
-	QModelIndex const& selectedIndex = m_pFilterProxyModel->mapFromSource(targetDirIndex);
+	QModelIndex const targetDirIndex = m_pFileSystemModel->index(targetFolderPath);
+	QModelIndex const selectedIndex = m_pFilterProxyModel->mapFromSource(targetDirIndex);
 	m_pTreeView->setCurrentIndex(selectedIndex);
 	m_pTreeView->scrollTo(selectedIndex);
 }

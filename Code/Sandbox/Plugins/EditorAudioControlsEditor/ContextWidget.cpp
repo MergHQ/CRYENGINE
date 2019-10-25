@@ -106,13 +106,13 @@ CContextWidget::~CContextWidget()
 //////////////////////////////////////////////////////////////////////////
 void CContextWidget::OnContextMenu(QPoint const& pos)
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows();
 	auto const pContextMenu = new QMenu(this);
 	int const numSelections = selection.size();
 
 	if (numSelections == 1)
 	{
-		QModelIndex const& index = m_pTreeView->currentIndex();
+		QModelIndex const index = m_pTreeView->currentIndex();
 
 		if (index.isValid())
 		{
@@ -188,7 +188,7 @@ void CContextWidget::DeactivateContext(CryAudio::ContextId const contextId)
 //////////////////////////////////////////////////////////////////////////
 void CContextWidget::ActivateMultipleContexts()
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows();
 
 	for (auto const& index : selection)
 	{
@@ -211,7 +211,7 @@ void CContextWidget::ActivateMultipleContexts()
 //////////////////////////////////////////////////////////////////////////
 void CContextWidget::DeactivateMultipleContexts()
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows();
 
 	for (auto const& index : selection)
 	{
@@ -238,14 +238,14 @@ void CContextWidget::AddContext()
 //////////////////////////////////////////////////////////////////////////
 void CContextWidget::RenameContext()
 {
-	QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), g_contextNameColumn);
+	QModelIndex const nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), g_contextNameColumn);
 	m_pTreeView->edit(nameColumnIndex);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CContextWidget::DeleteSelectedContexts()
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows();
 
 	if (!selection.empty())
 	{
@@ -299,7 +299,7 @@ void CContextWidget::SelectNewContext(QModelIndex const& parent, int const row)
 	if (!g_assetsManager.IsLoading())
 	{
 		m_pSearchBox->clear();
-		QModelIndex const& index = m_pAttributeFilterProxyModel->mapFromSource(m_pContextModel->index(row, g_contextNameColumn, parent));
+		QModelIndex const index = m_pAttributeFilterProxyModel->mapFromSource(m_pContextModel->index(row, g_contextNameColumn, parent));
 
 		m_pTreeView->setCurrentIndex(index);
 		m_pTreeView->edit(index);

@@ -455,7 +455,7 @@ QVariant CSystemSourceModel::GetHeaderData(int const section, Qt::Orientation co
 CAsset* CSystemSourceModel::GetAssetFromIndex(QModelIndex const& index, int const column)
 {
 	CAsset* pAsset = nullptr;
-	QModelIndex const& nameColumnIndex = index.sibling(index.row(), column);
+	QModelIndex const nameColumnIndex = index.sibling(index.row(), column);
 	QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 	if (internalPtr.isValid())

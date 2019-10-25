@@ -38,7 +38,7 @@ bool HasDirValidData(QDir const& dir)
 
 		while (itFiles.hasNext())
 		{
-			QFileInfo const& fileInfo(itFiles.next());
+			QFileInfo const fileInfo(itFiles.next());
 
 			if (fileInfo.isFile())
 			{
@@ -53,7 +53,7 @@ bool HasDirValidData(QDir const& dir)
 
 			while (itDirs.hasNext())
 			{
-				QDir const& folder(itDirs.next());
+				QDir const folder(itDirs.next());
 
 				if (HasDirValidData(folder))
 				{
@@ -95,7 +95,7 @@ void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos
 
 		for (auto const& fileInfo : dir.entryInfoList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot))
 		{
-			QDir const& folder(fileInfo.absoluteFilePath());
+			QDir const folder(fileInfo.absoluteFilePath());
 			GetFilesFromDir(folder, parentFolderName, fileImportInfos);
 		}
 	}
@@ -351,7 +351,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 	if ((pItem != nullptr) && (pEventConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
 		node = GetISystem()->CreateXmlNode(CryAudio::Impl::PortAudio::g_szEventTag);
-		node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+		node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName().c_str());
 
 		string const& path = pItem->GetPath();
 
@@ -509,11 +509,11 @@ bool CImpl::CanDropExternalData(QMimeData const* const pData) const
 
 	if (pDragDropData->HasFilePaths())
 	{
-		QStringList& allFiles = pDragDropData->GetFilePaths();
+		QStringList const allFiles = pDragDropData->GetFilePaths();
 
 		for (auto const& filePath : allFiles)
 		{
-			QFileInfo const& fileInfo(filePath);
+			QFileInfo const fileInfo(filePath);
 			bool isSupportedType = false;
 
 			for (auto const& pair : CryAudio::Impl::PortAudio::g_supportedExtensions)
@@ -536,7 +536,7 @@ bool CImpl::CanDropExternalData(QMimeData const* const pData) const
 		{
 			for (auto const& filePath : allFiles)
 			{
-				QDir const& folder(filePath);
+				QDir const folder(filePath);
 
 				if (HasDirValidData(folder))
 				{
@@ -561,11 +561,11 @@ bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& file
 
 		if (pDragDropData->HasFilePaths())
 		{
-			QStringList const& allFiles = pDragDropData->GetFilePaths();
+			QStringList const allFiles = pDragDropData->GetFilePaths();
 
 			for (auto const& filePath : allFiles)
 			{
-				QFileInfo const& fileInfo(filePath);
+				QFileInfo const fileInfo(filePath);
 
 				if (fileInfo.isFile())
 				{
@@ -584,7 +584,7 @@ bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& file
 				}
 				else
 				{
-					QDir const& folder(filePath);
+					QDir const folder(filePath);
 					GetFilesFromDir(folder, "", fileImportInfos);
 				}
 			}

@@ -14,11 +14,11 @@ bool CFolderSelectorFilterModel::rowMatchesFilter(int sourceRow, QModelIndex con
 
 	if (QDeepFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent))
 	{
-		QModelIndex const& index = sourceModel()->index(sourceRow, 0, sourceParent);
+		QModelIndex const index = sourceModel()->index(sourceRow, 0, sourceParent);
 
 		if (index.isValid())
 		{
-			QString const& filePath = index.data(QFileSystemModel::Roles::FilePathRole).toString();
+			QString const filePath = index.data(QFileSystemModel::Roles::FilePathRole).toString();
 
 			if (filePath.startsWith(m_assetPath + "/", Qt::CaseInsensitive) || (filePath.compare(m_assetPath, Qt::CaseInsensitive) == 0))
 			{
