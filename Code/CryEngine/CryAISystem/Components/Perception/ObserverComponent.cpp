@@ -96,7 +96,7 @@ void CEntityAIObserverComponent::Register(Schematyc::IEnvRegistrar& registrar)
 
 void CEntityAIObserverComponent::OnShutDown()
 {
-	Reset(EEntitySimulationMode::Idle);
+	UnregisterFromVisionMap();
 }
 
 void CEntityAIObserverComponent::ProcessEvent(const SEntityEvent& event)
@@ -108,10 +108,15 @@ void CEntityAIObserverComponent::ProcessEvent(const SEntityEvent& event)
 		Update();
 		break;
 	case ENTITY_EVENT_RESET:
-		Reset(GetEntity()->GetSimulationMode());
+		if (GetEntity()->GetSimulationMode() != EEntitySimulationMode::Game)
+		{
+			Reset();
+		}
 		break;
 	case ENTITY_EVENT_START_GAME:
 		{
+			RegisterToVisionMap();
+		
 			m_entityEventMask |= m_visionProperties.location.type == Perception::ComponentHelpers::SLocation::EType::Bone
 			                     ? ENTITY_EVENT_UPDATE : ENTITY_EVENT_XFORM;
 			GetEntity()->UpdateComponentEventMask(this);
@@ -120,17 +125,10 @@ void CEntityAIObserverComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-void CEntityAIObserverComponent::Reset(EEntitySimulationMode simulationMode)
+void CEntityAIObserverComponent::Reset()
 {
-	if (simulationMode == EEntitySimulationMode::Game)
-	{
-		RegisterToVisionMap();
-	}
-	else
-	{
-		UnregisterFromVisionMap();
-		m_entityEventMask = ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
-	}
+	UnregisterFromVisionMap();
+	m_entityEventMask = ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
 }
 
 void CEntityAIObserverComponent::RegisterToVisionMap()

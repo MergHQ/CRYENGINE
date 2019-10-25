@@ -96,7 +96,11 @@ uint8 CEntityAIFactionComponent::GetFactionId() const
 
 void CEntityAIFactionComponent::SetFactionId(const uint8 factionId)
 {
-	m_factionId.id = factionId;
+	if (factionId != m_factionId.id)
+	{
+		m_factionId.id = factionId;
+		RegisterFactionId(m_factionId);
+	}
 }
 
 IFactionMap::ReactionType CEntityAIFactionComponent::GetReaction(const EntityId otherEntityId) const
@@ -121,7 +125,7 @@ void CEntityAIFactionComponent::SetFactionIdSchematyc(const SFactionID& factionI
 	if (factionId.id != m_factionId.id)
 	{
 		m_factionId = factionId;
-		RegisterFactionId(factionId);
+		RegisterFactionId(m_factionId);
 	}
 }
 
