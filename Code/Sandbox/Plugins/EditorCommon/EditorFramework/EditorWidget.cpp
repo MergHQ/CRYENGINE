@@ -49,15 +49,36 @@ bool CEditorWidget::event(QEvent *pEvent)
 			// If we found a match for the shortcut, then trigger the action and mark the event as handled
 			if (ite != m_actions.cend())
 			{
-				QCommandAction* pCommandAction = qobject_cast<QCommandAction*>(ite->second);
-				pCommandAction->trigger();
-				pEvent->setAccepted(true);
+				// Catch the action we want to execute on the following keypress and signal that we will handle the shortcut override
+				m_pShortcutOverride = qobject_cast<QCommandAction*>(ite->second);
+				pEvent->accept();
 				return true;
 			}
 		}
 	}
 
 	return QWidget::event(pEvent);
+}
+
+void CEditorWidget::keyPressEvent(QKeyEvent* pEvent)
+{
+	if (m_pShortcutOverride)
+	{
+		// Reset the shortcut override action
+		QCommandAction* pShortcutOverrideAction = m_pShortcutOverride;
+		m_pShortcutOverride = nullptr;
+
+		// If there's an incoming shortcut override key press, double check that the key sequence matches the shortcut action
+		QKeySequence keySequence(pEvent->key() | pEvent->modifiers());
+		if (pShortcutOverrideAction->shortcut() == keySequence)
+		{
+			pShortcutOverrideAction->trigger();
+			pEvent->accept();			
+			return;
+		}
+	}
+
+	QWidget::keyPressEvent(pEvent);
 }
 
 void CEditorWidget::customEvent(QEvent* pEvent)

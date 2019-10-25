@@ -20,6 +20,7 @@ public:
 	CEditorWidget(QWidget* pParent = nullptr)
 		: QWidget(pParent)
 		, m_widgetActionRegistry(*this)
+		, m_pShortcutOverride(nullptr)
 	{}
 
 	const std::vector<CCommand*>& GetCommands() const { return m_commands; }
@@ -34,6 +35,7 @@ public:
 protected:
 	virtual bool event(QEvent* pEvent) override;
 	virtual void customEvent(QEvent* pEvent) override;
+	virtual void keyPressEvent(QKeyEvent* pEvent) override;
 
 	//! Registers an action on the widget.
 	//! /param actionId id of the action to register.
@@ -94,4 +96,5 @@ private:
 	CWidgetActionRegistry      m_widgetActionRegistry;
 	std::vector<CCommand*>     m_commands;
 	StringMap<QCommandAction*> m_actions;
+	QCommandAction*            m_pShortcutOverride;
 };
