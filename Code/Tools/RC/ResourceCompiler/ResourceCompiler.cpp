@@ -4164,13 +4164,7 @@ void ResourceCompiler::LogMemoryUsage(bool bReportProblemsOnly)
 
 	static const float megabyte = 1024 * 1024;
 	const float peakSizeMb = p.PeakWorkingSetSize / megabyte;
-#if CRY_PLATFORM_64BIT
-	static const float warningMemorySizePeakMb =  7500.0f;
-	static const float errorMemorySizePeakMb   = 15500.0f;
-#else
-	static const float warningMemorySizePeakMb =  3100.0f;
-	static const float errorMemorySizePeakMb   =  3600.0f;
-#endif
+	static const float warningMemorySizePeakMb = 15500.0f;
 
 	bool bReportProblem = false;
 	{
@@ -4186,7 +4180,7 @@ void ResourceCompiler::LogMemoryUsage(bool bReportProblemsOnly)
 	{
 		if (peakSizeMb >= warningMemorySizePeakMb)
 		{
-			((peakSizeMb >= errorMemorySizePeakMb) ? RCLogError : RCLogWarning)(
+			RCLogWarning(
 				"Memory: working set %.1fMb (peak %.1fMb - DANGER!), pagefile %.1fMb (peak %.1fMb)",
 				p.WorkingSetSize / megabyte, p.PeakWorkingSetSize / megabyte,
 				p.PagefileUsage / megabyte, p.PeakPagefileUsage / megabyte);
