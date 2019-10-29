@@ -318,9 +318,9 @@ static SResourceSelectionResult MannequinFragmentNameSelector(const SResourceSel
 	return result;
 }
 
-REGISTER_RESOURCE_SELECTOR("EntityClass", EntityClassNameSelector, "")
-REGISTER_RESOURCE_SELECTOR("ActionMap", ActionMapNameSelector, "")
-REGISTER_RESOURCE_SELECTOR("ActionMapAction", ActionMapActionNameSelector, "")
+REGISTER_RESOURCE_SELECTOR("EntityClassName", EntityClassNameSelector, "")
+REGISTER_RESOURCE_SELECTOR("ActionMapName", ActionMapNameSelector, "")
+REGISTER_RESOURCE_SELECTOR("ActionMapActionName", ActionMapActionNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("SurfaceTypeName", SurfaceTypeNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("MannequinScopeContextName", MannequinScopeContextNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("MannequinFragmentName", MannequinFragmentNameSelector, "")
