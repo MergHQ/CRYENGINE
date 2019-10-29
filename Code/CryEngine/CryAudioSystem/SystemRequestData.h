@@ -63,6 +63,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ExecutePreviewTriggerEx,
 	ExecutePreviewTriggerExNode,
 	StopPreviewTrigger,
+	RefreshObject,
 	ResetRequestCount,
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 };
@@ -798,6 +799,25 @@ struct SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> final
 	virtual ~SSystemRequestData() override = default;
 
 	XmlNodeRef const node;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::RefreshObject> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(Impl::IObject* const pIObject_)
+		: SSystemRequestDataBase(ESystemRequestType::RefreshObject)
+		, pIObject(pIObject_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::RefreshObject> const* const pSRData)
+		: SSystemRequestDataBase(ESystemRequestType::RefreshObject)
+		, pIObject(pSRData->pIObject)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	Impl::IObject* const pIObject;
 };
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

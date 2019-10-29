@@ -17,9 +17,9 @@ CEventListenerManager::~CEventListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEventListenerManager::AddRequestListener(SSystemRequestData<ESystemRequestType::AddRequestListener> const* const pRequestData)
+void CEventListenerManager::AddRequestListener(SSystemRequestData<ESystemRequestType::AddRequestListener> const* const pRequestData)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+	bool foundListener = false;
 
 	for (auto const& listener : m_listeners)
 	{
@@ -27,28 +27,28 @@ ERequestStatus CEventListenerManager::AddRequestListener(SSystemRequestData<ESys
 		    (listener.pObjectToListenTo == pRequestData->pObjectToListenTo) &&
 		    (listener.eventMask == pRequestData->eventMask))
 		{
-			result = ERequestStatus::Success;
+			foundListener = true;
 			break;
 		}
 	}
 
-	if (result == ERequestStatus::Failure)
+	if (!foundListener)
 	{
 		SEventListener eventListener;
 		eventListener.pObjectToListenTo = pRequestData->pObjectToListenTo;
 		eventListener.OnEvent = pRequestData->func;
 		eventListener.eventMask = pRequestData->eventMask;
 		m_listeners.push_back(eventListener);
-		result = ERequestStatus::Success;
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEventListenerManager::RemoveRequestListener(void (*func)(SRequestInfo const* const), void const* const pObjectToListenTo)
+void CEventListenerManager::RemoveRequestListener(void (*func)(SRequestInfo const* const), void const* const pObjectToListenTo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	bool removedListener = false;
+#endif // CRY_AUDIO_USE_DEBUG_CODE
+
 	ListenerArray::iterator Iter(m_listeners.begin());
 	ListenerArray::const_iterator const IterEnd(m_listeners.end());
 
@@ -62,20 +62,21 @@ ERequestStatus CEventListenerManager::RemoveRequestListener(void (*func)(SReques
 			}
 
 			m_listeners.pop_back();
-			result = ERequestStatus::Success;
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+			removedListener = true;
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 			break;
 		}
 	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	if (result == ERequestStatus::Failure)
+	if (!removedListener)
 	{
 		Cry::Audio::Log(ELogType::Warning, "Failed to remove a request listener!");
 	}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

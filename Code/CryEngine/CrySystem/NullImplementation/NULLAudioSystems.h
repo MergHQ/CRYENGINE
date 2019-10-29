@@ -81,6 +81,7 @@ public:
 	virtual void        ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override                                                                                                                             {}
 	virtual void        ExecutePreviewTriggerEx(XmlNodeRef const& node) override                                                                                                                                            {}
 	virtual void        StopPreviewTrigger() override                                                                                                                                                                       {}
+	virtual void        RefreshObject(Impl::IObject* const pIObject) override                                                                                                                                               {}
 
 private:
 

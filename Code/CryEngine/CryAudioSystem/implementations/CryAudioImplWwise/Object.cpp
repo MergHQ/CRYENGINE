@@ -208,7 +208,7 @@ void CObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetName(char const* const szName)
+void CObject::SetName(char const* const szName)
 {
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	StopAllTriggers();
@@ -221,9 +221,9 @@ ERequestStatus CObject::SetName(char const* const szName)
 
 	m_name = szName;
 
-	return ERequestStatus::SuccessNeedsRefresh;
-#else
-	return ERequestStatus::Success;
+	// Needs to refresh object to retrigger possibly playing events,
+	// set parameters, environments and switches.
+	gEnv->pAudioSystem->RefreshObject(this);
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 

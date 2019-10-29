@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RequestData.h"
+#include "Common.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace CryAudio

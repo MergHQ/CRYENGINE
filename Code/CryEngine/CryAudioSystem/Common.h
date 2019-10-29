@@ -54,6 +54,14 @@ enum class ESystemStates : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemStates);
 
+enum class ERequestStatus : EnumFlagsType
+{
+	None,
+	Success,
+	Failure,
+	Pending,
+};
+
 using TriggerLookup = std::map<ControlId, CTrigger const*>;
 using ParameterLookup = std::map<ControlId, CParameter const*>;
 using SwitchLookup = std::map<ControlId, CSwitch const*>;

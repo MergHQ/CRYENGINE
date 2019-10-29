@@ -28,7 +28,7 @@ struct SObject final : IObject
 	virtual void                   SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners) override  {}
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override                                                 {}
 	virtual void                   StopAllTriggers() override                                                                                    {}
-	virtual ERequestStatus         SetName(char const* const szName) override                                                                    { return ERequestStatus::Success; }
+	virtual void                   SetName(char const* const szName) override                                                                    {}
 	virtual void                   AddListener(IListener* const pIListener) override                                                             {}
 	virtual void                   RemoveListener(IListener* const pIListener) override                                                          {}
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override                              {}
@@ -41,9 +41,9 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize)
+bool CImpl::Init(uint16 const objectPoolSize)
 {
-	return ERequestStatus::Success;
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -107,9 +107,8 @@ void CImpl::ResumeAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::StopAllSounds()
+void CImpl::StopAllSounds()
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -123,9 +122,9 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
+bool CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
-	return ERequestStatus::Failure; // This is the correct behavior: the NULL implementation does not recognize any file nodes.
+	return false; // This is the correct behavior: the NULL implementation does not recognize any file nodes.
 }
 
 //////////////////////////////////////////////////////////////////////////

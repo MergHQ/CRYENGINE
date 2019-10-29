@@ -89,13 +89,11 @@ void CObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetName(char const* const szName)
+void CObject::SetName(char const* const szName)
 {
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 	m_name = szName;
-#endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
-
-	return ERequestStatus::Success;
+#endif    // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

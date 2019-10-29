@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "FileCacheManager.h"
-#include "Common.h"
 #include "File.h"
 #include "PreloadRequest.h"
 #include "CVars.h"
@@ -66,7 +65,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const& fileNode, Conte
 	FileId fileId = InvalidFileId;
 	Impl::SFileInfo fileInfo;
 
-	if (g_pIImpl->ConstructFile(fileNode, &fileInfo) == ERequestStatus::Success)
+	if (g_pIImpl->ConstructFile(fileNode, &fileInfo))
 	{
 		CryFixedStringT<MaxFilePathLength> const filePath(fileInfo.filePath);
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CFile");
@@ -200,13 +199,12 @@ ERequestStatus CFileCacheManager::TryLoadRequest(
 	void* const pUserData /*= nullptr*/,
 	void* const pUserDataOwner /*= nullptr*/)
 {
-	bool isFullSuccess = false;
-	bool isFullFailure = true;
+	bool isSuccess = false;
 	CPreloadRequest* const pPreloadRequest = stl::find_in_map(g_preloadRequests, preloadRequestId, nullptr);
 
 	if (pPreloadRequest != nullptr && (!autoLoadOnly || (autoLoadOnly && pPreloadRequest->m_bAutoLoad)))
 	{
-		isFullSuccess = true;
+		isSuccess = true;
 
 		for (FileId const fileId : pPreloadRequest->m_fileIds)
 		{
@@ -214,15 +212,13 @@ ERequestStatus CFileCacheManager::TryLoadRequest(
 
 			if (pFile != nullptr)
 			{
-				bool const bTemp = TryCacheFileCacheEntryInternal(pFile, fileId, loadSynchronously);
-				isFullSuccess = isFullSuccess && bTemp;
-				isFullFailure = isFullFailure && !bTemp;
+				isSuccess = TryCacheFileCacheEntryInternal(pFile, fileId, loadSynchronously) && isSuccess;
 			}
 		}
 	}
 
-	ERequestStatus const requestStatus = (isFullSuccess) ? ERequestStatus::Success : ((isFullFailure) ? ERequestStatus::Failure : ERequestStatus::PartialSuccess);
-	SendFinishedPreloadRequest(preloadRequestId, isFullSuccess, flags, pOwner, pUserData, pUserDataOwner);
+	ERequestStatus const requestStatus = (isSuccess ? ERequestStatus::Success : ERequestStatus::Failure);
+	SendFinishedPreloadRequest(preloadRequestId, isSuccess, flags, pOwner, pUserData, pUserDataOwner);
 
 	return requestStatus;
 }
@@ -230,13 +226,12 @@ ERequestStatus CFileCacheManager::TryLoadRequest(
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CFileCacheManager::TryUnloadRequest(PreloadRequestId const preloadRequestId)
 {
-	bool isFullSuccess = false;
-	bool isFullFailure = true;
+	bool isSuccess = false;
 	CPreloadRequest* const pPreloadRequest = stl::find_in_map(g_preloadRequests, preloadRequestId, nullptr);
 
 	if (pPreloadRequest != nullptr)
 	{
-		isFullSuccess = true;
+		isSuccess = true;
 
 		for (FileId const fileId : pPreloadRequest->m_fileIds)
 		{
@@ -244,18 +239,16 @@ ERequestStatus CFileCacheManager::TryUnloadRequest(PreloadRequestId const preloa
 
 			if (pFile != nullptr)
 			{
-				bool const bTemp = UncacheFileCacheEntryInternal(pFile, false);
-				isFullSuccess = isFullSuccess && bTemp;
-				isFullFailure = isFullFailure && !bTemp;
+				isSuccess = UncacheFileCacheEntryInternal(pFile, false) && isSuccess;
 			}
 		}
 	}
 
-	return (isFullSuccess) ? ERequestStatus::Success : ((isFullFailure) ? ERequestStatus::Failure : ERequestStatus::PartialSuccess);
+	return (isSuccess ? ERequestStatus::Success : ERequestStatus::Failure);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CFileCacheManager::UnloadDataByContext(ContextId const contextId)
+void CFileCacheManager::UnloadDataByContext(ContextId const contextId)
 {
 	Files::iterator iter(m_files.begin());
 	Files::const_iterator iterEnd(m_files.end());
@@ -278,8 +271,6 @@ ERequestStatus CFileCacheManager::UnloadDataByContext(ContextId const contextId)
 
 		++iter;
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////

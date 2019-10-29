@@ -64,6 +64,7 @@ public:
 	virtual void ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override;
 	virtual void ExecutePreviewTriggerEx(XmlNodeRef const& node) override;
 	virtual void StopPreviewTrigger() override;
+	virtual void RefreshObject(Impl::IObject* const pIObject) override;
 	// ~CryAudio::IAudioSystem
 
 	// ISystemEventListener
@@ -96,7 +97,7 @@ private:
 	ERequestStatus ProcessObjectRequest(CRequest const& request);
 	ERequestStatus ProcessListenerRequest(SRequestData const* const pPassedRequestData);
 	void           NotifyListener(CRequest const& request);
-	ERequestStatus HandleSetImpl(Impl::IImpl* const pIImpl);
+	bool           HandleSetImpl(Impl::IImpl* const pIImpl);
 	void           SetImplLanguage();
 	void           HandleActivateContext(ContextId const contextId);
 	void           HandleDeactivateContext(ContextId const contextId);

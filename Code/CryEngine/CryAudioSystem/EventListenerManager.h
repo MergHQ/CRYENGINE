@@ -18,8 +18,8 @@ public:
 	CEventListenerManager& operator=(CEventListenerManager const&) = delete;
 	CEventListenerManager& operator=(CEventListenerManager&&) = delete;
 
-	ERequestStatus         AddRequestListener(SSystemRequestData<ESystemRequestType::AddRequestListener> const* const pRequestData);
-	ERequestStatus         RemoveRequestListener(void (* func)(SRequestInfo const* const), void const* const pObjectToListenTo);
+	void                   AddRequestListener(SSystemRequestData<ESystemRequestType::AddRequestListener> const* const pRequestData);
+	void                   RemoveRequestListener(void (* func)(SRequestInfo const* const), void const* const pObjectToListenTo);
 	void                   NotifyListener(SRequestInfo const* const pRequestInfo);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)

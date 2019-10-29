@@ -175,7 +175,7 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize)
+bool CImpl::Init(uint16 const objectPoolSize)
 {
 	if (g_cvars.m_eventPoolSize < 1)
 	{
@@ -265,7 +265,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 
 	LoadMasterBanks();
 
-	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
+	return fmodResult == FMOD_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -428,7 +428,7 @@ void CImpl::ResumeAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::StopAllSounds()
+void CImpl::StopAllSounds()
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
 
@@ -452,8 +452,6 @@ ERequestStatus CImpl::StopAllSounds()
 		pMasterBus->stopAllEvents(FMOD_STUDIO_STOP_IMMEDIATE);
 #endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -540,9 +538,9 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
+bool CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+	bool isConstructed = false;
 
 	if ((_stricmp(rootNode->getTag(), g_szFileTag) == 0) && (pFileInfo != nullptr))
 	{
@@ -562,11 +560,11 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CBank");
 			pFileInfo->pImplData = new CBank();
 
-			result = ERequestStatus::Success;
+			isConstructed = true;
 		}
 	}
 
-	return result;
+	return isConstructed;
 }
 
 //////////////////////////////////////////////////////////////////////////

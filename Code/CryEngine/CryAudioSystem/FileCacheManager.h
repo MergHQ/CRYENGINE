@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <CryAudio/IAudioSystem.h>
+#include "Common.h"
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CryMemory/IMemory.h>
 
@@ -41,7 +42,7 @@ public:
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr);
 	ERequestStatus TryUnloadRequest(PreloadRequestId const preloadRequestId);
-	ERequestStatus UnloadDataByContext(ContextId const contextId);
+	void           UnloadDataByContext(ContextId const contextId);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void   UpdateDebugInfo(char const* const szDebugFilter);

@@ -43,10 +43,10 @@ struct IImpl
 	/**
 	 * Initialize all internal components and the audio middleware.
 	 * @param objectPoolSize - Number of objects to preallocate storage for.
-	 * @return ERequestStatus::Success if the initialization was successful, ERequestStatus::Failure otherwise.
+	 * @return true if the initialization was successful, false otherwise.
 	 * @see ShutDown
 	 */
-	virtual ERequestStatus Init(uint16 const objectPoolSize) = 0;
+	virtual bool Init(uint16 const objectPoolSize) = 0;
 
 	/**
 	 * Shuts down all of the internal components and the audio middleware.
@@ -145,10 +145,9 @@ struct IImpl
 
 	/**
 	 * Stop all currently playing sounds. Has no effect on anything triggered after this method is called.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
 	 * @see MuteAll
 	 */
-	virtual ERequestStatus StopAllSounds() = 0;
+	virtual void StopAllSounds() = 0;
 
 	/**
 	 * Inform the audio middleware about the memory location of a preloaded audio-data file
@@ -172,10 +171,10 @@ struct IImpl
 	 * Create an object implementing IFile to hold implementation-specific data about the file and store a pointer to it in a member of pFileInfo
 	 * @param rootNode - an XML node containing the necessary information about the file
 	 * @param pFileInfo - a pointer to the struct containing the data used by the audio system to load the file into memory
-	 * @return ERequestStatus::Success if the XML node was parsed successfully, ERequestStatus::Failure otherwise
+	 * @return true if the XML node was parsed successfully, false otherwise
 	 * @see DestructFile
 	 */
-	virtual ERequestStatus ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo) = 0;
+	virtual bool ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IFile instance.

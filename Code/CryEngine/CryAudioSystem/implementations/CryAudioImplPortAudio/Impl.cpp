@@ -139,7 +139,7 @@ CImpl::CImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize)
+bool CImpl::Init(uint16 const objectPoolSize)
 {
 	if (g_cvars.m_eventPoolSize < 1)
 	{
@@ -195,7 +195,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	Pa_Initialize();
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
-	return ERequestStatus::Success;
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -311,14 +311,12 @@ void CImpl::ResumeAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::StopAllSounds()
+void CImpl::StopAllSounds()
 {
 	for (auto const pObject : g_constructedObjects)
 	{
 		pObject->StopAllTriggers();
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -332,9 +330,9 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
+bool CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
-	return ERequestStatus::Failure;
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

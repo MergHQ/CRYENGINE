@@ -429,9 +429,9 @@ void CImpl::Update()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize)
+bool CImpl::Init(uint16 const objectPoolSize)
 {
-	ERequestStatus requestStatus = ERequestStatus::Failure;
+	bool isInitialized = false;
 
 	if (g_cvars.m_eventPoolSize < 1)
 	{
@@ -479,7 +479,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 				LoadMetadata("", false);
 				LoadMetadata("", true);
 
-				requestStatus = ERequestStatus::Success;
+				isInitialized = true;
 			}
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			else
@@ -502,7 +502,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	}
 #endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
-	return requestStatus;
+	return isInitialized;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -651,10 +651,9 @@ void CImpl::ResumeAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::StopAllSounds()
+void CImpl::StopAllSounds()
 {
 	Mix_HaltChannel(-1);
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -698,9 +697,9 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
+bool CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+	bool isConstructed = false;
 
 	if ((pFileInfo != nullptr) && (_stricmp(rootNode->getTag(), g_szEventTag) == 0))
 	{
@@ -722,11 +721,11 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CFile");
 			pFileInfo->pImplData = new CFile(sampleId);
 
-			result = ERequestStatus::Success;
+			isConstructed = true;
 		}
 	}
 
-	return result;
+	return isConstructed;
 }
 
 ///////////////////////////////////////////////////////////////////////////

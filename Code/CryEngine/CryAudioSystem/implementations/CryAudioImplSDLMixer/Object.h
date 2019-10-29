@@ -40,7 +40,7 @@ public:
 	virtual void                   SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners) override {}
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override                                                {}
 	virtual void                   StopAllTriggers() override;
-	virtual ERequestStatus         SetName(char const* const szName) override;
+	virtual void                   SetName(char const* const szName) override;
 	virtual void                   AddListener(IListener* const pIListener) override;
 	virtual void                   RemoveListener(IListener* const pIListener) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}

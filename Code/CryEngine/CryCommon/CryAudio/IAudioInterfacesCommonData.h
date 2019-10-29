@@ -139,26 +139,6 @@ enum class ERequestFlags : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
 
 /**
- * @enum CryAudio::ERequestStatus
- * @brief A strongly typed enum class representing a list of possible statuses of an internally generated audio request. Used as a return type for many methods used by the AudioSystem internally and also for most of the CryAudio::Impl::IImpl calls.
- * @var CryAudio::ERequestStatus::None
- * @var CryAudio::ERequestStatus::Success
- * @var CryAudio::ERequestStatus::SuccessNeedsRefresh
- * @var CryAudio::ERequestStatus::PartialSuccess
- * @var CryAudio::ERequestStatus::Failure
- * @var CryAudio::ERequestStatus::Pending
- */
-enum class ERequestStatus : EnumFlagsType
-{
-	None,                    /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
-	Success,                 /**< Returned if the request processed successfully. */
-	SuccessNeedsRefresh,     /**< Audio middleware implementations return this if after an action they require to be refreshed. */
-	PartialSuccess,          /**< Returned if the outcome of the request wasn't a complete success but also not complete failure. */
-	Failure,                 /**< Returned if the request failed to process. */
-	Pending,                 /**< Returned if the request was delivered but final execution is pending. It's then kept in the system until its status changed. */
-};
-
-/**
  * @enum CryAudio::ERequestResult
  * @brief A strongly typed enum class representing a list of possible outcomes of a request which gets communicated via the callbacks if the user decided to be informed of the outcome of a particular request.
  * @var CryAudio::ERequestResult::None
