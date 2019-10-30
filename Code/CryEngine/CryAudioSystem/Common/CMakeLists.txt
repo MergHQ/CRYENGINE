@@ -19,6 +19,7 @@ add_sources("NoUberFile"
 		"ITriggerConnection.h"
 		"ITriggerInfo.h"
 		"Logger.h"
+		"PluginPlatform.h"
 		"PoolObject.h"
 		"PoolObject_impl.h"
 )
