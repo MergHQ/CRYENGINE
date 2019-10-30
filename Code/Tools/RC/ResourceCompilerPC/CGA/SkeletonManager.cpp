@@ -25,19 +25,40 @@ SkeletonManager::SkeletonManager(IPakSystem* pPakSystem, ICryXML* pXmlParser, IR
 }
 
 
+namespace SkelMgr_Internal
+{
+static string StandardizePath(const char* path)
+{
+	const string absolutePath = PathUtil::ToUnixPath(PathHelpers::IsRelative(path) ? PathHelpers::GetAbsolutePath(path) : path);
+	
+	const size_t bufferLength = strlen(absolutePath.c_str()) + 1;
+	STACK_ARRAY(char, szSimplifiedPath, bufferLength);
+
+	// We simplify the file path to remove any ., .. or other redundant path operators
+	bool bSuccess = PathUtil::SimplifyFilePath(absolutePath.c_str(), szSimplifiedPath, bufferLength, PathUtil::ePathStyle_Posix);
+	if (!bSuccess)
+	{
+		RCLogError("Error while simplifying path '%s'", absolutePath.c_str());
+	}
+
+	return string{ szSimplifiedPath };
+}
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 bool SkeletonManager::Initialize(const string& rootPath)
 {
-	m_rootPath = PathUtil::ToUnixPath(PathUtil::AddSlash(rootPath));
+	m_rootPath = PathUtil::AddSlash(SkelMgr_Internal::StandardizePath(rootPath));
 
 	std::vector<string> foundSkeletons;
-	FileUtil::ScanDirectory(rootPath, "*.chr", foundSkeletons, true, "");
-
+	FileUtil::ScanDirectory(m_rootPath, "*.chr", foundSkeletons, true, "");
+	
 	RCLog("Starting preloading of skeletons.");
 	for (const string& skeletonFilename : foundSkeletons)
 	{
 		RCLog("Loading skeleton '%s'", skeletonFilename.c_str());
-		LoadSkeletonInfo(skeletonFilename.c_str());
+		LoadSkeletonInfo(skeletonFilename.c_str(), true);
 	} 
 
 	RCLog("Finished preloading of skeletons.");
@@ -50,7 +71,7 @@ const CSkeletonInfo* SkeletonManager::FindSkeletonByAnimFile(const char* szAnima
 	string relativeAnimFilePath;
 	if (!bRelative)
 	{
-		string fullAnimFilePath = PathUtil::ToUnixPath(szAnimationFile);
+		string fullAnimFilePath = SkelMgr_Internal::StandardizePath(szAnimationFile);
 		int rootLength = m_rootPath.length();
 		if (0 == strcmpi(m_rootPath, fullAnimFilePath.substr(0, rootLength)))
 		{
@@ -79,7 +100,7 @@ const CSkeletonInfo* SkeletonManager::FindSkeletonByAnimFile(const char* szAnima
 }
 
 //////////////////////////////////////////////////////////////////////////
-const CSkeletonInfo* SkeletonManager::LoadSkeletonInfo(const char* szFilename)
+const CSkeletonInfo* SkeletonManager::LoadSkeletonInfo(const char* szFilename, bool bErrorsAsWarnings)
 {
 	if (szFilename == nullptr || szFilename[0] == '\0')
 	{
@@ -102,7 +123,7 @@ const CSkeletonInfo* SkeletonManager::LoadSkeletonInfo(const char* szFilename)
 	const bool bLoadSuccess = skeletonInfo.IsLoaded();
 	if (!bLoadSuccess)
 	{
-		RCLogError("Failed to load skeleton '%s'.", fullFile.c_str());
+		(bErrorsAsWarnings ? RCLogWarning : RCLogError)("Failed to load skeleton '%s'.", fullFile.c_str());
 		return nullptr;
 	}
 
