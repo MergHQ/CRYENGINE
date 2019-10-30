@@ -75,7 +75,7 @@ void BiquadIIFilter::ComputeCoefficients(int const frequency, float const qualit
 				m_coefficientB0 = m_coefficientA1;
 				m_coefficientB1 = static_cast<AkReal32>((1.0 - x1 + factorKSpuare) * norm);
 			}
-			else    // cut
+			else      // cut
 			{
 				double const x1 = 1.0 / qualityFactor * factorK;
 				double const x2 = factorV / qualityFactor * factorK;
@@ -103,7 +103,7 @@ void BiquadIIFilter::ComputeCoefficients(int const frequency, float const qualit
 				m_coefficientB0 = static_cast<AkReal32>(2.0 * (factorKSpuare - 1.0) * norm);
 				m_coefficientB1 = static_cast<AkReal32>((1.0 - x3 + factorKSpuare) * norm);
 			}
-			else    // cut
+			else      // cut
 			{
 				double const x1 = sqrt(2.0 * factorV) * factorK;
 				double const x2 = factorV * factorKSpuare;
@@ -131,7 +131,7 @@ void BiquadIIFilter::ComputeCoefficients(int const frequency, float const qualit
 				m_coefficientB0 = static_cast<AkReal32>(2.0 * (factorKSpuare - 1) * norm);
 				m_coefficientB1 = static_cast<AkReal32>((1.0 - x2 + factorKSpuare) * norm);
 			}
-			else    // cut
+			else      // cut
 			{
 				double const x1 = sqrt(2.0 * factorV) * factorK;
 				double const x2 = g_rootTwo * factorK;

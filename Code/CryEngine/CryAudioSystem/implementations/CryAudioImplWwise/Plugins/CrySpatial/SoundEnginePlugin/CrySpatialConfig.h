@@ -16,7 +16,7 @@ namespace CrySpatialConfig
 {
 static const unsigned short g_companyID = 137;
 static const unsigned short g_pluginID = 1000;
-}       // namespace CrySpatialConfig
+}         // namespace CrySpatialConfig
 
 namespace CrySpatialAttachmentConfig
 {

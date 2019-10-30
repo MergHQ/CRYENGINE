@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <windows.h>
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
 #include <atlstr.h>
 #include <AK/Wwise/AudioPlugin.h>

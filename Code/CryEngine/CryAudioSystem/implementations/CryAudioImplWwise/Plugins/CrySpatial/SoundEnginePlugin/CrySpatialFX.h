@@ -20,11 +20,14 @@ constexpr int g_maxDelay = 24;
 constexpr float g_defaultFilterQuality = 0.7f;
 constexpr float g_linearFadeStrength = 0.0f;
 
-constexpr float g_smallFadeLength = 100.0f;
-constexpr int g_smallFadeLengthInteger = 100; // fade length in samples
+constexpr float g_smallFadeLength = 10.0f;
+constexpr int g_smallFadeLengthInteger = 10; // fade length in samples
 
-constexpr float g_bigFadeLength = 200.0f;
-constexpr int g_bigFadeLengthInteger = 200; // fade length in samples
+constexpr float g_mediumFadeLength = 200.0f;
+constexpr int g_mediumFadeLengthInteger = 200; // fade length in samples
+
+constexpr float g_largeFadeLength = 300.0f;
+constexpr int g_largeFadeLengthInteger = 300; // fade length in samples
 
 enum class EFadeType
 {
