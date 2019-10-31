@@ -1834,6 +1834,14 @@ void CNodeGraphView::ReloadItems()
 
 void CNodeGraphView::ClearItems()
 {
+	for (auto itemWidgetPair : m_connectionWidgetByItemInstance)
+	{
+		if (!itemWidgetPair.second)
+			continue;
+		m_pScene->removeItem(itemWidgetPair.second);
+		itemWidgetPair.second->DeleteLater();
+	}
+
 	for (auto itemWidgetPair : m_nodeWidgetByItemInstance)
 	{
 		if (!itemWidgetPair.second)
@@ -1851,14 +1859,6 @@ void CNodeGraphView::ClearItems()
 	}
 
 	for (auto itemWidgetPair : m_commentWidgetByItemInstance)
-	{
-		if (!itemWidgetPair.second)
-			continue;
-		m_pScene->removeItem(itemWidgetPair.second);
-		itemWidgetPair.second->DeleteLater();
-	}
-
-	for (auto itemWidgetPair : m_connectionWidgetByItemInstance)
 	{
 		if (!itemWidgetPair.second)
 			continue;
