@@ -10,6 +10,9 @@
 class CGoToFuncWnd : public _TinyDialog
 {
 public:
+
+	using _TinyWindow::Create;
+
 	BOOL Create(_TinyWindow* pParent = NULL)
 	{
 		return _TinyDialog::Create(MAKEINTRESOURCE(IDD_GOTO_FUNC), pParent);

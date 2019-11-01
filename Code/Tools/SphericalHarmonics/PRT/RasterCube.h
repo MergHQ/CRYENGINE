@@ -6,6 +6,7 @@
 #pragma warning (disable : 4127) 
 
 #include "RasterTable.h"									// CRasterTable
+#include "Enums.h"
 #include <PRT/PRTTypes.h>
 #include <CryMath/Cry_Math.h>
 #include <limits>
@@ -17,11 +18,6 @@
 
 template <class T, class T2> class _Matrix34C;
 template <class T> class _Vector2dC;
-
-namespace NSH
-{
-	enum EReturnSinkValue;
-}
 
 template < class T > class _Vector3dC
 {

@@ -8,6 +8,9 @@
 class CAboutWnd : public _TinyDialog
 {
 public:
+
+	using _TinyWindow::Create;
+
 	BOOL Create(_TinyWindow* pParent = NULL)
 	{ return _TinyDialog::Create(MAKEINTRESOURCE(IDD_ABOUTBOX), pParent); };
 	BOOL DoModal(_TinyWindow* pParent = NULL)

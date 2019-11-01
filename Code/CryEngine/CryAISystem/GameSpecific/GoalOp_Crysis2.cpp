@@ -3812,8 +3812,9 @@ bool COPCrysis2FlightFireWeapons::GetTarget(CPipeUser* pPipeUser, Vec3& target)
 			}
 		}
 		break;
-
-	case AI_REG_INTERNAL_TARGET:
+#pragma warning (disable: 4063)
+	case static_cast<EAIRegister>(AI_REG_INTERNAL_TARGET):
+#pragma warning (default: 4063)
 		if (m_targetId != 0)
 		{
 			IEntity* pTargetEntity = gEnv->pEntitySystem->GetEntity(m_targetId);

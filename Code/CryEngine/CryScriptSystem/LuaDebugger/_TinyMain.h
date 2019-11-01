@@ -38,7 +38,7 @@
 // Debug functions / macros
 ///////////////////////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
-	#define _TinyVerify(x) { if (!(x)) assert(0); }
+	#define _TinyVerify(x) { CRY_VERIFY(x); }
 #else
 	#define _TinyVerify(x) { if (!(x)) { __debugbreak(); }; }
 #endif

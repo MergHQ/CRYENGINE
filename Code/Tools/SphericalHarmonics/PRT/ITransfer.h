@@ -12,16 +12,6 @@ class CSimpleIndexedMesh;//forward declaration
 
 namespace NSH
 {
-	namespace NMaterial
-	{
-		enum EMaterialType;
-	}
-
-	namespace NFramework
-	{
-		enum ESHRenderType;
-	}
-
 	namespace NSampleGen
 	{
 		interface ISampleGenerator;//forward declaration

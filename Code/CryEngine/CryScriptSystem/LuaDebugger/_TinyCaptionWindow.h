@@ -10,6 +10,9 @@
 class _TinyCaptionWindow : public _TinyWindow
 {
 public:
+
+	using _TinyWindow::Create;
+
 	_TinyCaptionWindow() { m_pContent = NULL; };
 	~_TinyCaptionWindow() {};
 

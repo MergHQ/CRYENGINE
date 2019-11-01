@@ -50,6 +50,9 @@ class CLUACodeCoverage;
 class CSourceEdit : public _TinyWindow
 {
 public:
+
+	using _TinyWindow::Create;
+
 	CSourceEdit()
 		: m_iLineMarkerPos(1)
 		, m_pIScriptSystem(nullptr)
