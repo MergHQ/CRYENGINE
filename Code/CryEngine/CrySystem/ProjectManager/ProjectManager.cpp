@@ -90,38 +90,27 @@ bool CProjectManager::ParseProjectFile()
 
 	const char* szEngineRootDirectory = gEnv->pSystem->GetRootFolder();
 
-	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
-	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
-	if (projectFile.empty())
+	// Assign project file path
 	{
-		CryLogAlways("\nRunning CRYENGINE without a project!");
-		CryLogAlways("	Using Engine Folder %s", szEngineRootDirectory);
+		string projectFile = PathUtil::GetProjectFile();
+		if (projectFile.empty())
+		{
+			CryLogAlways("\nRunning CRYENGINE without a project!");
+			CryLogAlways("	Using Engine Folder %s", szEngineRootDirectory);
 
-		m_sys_game_name->Set("CRYENGINE - No Project");
-		// Specify an assets directory despite having no project, this is to prevent CryPak scanning engine root
-		m_sys_game_folder->Set("Assets");
-		return false;
-	}
+			m_sys_game_name->Set("CRYENGINE - No Project");
+			// Specify an assets directory despite having no project, this is to prevent CryPak scanning engine root
+			m_sys_game_folder->Set("Assets");
+			return false;
+		}
 
-	string extension = PathUtil::GetExt(projectFile);
-	if (extension.empty())
-	{
-		projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
-	}
+		string extension = PathUtil::GetExt(projectFile);
+		if (extension.empty())
+		{
+			projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
+		}
 
-#if CRY_PLATFORM_DURANGO
-	if(true)
-#elif CRY_PLATFORM_WINAPI
-	if (PathIsRelative(projectFile.c_str()))
-#elif CRY_PLATFORM_POSIX
-	if (projectFile[0] != '/')
-#endif
-	{
-		m_project.filePath = PathUtil::Make(szEngineRootDirectory, projectFile.c_str());
-	}
-	else
-	{
-		m_project.filePath = projectFile.c_str();
+		m_project.filePath = projectFile;
 	}
 
 #ifndef CRY_FORCE_CRYPROJECT_IN_PAK

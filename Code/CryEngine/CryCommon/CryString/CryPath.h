@@ -821,37 +821,55 @@ inline string GetGameFolder()
 	return gEnv->pCryPak->GetGameFolder();
 }
 
-inline string GetProjectFolder()
+//! Returns a normalized, absolute path to the .cryproject file in use.
+//! This function may only be called after CrySystem has been initialized.
+inline string GetProjectFile()
 {
-	static bool checkedForCmdLineProjectArg = false;
-	static string cmdLineProjectPath;
-	if (cmdLineProjectPath.IsEmpty() && !checkedForCmdLineProjectArg)
+	static bool initializedProjectFilePath = false;
+	static string projectFilePath;
+	if (!initializedProjectFilePath)
 	{
 		CRY_ASSERT(gEnv && gEnv->pSystem && gEnv->pSystem->GetICmdLine(), "PathUtil::GetProjectFolder() was called before system was initialized");
 		const ICmdLineArg* project = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
 		if (project)
 		{
-			cmdLineProjectPath = PathUtil::GetParentDirectory(project->GetValue());
+			projectFilePath = project->GetValue();
 		}
 		else
 		{
 			ICVar* pSysProject = gEnv->pConsole->GetCVar("sys_project");
 			if (pSysProject && pSysProject->GetString())
 			{
-				string sysProjectStr = PathUtil::GetParentDirectory(pSysProject->GetString());
-				if (PathUtil::IsRelativePath(sysProjectStr))
-				{
-					cmdLineProjectPath = PathUtil::Make(GetEnginePath(), sysProjectStr);
-				}
-				else
-				{
-					cmdLineProjectPath = sysProjectStr;
-				}
+				projectFilePath = pSysProject->GetString();
 			}
 		}
-		checkedForCmdLineProjectArg = true;
+
+		if (PathUtil::IsRelativePath(projectFilePath))
+		{
+			projectFilePath = PathUtil::Make(GetEnginePath(), projectFilePath);
+		}
+
+		// TODO: move to a standalone helper function
+		{
+			projectFilePath = PathUtil::ToUnixPath(projectFilePath);
+
+			const size_t bufferLength = projectFilePath.size() + 1;
+			STACK_ARRAY(char, szNormalizedProjectFilePath, bufferLength);
+			PathUtil::SimplifyFilePath(projectFilePath.c_str(), szNormalizedProjectFilePath, bufferLength, PathUtil::ePathStyle_Posix);
+			projectFilePath = szNormalizedProjectFilePath;
+		}
+
+		initializedProjectFilePath = true;
 	}
-	return PathUtil::ToUnixPath(cmdLineProjectPath);
+
+	return projectFilePath;
+}
+
+//! Returns a normalized, absolute path to the directory containing .cryproject file in use.
+//! This function may only be called after CrySystem has been initialized.
+inline string GetProjectFolder()
+{
+	return PathUtil::GetParentDirectory(GetProjectFile());
 }
 
 inline string GetLocalizationFolder()
