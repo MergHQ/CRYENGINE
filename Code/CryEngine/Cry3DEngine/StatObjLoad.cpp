@@ -1524,7 +1524,7 @@ static inline CNodeCGF* CreateNodeCGF(CContentCGF* pCGF, CStatObj* pStatObj, con
 	pNode->pMaterial = pMaterial;
 	pNode->nPhysicalizeFlags = 0;
 
-	if (pStatObj && pStatObj->GetIndexedMesh())
+	if (pStatObj && pStatObj->GetIndexedMesh(true))	// GetIndexedMesh(true) will create indexed mesh from render mesh if needed
 	{
 		pNode->pMesh = new CMesh;
 		pNode->pMesh->CopyFrom(*(pStatObj->GetIndexedMesh()->GetMesh()));
@@ -1570,8 +1570,15 @@ bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool
 		*pOutChunkFile = pChunkFile;
 
 	CMaterialCGF* pMaterialCGF = new CMaterialCGF;
+	// if material name uses an absolute path, check if it's in the same folder as the cgf
+	// if so, leave just the name, otherwise remove the engine path from the material path
 	if (m_pMaterial)
-		cry_strcpy(pMaterialCGF->name, m_pMaterial->GetName());
+		cry_strcpy(pMaterialCGF->name, 
+			PathUtil::IsRelativePath(m_pMaterial->GetName()) ? m_pMaterial->GetName() :	// store non-absolute path as it is
+			(stricmp(PathUtil::GetPathWithoutFilename(GetFilePath()), PathUtil::GetPathWithoutFilename(m_pMaterial->GetName())) ?
+			m_pMaterial->GetName() + PathUtil::GetEnginePath().length() + 1 :
+			PathUtil::GetFileName(m_pMaterial->GetName()).c_str())
+		);
 	else
 		pMaterialCGF->name[0] = 0;
 	pMaterialCGF->nPhysicalizeType = PHYS_GEOM_TYPE_DEFAULT;
