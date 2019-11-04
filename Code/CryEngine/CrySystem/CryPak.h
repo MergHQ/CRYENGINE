@@ -343,7 +343,7 @@ private:
 	bool InitPack(const char* szBasePath, unsigned nFlags = FLAGS_PATH_REAL);
 
 	// Return true if alias was adjusted
-	bool AdjustAliases(char* dst);
+	bool AdjustAliases(CryPathString& dst);
 	void AdjustFileNameInternal(const char* src, CryPathString& dst, unsigned nFlags);
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)

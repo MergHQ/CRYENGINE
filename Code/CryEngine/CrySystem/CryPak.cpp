@@ -1078,31 +1078,22 @@ void CCryPak::AdjustFileName(const char* src, CryPathString& dst, unsigned nFlag
 	AdjustFileNameInternal(src, dst, nFlags);
 }
 //////////////////////////////////////////////////////////////////////////
-bool CCryPak::AdjustAliases(char* dst)
+bool CCryPak::AdjustAliases(CryPathString& dst)
 {
 	bool foundAlias = false;
-	for (tNameAlias* tTemp : m_arrAliases)
+	for (tNameAlias* pAlias : m_arrAliases)
 	{
 		// Replace the alias if it's the first item in the path
-		if (strncmp(dst, tTemp->szName, tTemp->nLen1) == 0 && dst[tTemp->nLen1] == g_cNativeSlash)
+		if (strncmp(dst, pAlias->szName, pAlias->nLen1) == 0 && dst[pAlias->nLen1] == g_cNativeSlash)
 		{
 			foundAlias = true;
-			char temp[512];
-			strcpy(temp, &dst[tTemp->nLen1]); // Make a copy of string remainder to avoid trampling from sprintf
-			sprintf(dst, "%s%s", tTemp->szAlias, temp);
+			dst.replace(0, pAlias->nLen1, pAlias->szAlias);
 		}
 
 		// Strip extra aliases from path
-		char* searchIdx = dst;
-		char* pos;
-		while ((pos = strstr(searchIdx, tTemp->szName)))
-		{
-			if (pos[tTemp->nLen1] == g_cNativeSlash && pos[-1] == g_cNativeSlash)
-			{
-				memmove(pos, &pos[tTemp->nLen1 + 1], strlen(pos + tTemp->nLen1 + 1));
-			}
-			searchIdx = pos + 1;
-		}
+		stack_string searchAlias;
+		searchAlias.Format("%c%s%c", g_cNativeSlash, pAlias->szName, g_cNativeSlash);
+		dst.replace(searchAlias, "");
 	}
 	return foundAlias;
 }
@@ -1143,68 +1134,71 @@ void CCryPak::GetCachedPakCDROffsetSize(const char* szName, uint32& offset, uint
 void CCryPak::AdjustFileNameInternal(const char* src, CryPathString& dst, unsigned nFlags)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-	// in many cases, the path will not be long, so there's no need to allocate so much..
-	// I'd use _alloca, but I don't like non-portable solutions. besides, it tends to confuse new developers. So I'm just using a big enough array
-	char szNewSrc[CryPathString::MAX_SIZE];
-	cry_strcpy(szNewSrc, src);
 
-	if (nFlags & FLAGS_FOR_WRITING)
 	{
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_MOBILE
-		// Path is adjusted for writing file.
-		if (!m_bGameFolderWritable)
+		// in many cases, the path will not be long, so there's no need to allocate so much..
+		// I'd use _alloca, but I don't like non-portable solutions. besides, it tends to confuse new developers. So I'm just using a big enough array
+		char szNewSrc[CryPathString::MAX_SIZE];
+		cry_strcpy(szNewSrc, src);
+
+		if (nFlags & FLAGS_FOR_WRITING)
 		{
-			// If game folder is not writable, we must adjust the path to go into the user folder UNLESS it is absolute or already starts with an alias
-			if (*src != '%' && src[0] != 0
-	#if CRY_PLATFORM_WINDOWS
-			    && src[1] != ':'
-	#else
-			    && !IsAbsPath(src)
-	#endif
-			    )
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_MOBILE
+			// Path is adjusted for writing file.
+			if (!m_bGameFolderWritable)
 			{
-				// If game folder is not writable on Windows, we must adjust the path to go into the user folder if not already.
-				cry_strcpy(szNewSrc, "%user%\\");
-				cry_strcat(szNewSrc, src);
+				// If game folder is not writable, we must adjust the path to go into the user folder UNLESS it is absolute or already starts with an alias
+				if (*src != '%' && src[0] != 0
+	#if CRY_PLATFORM_WINDOWS
+					&& src[1] != ':'
+	#else
+					&& !IsAbsPath(src)
+	#endif
+					)
+				{
+					// If game folder is not writable on Windows, we must adjust the path to go into the user folder if not already.
+					cry_strcpy(szNewSrc, "%user%\\");
+					cry_strcat(szNewSrc, src);
+				}
 			}
-		}
 #endif
-		BeautifyPath(szNewSrc, (nFlags & FLAGS_NO_LOWCASE) == 0);
+			BeautifyPath(szNewSrc, (nFlags & FLAGS_NO_LOWCASE) == 0);
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_ORBIS
-		RemoveRelativeParts(szNewSrc);
+			RemoveRelativeParts(szNewSrc);
 #endif
+		}
+		else
+		{
+			BeautifyPath(szNewSrc, (nFlags & FLAGS_NO_LOWCASE) == 0);
+			RemoveRelativeParts(szNewSrc);
+		}
+
+		dst = szNewSrc;
 	}
-	else
-	{
-		BeautifyPath(szNewSrc, (nFlags & FLAGS_NO_LOWCASE) == 0);
-		RemoveRelativeParts(szNewSrc);
-	}
-	bool bAliasWasUsed = AdjustAliases(szNewSrc);
+
+	const bool bAliasWasUsed = AdjustAliases(dst);
 
 	if (nFlags & FLAGS_NO_FULL_PATH)
 	{
-		dst.assign(szNewSrc);
 		return;
 	}
 
-	bool isAbsolutePath = IsAbsPath(szNewSrc);
+	const bool isAbsolutePath = IsAbsPath(dst);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Strip ./ or .\\ at the beginning of the path when absolute path is given.
 	//////////////////////////////////////////////////////////////////////////
 	if (nFlags & FLAGS_PATH_REAL)
 	{
-		if (filehelpers::CheckPrefix(szNewSrc, "./") ||
-		    filehelpers::CheckPrefix(szNewSrc, ".\\"))
+		if (filehelpers::CheckPrefix(dst, "./") ||
+		    filehelpers::CheckPrefix(dst, ".\\"))
 		{
-			size_t len = std::min<size_t>(sizeof(szNewSrc), strlen(szNewSrc) - 2);
-			memmove(szNewSrc, szNewSrc + 2, len);
-			szNewSrc[len] = 0;
+			dst.erase(0, 2);
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	if (!isAbsolutePath && !(nFlags & FLAGS_PATH_REAL) && !bAliasWasUsed && !IsModPath(szNewSrc))
+	if (!isAbsolutePath && !(nFlags & FLAGS_PATH_REAL) && !bAliasWasUsed && !IsModPath(dst))
 	{
 		// This is a relative filename.
 		// 1) /root/system.cfg
@@ -1212,62 +1206,53 @@ void CCryPak::AdjustFileNameInternal(const char* src, CryPathString& dst, unsign
 		// 3) /root/game/config/system.cfg
 
 #if CRY_PLATFORM_ORBIS
-		if (filehelpers::CheckPrefix(szNewSrc, "localization/") ||
-		    (!filehelpers::CheckPrefix(szNewSrc, m_strDataRootWithSlash.c_str()) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "./") &&
-		     !filehelpers::CheckPrefix(szNewSrc, "engineassets/" ) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "engine/")))
+		if (filehelpers::CheckPrefix(dst, "localization/") ||
+		    (!filehelpers::CheckPrefix(dst, m_strDataRootWithSlash.c_str()) &&
+		     !filehelpers::CheckPrefix(dst, "./") &&
+		     !filehelpers::CheckPrefix(dst, "engineassets/" ) &&
+		     !filehelpers::CheckPrefix(dst, "engine/")))
 #else
-		if (filehelpers::CheckPrefix(szNewSrc, "localization" CRY_NATIVE_PATH_SEPSTR) ||
-		    (!filehelpers::CheckPrefix(szNewSrc, m_strDataRootWithSlash.c_str()) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "." CRY_NATIVE_PATH_SEPSTR) &&
-		     !filehelpers::CheckPrefix(szNewSrc, ".." CRY_NATIVE_PATH_SEPSTR) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "editor" CRY_NATIVE_PATH_SEPSTR) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "mods" CRY_NATIVE_PATH_SEPSTR) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "engineassets" CRY_NATIVE_PATH_SEPSTR) &&
-		     !filehelpers::CheckPrefix(szNewSrc, "engine" CRY_NATIVE_PATH_SEPSTR)))
+		if (filehelpers::CheckPrefix(dst, "localization" CRY_NATIVE_PATH_SEPSTR) ||
+		    (!filehelpers::CheckPrefix(dst, m_strDataRootWithSlash.c_str()) &&
+		     !filehelpers::CheckPrefix(dst, "." CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(dst, ".." CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(dst, "editor" CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(dst, "mods" CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(dst, "engineassets" CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(dst, "engine" CRY_NATIVE_PATH_SEPSTR)))
 #endif
 		{
 			// Add data folder prefix.
-			memmove(szNewSrc + m_strDataRootWithSlash.length(), szNewSrc, strlen(szNewSrc) + 1);
-			memcpy(szNewSrc, m_strDataRootWithSlash.c_str(), m_strDataRootWithSlash.length());
+			dst = m_strDataRootWithSlash.c_str() + dst;
 		}
-		else if (filehelpers::CheckPrefix(szNewSrc, "." CRY_NATIVE_PATH_SEPSTR))
+		else if (filehelpers::CheckPrefix(dst, "." CRY_NATIVE_PATH_SEPSTR))
 		{
-			size_t len = std::min<size_t>(sizeof(szNewSrc), strlen(szNewSrc) - 2);
-			memmove(szNewSrc, szNewSrc + 2, len);
-			szNewSrc[len] = 0;
+			dst.erase(0, 2);
 		}
-		else if (filehelpers::CheckPrefix(szNewSrc, "engineassets"))
+		else if (filehelpers::CheckPrefix(dst, "engineassets"))
 		{
-			char szTempSrc[MAX_PATH];
-			cry_strcpy(szTempSrc,"%engine%" CRY_NATIVE_PATH_SEPSTR);
-			cry_strcat(szTempSrc,szNewSrc);
-			AdjustAliases(szTempSrc);
-			cry_strcpy(szNewSrc,szTempSrc);
+			dst = GetAlias("%engine%") + (CRY_NATIVE_PATH_SEPSTR + dst);
 		}
 	}
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS	
 	// Only lower case after the root path
-	uint rootAdj = strncmp(m_szEngineRootDir, szNewSrc, m_szEngineRootDirStrLen) == 0 ? m_szEngineRootDirStrLen : 0;
-	ConvertFilenameNoCase(szNewSrc + rootAdj);
+	const uint rootAdj = strncmp(m_szEngineRootDir, dst, m_szEngineRootDirStrLen) == 0 ? m_szEngineRootDirStrLen : 0;
+	CryPathString localPath(dst.substr(rootAdj));
+	ConvertFilenameNoCase(localPath.begin());
+	dst.erase(rootAdj);
+	dst += localPath.c_str();
 #endif
 
-	dst.assign(szNewSrc);
 	const char dstLastChar = dst.end()[-1];
-
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && !dst.empty() && (dstLastChar != g_cNativeSlash && dstLastChar != g_cNonNativeSlash))
 #else
-	// p now points to the end of string
 	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && !dst.empty() && dstLastChar != g_cNativeSlash)
 #endif
 	{
 		dst += g_cNativeSlash;
 	}
-
-	return; // the last MOD scanned, or the absolute path outside MasterCD
 }
 
 //////////////////////////////////////////////////////////////////////////
