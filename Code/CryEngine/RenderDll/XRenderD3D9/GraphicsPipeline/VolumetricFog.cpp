@@ -1040,6 +1040,8 @@ void CVolumetricFogStage::GenerateLightList()
 	matView.m22 *= -1;
 	matView.m32 *= -1;
 
+	const float itensityScale = rd->m_fAdaptedSceneScaleLBuffer;
+
 	const auto& defLights = pRenderView->GetLightsArray(eDLT_DeferredLight);
 	const auto& envProbes = pRenderView->GetLightsArray(eDLT_DeferredCubemap);
 	const auto& ambientLights = pRenderView->GetLightsArray(eDLT_DeferredAmbientLight);
@@ -1053,8 +1055,8 @@ void CVolumetricFogStage::GenerateLightList()
 
 	const Vec3 worldViewPos = viewInfo.cameraOrigin;
 	const Vec3 cameraPosition = pRenderView->GetCamera(CCamera::eEye_Left).GetPosition();
+
 	const float minBulbSize = max(0.001f, min(2.0f, CRendererCVars::CV_r_VolumetricFogMinimumLightBulbSize));// limit the minimum bulb size to reduce the light flicker.
-	const uint32 maxSliceCount = m_graphicsPipelineResources.m_pTexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CGraphicsPipelineResources::m_pShadowMaskRT
 
 	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 	CryStackAllocWithSizeVectorCleared(CTiledLightVolumesStage::STiledLightCullInfo, MaxNumTileLights, tileLightsCull, CDeviceBufferManager::AlignBufferSizeForStreaming);
@@ -1071,8 +1073,6 @@ void CVolumetricFogStage::GenerateLightList()
 	float attenuationGlobalEnvProbe1 = 0.0f;
 	float maxSizeGlobalEnvProbe0 = 0.0f;
 	float maxSizeGlobalEnvProbe1 = 0.0f;
-
-	const float invCameraFar = 1.0f / viewInfo.farClipPlane;
 
 	for (uint32 lightListIdx = 0; lightListIdx < lightArraySize; ++lightListIdx)
 	{
@@ -1100,17 +1100,15 @@ void CVolumetricFogStage::GenerateLightList()
 			bool isAreaLight = (renderLight.m_Flags & DLF_AREA) != 0;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
-			lightCullInfo.posRad = Vec4(pos, volumeSize);
+			lightShadeInfo.posRad = Vec4(pos.x - worldViewPos.x, pos.y - worldViewPos.y, pos.z - worldViewPos.z, volumeSize);
 			Vec4 posVS = Vec4(pos, 1) * matView;
-			lightCullInfo.miscFlag = 0;
-			lightCullInfo.depthBounds = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
-			lightShadeInfo.posRad = Vec4(pos.x, pos.y, pos.z, volumeSize);
+			lightCullInfo.posRad = Vec4(posVS.x, posVS.y, posVS.z, volumeSize);
 			lightShadeInfo.attenuationParams = Vec2(renderLight.m_fAttenuationBulbSize, minBulbSize);
-			float intensityScale = rd->m_fAdaptedSceneScaleLBuffer;
-			lightShadeInfo.color = Vec4(renderLight.m_Color.r * intensityScale,
-				renderLight.m_Color.g * intensityScale,
-				renderLight.m_Color.b * intensityScale,
-				renderLight.m_fFogRadialLobe);
+			lightCullInfo.depthBounds = Vec2(posVS.z - volumeSize, posVS.z + volumeSize);
+			lightShadeInfo.color = Vec4(renderLight.m_Color.r * itensityScale,
+			                            renderLight.m_Color.g * itensityScale,
+			                            renderLight.m_Color.b * itensityScale,
+			                            renderLight.m_fFogRadialLobe);
 			lightShadeInfo.resIndex = 0;
 			lightShadeInfo.resMipClamp0 = 0;
 			lightShadeInfo.resMipClamp1 = 0;
@@ -1124,15 +1122,21 @@ void CVolumetricFogStage::GenerateLightList()
 				lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeOBB;
 				lightShadeInfo.lightType = CTiledLightVolumesStage::tlTypeProbe;
 				lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
-				lightShadeInfo.attenuationParams = Vec2(renderLight.m_Color.a, max(renderLight.GetFalloffMax(), 0.001f));
+				lightShadeInfo.attenuationParams.x = renderLight.m_Color.a;
+				// assigning value isn't needed because AttenuationFalloffMax is hard-coded in VolumeLighting.cfi to mitigate sharp transition between probes.
+				//lightShadeInfo.attenuationParams.y = max( renderLight.GetFalloffMax(), 0.001f );
+				lightCullInfo.miscFlag = 0;
 
 				AABB aabb = vfRotateAABB(AABB(-renderLight.m_ProbeExtents, renderLight.m_ProbeExtents), Matrix33(renderLight.m_ObjMatrix));
 				aabb = vfRotateAABB(aabb, Matrix33(matView));
-				lightCullInfo.depthBounds = Vec2(posVS.z + aabb.min.z, posVS.z + aabb.max.z) * invCameraFar;
+				lightCullInfo.depthBounds = Vec2(posVS.z + aabb.min.z, posVS.z + aabb.max.z);
 
-				lightCullInfo.volumeParams0 = Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), renderLight.m_ProbeExtents.x);
-				lightCullInfo.volumeParams1 = Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), renderLight.m_ProbeExtents.y);
-				lightCullInfo.volumeParams2 = Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), renderLight.m_ProbeExtents.z);
+				Vec4 u0 = Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), 0) * matView;
+				Vec4 u1 = Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), 0) * matView;
+				Vec4 u2 = Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), 0) * matView;
+				lightCullInfo.volumeParams0 = Vec4(u0.x, u0.y, u0.z, renderLight.m_ProbeExtents.x);
+				lightCullInfo.volumeParams1 = Vec4(u1.x, u1.y, u1.z, renderLight.m_ProbeExtents.y);
+				lightCullInfo.volumeParams2 = Vec4(u2.x, u2.y, u2.z, renderLight.m_ProbeExtents.z);
 
 				lightShadeInfo.projectorMatrix.SetRow4(0, Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized() / renderLight.m_ProbeExtents.x, 0));
 				lightShadeInfo.projectorMatrix.SetRow4(1, Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized() / renderLight.m_ProbeExtents.y, 0));
@@ -1168,7 +1172,7 @@ void CVolumetricFogStage::GenerateLightList()
 				// Determine the global env probe for lighting analytical volumetric fog if we have it in the scene.
 				// Enough big(more than 1000 meters), the biggest and the second biggest including camera position are selected.
 				if (volumeSize >= ThresholdLengthGlobalProbe &&
-					(volumeSize > maxSizeGlobalEnvProbe0 || volumeSize > maxSizeGlobalEnvProbe1))
+				    (volumeSize > maxSizeGlobalEnvProbe0 || volumeSize > maxSizeGlobalEnvProbe1))
 				{
 					Vec3 vLightPos = renderLight.GetPosition();
 					Vec3 vCenterRel = worldViewPos - vLightPos;
@@ -1178,6 +1182,7 @@ void CVolumetricFogStage::GenerateLightList()
 						vCenterOBBSpace.x = renderLight.m_ObjMatrix.GetColumn0().GetNormalized().dot(vCenterRel);
 						vCenterOBBSpace.y = renderLight.m_ObjMatrix.GetColumn1().GetNormalized().dot(vCenterRel);
 						vCenterOBBSpace.z = renderLight.m_ObjMatrix.GetColumn2().GetNormalized().dot(vCenterRel);
+
 						// Check if camera position is within probe OBB
 						Vec3 vProbeExtents = renderLight.m_ProbeExtents;
 						if (fabs(vCenterOBBSpace.x) < vProbeExtents.x && fabs(vCenterOBBSpace.y) < vProbeExtents.y && fabs(vCenterOBBSpace.z) < vProbeExtents.z)
@@ -1196,12 +1201,14 @@ void CVolumetricFogStage::GenerateLightList()
 							const static float AttenuationFalloffMax = 0.2f;
 							falloff = min(1.0f, falloff / max(renderLight.GetFalloffMax(), AttenuationFalloffMax));
 							float attenuation = falloff * falloff * (3.0f - 2.0f * falloff) * renderLight.m_Color.a;
+
 							if (volumeSize > maxSizeGlobalEnvProbe0)
 							{
 								maxSizeGlobalEnvProbe1 = maxSizeGlobalEnvProbe0;
 								texGlobalEnvProbe1 = texGlobalEnvProbe0;
 								colorGlobalEnvProbe1 = colorGlobalEnvProbe0;
 								attenuationGlobalEnvProbe1 = attenuationGlobalEnvProbe0;
+
 								maxSizeGlobalEnvProbe0 = volumeSize;
 								texGlobalEnvProbe0 = (CTexture*)renderLight.GetDiffuseCubemap();
 								colorGlobalEnvProbe0 = Vec3(lightShadeInfo.color);
@@ -1227,6 +1234,7 @@ void CVolumetricFogStage::GenerateLightList()
 
 				lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeSphere;
 				lightShadeInfo.lightType = ambientLight ? CTiledLightVolumesStage::tlTypeAmbientPoint : CTiledLightVolumesStage::tlTypeRegularPoint;
+				lightCullInfo.miscFlag = 0;
 
 				if (!ambientLight)
 				{
@@ -1247,6 +1255,7 @@ void CVolumetricFogStage::GenerateLightList()
 					lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeCone;
 					lightShadeInfo.lightType = ambientLight ? CTiledLightVolumesStage::tlTypeAmbientProjector : CTiledLightVolumesStage::tlTypeRegularProjector;
 					lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
+					lightCullInfo.miscFlag = 0;
 
 					{
 						CTexture* pProjTexture = (CTexture*)renderLight.m_pLightImage;
@@ -1265,19 +1274,25 @@ void CVolumetricFogStage::GenerateLightList()
 					Matrix34 objMat = renderLight.m_ObjMatrix;
 					objMat.m03 = objMat.m13 = objMat.m23 = 0;  // Remove translation
 					Vec3 lightDir = objMat * Vec3(-1, 0, 0);
-					lightCullInfo.volumeParams0 = Vec4(lightDir, 0);
+					lightCullInfo.volumeParams0 = Vec4(lightDir.x, lightDir.y, lightDir.z, 0) * matView;
 					lightCullInfo.volumeParams0.w = renderLight.m_fRadius * tanf(DEG2RAD(min(renderLight.m_fLightFrustumAngle + frustumAngleDelta, 89.9f))) * sqrt_2;
-					lightCullInfo.volumeParams1.w = DEG2RAD(renderLight.m_fLightFrustumAngle);
 
-					Vec3 coneTipVS = Vec3(posVS);
-					Vec3 coneDirVS = Vec3(Vec4(-lightDir.x, -lightDir.y, -lightDir.z, 0) * matView);
-					AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTipVS, coneDirVS, renderLight.m_fRadius, lightCullInfo.volumeParams0.w));
-					lightCullInfo.depthBounds.x = std::min(lightCullInfo.depthBounds.x, coneBounds.min.z * invCameraFar);
-					lightCullInfo.depthBounds.y = std::min(lightCullInfo.depthBounds.y, coneBounds.max.z * invCameraFar);
+					Vec3 coneTip = Vec3(lightCullInfo.posRad.x, lightCullInfo.posRad.y, lightCullInfo.posRad.z);
+					Vec3 coneDir = Vec3(-lightCullInfo.volumeParams0.x, -lightCullInfo.volumeParams0.y, -lightCullInfo.volumeParams0.z);
+					AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTip, coneDir, renderLight.m_fRadius, lightCullInfo.volumeParams0.w));
+					lightCullInfo.depthBounds = Vec2(coneBounds.min.z, coneBounds.max.z);
 
 					Matrix44A projMatT;
 					CShadowUtils::GetProjectiveTexGen(&renderLight, 0, &projMatT);
+
+					// Translate into camera space
 					projMatT.Transpose();
+					const Vec4 vEye(viewInfo.cameraOrigin, 0.0f);
+					Vec4 vecTranslation(vEye.Dot((Vec4&)projMatT.m00), vEye.Dot((Vec4&)projMatT.m10), vEye.Dot((Vec4&)projMatT.m20), vEye.Dot((Vec4&)projMatT.m30));
+					projMatT.m03 += vecTranslation.x;
+					projMatT.m13 += vecTranslation.y;
+					projMatT.m23 += vecTranslation.z;
+					projMatT.m33 += vecTranslation.w;
 
 					lightShadeInfo.projectorMatrix = projMatT;
 				}
@@ -1286,6 +1301,7 @@ void CVolumetricFogStage::GenerateLightList()
 				if (isAreaLight)
 				{
 					lightShadeInfo.lightType = ambientLight ? CTiledLightVolumesStage::tlTypeAmbientArea : CTiledLightVolumesStage::tlTypeRegularArea;
+					lightCullInfo.miscFlag = 0;
 
 					// Pre-transform polygonal shape vertices
 					Matrix33 rotationMat;
@@ -1352,33 +1368,44 @@ void CVolumetricFogStage::GenerateLightList()
 						ShadowMapFrustum& firstFrustum = *SMFrustums.front()->pFrustum;
 						assert(firstFrustum.bUseShadowsPool);
 
-						int numSides = firstFrustum.bOmniDirectionalShadow ? 6 : 1;
+						int32 numSides = firstFrustum.bOmniDirectionalShadow ? 6 : 1;
 						float kernelSize = firstFrustum.bOmniDirectionalShadow ? 2.5f : 1.5f;
 
 						if (numTileLights + numSides > MaxNumTileLights)
 							continue;  // Skip light
 
 						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)CRendererCVars::CV_e_ShadowsPoolSize), firstFrustum.fDepthConstBias);
+
 						const Vec3 cubeDirs[6] = { Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, -1, 0), Vec3(0, 1, 0), Vec3(0, 0, -1), Vec3(0, 0, 1) };
 
-						for (int side = 0; side < numSides; ++side)
+						for (int32 side = 0; side < numSides; ++side)
 						{
-							bool shouldSample = firstFrustum.ShouldSample(side) && renderLight.m_ShadowMaskIndex < maxSliceCount;
-
 							CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, &firstFrustum, side);
 							Matrix44A shadowMat = shadowsSetup.ShadowMat;
+							const float invFrustumFarPlaneDistance = shadowsSetup.RecpFarDist;
+
+							// Translate into camera space
+							const Vec4 vEye(viewInfo.cameraOrigin, 0.0f);
+							Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
+							shadowMat.m03 += vecTranslation.x;
+							shadowMat.m13 += vecTranslation.y;
+							shadowMat.m23 += vecTranslation.z;
+							shadowMat.m33 += vecTranslation.w;
+
 							// Pre-multiply by inverse frustum far plane distance
-							(Vec4&)shadowMat.m20 *= shadowsSetup.RecpFarDist;
+							(Vec4&)shadowMat.m20 *= invFrustumFarPlaneDistance;
 
-							Vec4 spotParams = Vec4(cubeDirs[side].x, cubeDirs[side].y, cubeDirs[side].z, 0);
+							Vec3 cubeDir = cubeDirs[side];
+							Vec4 spotParamsVS = Vec4(cubeDir.x, cubeDir.y, cubeDir.z, 0) * matView;
+
 							// slightly enlarge the frustum to prevent culling errors
-							spotParams.w = renderLight.m_fRadius * tanf(DEG2RAD(45.0f + 14.5f)) * sqrt_2;
+							spotParamsVS.w = renderLight.m_fRadius * tanf(DEG2RAD(45.0f + 14.5f)) * sqrt_2;
 
-							Vec3 coneTipVS = Vec3(posVS);
-							Vec3 coneDirVS = Vec3(Vec4(-spotParams.x, -spotParams.y, -spotParams.z, 0) * matView);
-							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTipVS, coneDirVS, renderLight.m_fRadius, spotParams.w));
-							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z) * invCameraFar;
-							Vec2 sideShadowParams = shouldSample ? shadowParams : Vec2(ZERO);
+							Vec3 coneTip = Vec3(lightCullInfo.posRad.x, lightCullInfo.posRad.y, lightCullInfo.posRad.z);
+							Vec3 coneDir = Vec3(-spotParamsVS.x, -spotParamsVS.y, -spotParamsVS.z);
+							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTip, coneDir, renderLight.m_fRadius, spotParamsVS.w));
+							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z);
+							Vec2 sideShadowParams = firstFrustum.ShouldSample(side) ? shadowParams : Vec2(ZERO);
 
 							if (side == 0)
 							{
@@ -1389,13 +1416,13 @@ void CVolumetricFogStage::GenerateLightList()
 								if (numSides > 1)
 								{
 									lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeCone;
-									lightCullInfo.volumeParams0 = spotParams;
-									lightCullInfo.volumeParams1.w = DEG2RAD(45.0f);
-									lightCullInfo.depthBounds = depthBoundsVS;
 									lightShadeInfo.lightType = CTiledLightVolumesStage::tlTypeRegularPointFace;
 									lightShadeInfo.resIndex = side;
 									lightShadeInfo.resMipClamp0 = 0;
 									lightShadeInfo.resMipClamp1 = 0;
+									lightCullInfo.volumeParams0 = spotParamsVS;
+									lightCullInfo.depthBounds = depthBoundsVS;
+									lightCullInfo.miscFlag = 0;
 								}
 							}
 							else
@@ -1403,15 +1430,14 @@ void CVolumetricFogStage::GenerateLightList()
 								// Split point light
 								++numTileLights;
 								tileLightsCull[numTileLights] = lightCullInfo;
-								tileLightsCull[numTileLights].volumeParams0 = spotParams;
-								tileLightsCull[numTileLights].volumeParams1.w = DEG2RAD(45.0f);
-								tileLightsCull[numTileLights].depthBounds = depthBoundsVS;
 								tileLightsShade[numTileLights] = lightShadeInfo;
 								tileLightsShade[numTileLights].shadowParams = sideShadowParams;
 								tileLightsShade[numTileLights].shadowMatrix = shadowMat;
 								tileLightsShade[numTileLights].resIndex = side;
 								tileLightsShade[numTileLights].resMipClamp0 = 0;
 								tileLightsShade[numTileLights].resMipClamp1 = 0;
+								tileLightsCull[numTileLights].volumeParams0 = spotParamsVS;
+								tileLightsCull[numTileLights].depthBounds = depthBoundsVS;
 							}
 						}
 					}
