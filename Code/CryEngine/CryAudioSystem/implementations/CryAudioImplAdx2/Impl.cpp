@@ -356,9 +356,9 @@ CImpl::CImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Init(uint16 const objectPoolSize)
+bool CImpl::Init(uint16 const objectPoolSize)
 {
-	ERequestStatus result = ERequestStatus::Success;
+	bool isInitialized = true;
 
 	if (g_cvars.m_cuePoolSize < 1)
 	{
@@ -410,10 +410,10 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	else
 	{
 		ShutDown();
-		result = ERequestStatus::Failure;
+		isInitialized = false;
 	}
 
-	return result;
+	return isInitialized;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -608,10 +608,9 @@ void CImpl::ResumeAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::StopAllSounds()
+void CImpl::StopAllSounds()
 {
 	criAtomExPlayer_StopAllPlayers();
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -675,9 +674,9 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
+bool CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
-	ERequestStatus result = ERequestStatus::Failure;
+	bool isConstructed = false;
 
 	if ((_stricmp(rootNode->getTag(), g_szBinaryTag) == 0) && (pFileInfo != nullptr))
 	{
@@ -698,11 +697,11 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CBinary");
 			pFileInfo->pImplData = new CBinary();
 
-			result = ERequestStatus::Success;
+			isConstructed = true;
 		}
 	}
 
-	return result;
+	return isConstructed;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1876,7 +1875,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
 	auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-	Debug::FormatMemoryString(memAllocSizeString, memAllocSize - totalPoolSize);
+	Debug::FormatMemoryString(memAllocSizeString, memAllocSize);
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
 	Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
@@ -1885,7 +1884,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	Debug::FormatMemoryString(acfSizeString, m_acfFileSize);
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
-	size_t const totalMemSize = memAllocSize + m_acfFileSize;
+	size_t const totalMemSize = memAllocSize + totalPoolSize + m_acfFileSize;
 	Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
 	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s (System: %s | Pools: %s | ACF: %s | Total: %s)",

@@ -33,7 +33,7 @@ end_sources()
 add_definitions(-DAK_OPTIMIZED)
 
 if (AUDIO_WWISE)
-CryEngineStaticModule(CrySpatialWwiseFX PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations/Wwise/Plugins/CrySpatial")
+CryEngineModule(CrySpatialWwiseFX PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations/Wwise/Plugins/CrySpatial" FORCE_STATIC)
 target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/Audio/wwise/SDK/include" )
 target_compile_options( ${THIS_PROJECT} PRIVATE /EHsc )
 

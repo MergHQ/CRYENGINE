@@ -905,10 +905,10 @@ void CObject::ForceImplementationRefresh()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::HandleSetName(char const* const szName)
+void CObject::HandleSetName(char const* const szName)
 {
 	m_name = szName;
-	return m_pIObject->SetName(szName);
+	m_pIObject->SetName(szName);
 }
 
 //////////////////////////////////////////////////////////////////////////

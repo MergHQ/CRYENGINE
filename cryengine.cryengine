@@ -2,7 +2,7 @@
     "info": {
         "id": "engine-5.6",
         "name": "CRYENGINE 5.6",
-        "version": "5.6.3"
+        "version": "5.6.4"
     },
     "dependencies": [
         {
@@ -99,7 +99,7 @@
                     "optional": true
                 },
                 {
-                    "name": "FMOD 2.00.04",
+                    "name": "FMOD 2.00.05",
                     "description": "The FMOD SDK gives you the power to customize FMOD to meet your requirements. This low-level API is intended to cover the basics/primitives of sound. This includes concepts such as 'Channels', 'Sounds', 'DSP', 'ChannelGroups', 'Sound Groups', 'Recording' and concepts for 3D Sound and occlusion.",
                     "website": "https://www.fmod.com/download",
                     "optional": true
@@ -117,7 +117,7 @@
                     "optional": true
                 },
                 {
-                    "name": "Oculus Wwise Spatializer 1.40.0",
+                    "name": "Oculus Wwise Spatializer 1.41.0",
                     "description": "A Wwise plugin to let developers add HRTF-based spatialization and room modeling to applications. This is an add-on plugin for the Audiokinetic Wwise toolset that allows monophonic sound sources to be spatialized in 3D relative to the user's head location.",
                     "website": "https://developer.oculus.com/downloads/package/oculus-spatializer-wwise",
                     "optional": true

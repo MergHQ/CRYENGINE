@@ -274,11 +274,6 @@ CAsset* CAssetsManager::CreateFolder(string const& name, CAsset* const pParent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::OnBeforeControlModified(CControl* const pControl)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAssetsManager::OnConnectionAdded(CControl* const pControl)
 {
 	SignalConnectionAdded(pControl);
@@ -315,7 +310,7 @@ string const& CAssetsManager::GetConfigFolderPath() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::OnAfterControlModified(CControl* const pControl)
+void CAssetsManager::OnControlModified(CControl* const pControl)
 {
 	SignalControlModified(pControl);
 }
@@ -694,7 +689,7 @@ void CAssetsManager::DuplicateAssets(Assets const& assets)
 			if (!isParentSelected)
 			{
 				auto const pOldControl = static_cast<CControl*>(pAsset);
-				CControl* const pNewControl = CreateControl(AssetUtils::GenerateUniqueControlName(pOldControl->GetName(), type), type, pOldControl->GetParent());
+				CControl* const pNewControl = CreateControl(AssetUtils::GenerateUniqueControlName(pOldControl->GetName(), type, nullptr), type, pOldControl->GetParent());
 
 				pNewControl->SetDescription(pOldControl->GetDescription());
 				pNewControl->SetContextId(pOldControl->GetContextId());
@@ -786,11 +781,11 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 
 		if (type != EAssetType::State)
 		{
-			name = AssetUtils::GenerateUniqueControlName(name, type);
+			name = AssetUtils::GenerateUniqueControlName(name, type, nullptr);
 		}
 		else
 		{
-			name = AssetUtils::GenerateUniqueName(name, type, pParent);
+			name = AssetUtils::GenerateUniqueName(name, type, nullptr, pParent);
 		}
 
 		ControlId const controlId = (type != EAssetType::State) ? AssetUtils::GenerateUniqueAssetId(name, type) : AssetUtils::GenerateUniqueStateId(pParent->GetName(), name);
@@ -811,7 +806,7 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 	else
 	{
 		// If the type of the control is invalid then it must be a folder or container
-		name = AssetUtils::GenerateUniqueName(name, EAssetType::Folder, pParent);
+		name = AssetUtils::GenerateUniqueName(name, EAssetType::Folder, nullptr, pParent);
 		auto const pFolder = new CFolder(name, AssetUtils::GenerateUniqueFolderId(name, pParent));
 		pParent->AddChild(pFolder);
 		pFolder->SetParent(pParent);

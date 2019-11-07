@@ -78,9 +78,9 @@ struct IObject
 	 * Sets this object's name.
 	 * Is only used during production whenever an entity's name is changed to adjust corresponding objects as well.
 	 * @param szName - name to set
-	 * @return ERequestStatus - indicates the outcome of underlying process
+	 * @return void
 	 */
-	virtual ERequestStatus SetName(char const* const szName) = 0;
+	virtual void SetName(char const* const szName) = 0;
 
 	/**
 	 * Adds a listener to the audio object.

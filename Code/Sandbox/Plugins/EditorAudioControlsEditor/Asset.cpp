@@ -55,17 +55,27 @@ void CAsset::SetName(string const& name)
 	{
 		if (m_type == EAssetType::Library)
 		{
-			m_name = AssetUtils::GenerateUniqueLibraryName(fixedName);
+			string const oldName = m_name;
+			m_name = AssetUtils::GenerateUniqueLibraryName(fixedName, this);
 			m_id = AssetUtils::GenerateUniqueAssetId(m_name, m_type);
-			SetModified(true);
-			g_assetsManager.OnAssetRenamed(this);
+
+			if (m_name != oldName)
+			{
+				SetModified(true);
+				g_assetsManager.OnAssetRenamed(this);
+			}
 		}
 		else if (m_type == EAssetType::Folder)
 		{
-			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, m_pParent);
+			string const oldName = m_name;
+			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, this, m_pParent);
 			m_id = AssetUtils::GenerateUniqueFolderId(m_name, m_pParent);
-			SetModified(true);
-			g_assetsManager.OnAssetRenamed(this);
+
+			if (m_name != oldName)
+			{
+				SetModified(true);
+				g_assetsManager.OnAssetRenamed(this);
+			}
 		}
 	}
 }
@@ -73,7 +83,7 @@ void CAsset::SetName(string const& name)
 //////////////////////////////////////////////////////////////////////////
 void CAsset::UpdateNameOnMove(CAsset* const pParent)
 {
-	m_name = AssetUtils::GenerateUniqueName(m_name, m_type, pParent);
+	m_name = AssetUtils::GenerateUniqueName(m_name, m_type, this, pParent);
 
 	switch (m_type)
 	{

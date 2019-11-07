@@ -351,17 +351,6 @@ void CBrushObject::Display(CObjectRenderHelper& objRenderHelper)
 		return;
 	}
 
-	if (!m_pGeometry)
-	{
-		static int nagCount = 0;
-		if (nagCount < 100)
-		{
-			const string& geomName = mv_geometryFile;
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Brush '%s' (%s) does not have geometry!", (const char*)GetName(), (const char*)geomName);
-			nagCount++;
-		}
-	}
-
 	if (dc.display2D)
 	{
 		int flags = 0;
@@ -439,7 +428,13 @@ void CBrushObject::Serialize(CObjectArchive& ar)
 		{
 			string mesh = mv_geometryFile;
 			if (!mesh.IsEmpty())
+			{
 				CreateBrushFromMesh(mesh);
+			}
+			else
+			{
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Brush '%s' does not have geometry!", (const char*)GetName());
+			}
 		}
 
 		UpdateEngineNode();
@@ -634,6 +629,10 @@ void CBrushObject::CreateBrushFromMesh(const char* meshFilename)
 	else
 	{
 		m_pGeometry = CEdMesh::LoadMesh(meshFilename);
+		if (!m_pGeometry)
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Brush '%s' does not have geometry!", (const char*)GetName());
+		}
 	}
 
 	if (m_pGeometry)

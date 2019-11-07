@@ -507,7 +507,7 @@ CItem* CItemModel::GetItemFromIndex(QModelIndex const& index)
 {
 	CItem* pItem = nullptr;
 
-	QModelIndex const& nameColumnIndex = index.sibling(index.row(), static_cast<int>(EColumns::Name));
+	QModelIndex const nameColumnIndex = index.sibling(index.row(), static_cast<int>(EColumns::Name));
 	QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 	if (internalPtr.isValid())

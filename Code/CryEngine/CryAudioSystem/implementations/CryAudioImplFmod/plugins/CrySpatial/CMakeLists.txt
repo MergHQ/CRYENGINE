@@ -26,5 +26,6 @@ end_sources()
 if (AUDIO_FMOD AND WINDOWS AND NOT OPTION_STATIC_LINKING)
 CryEngineModule(CrySpatialFmod PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations/Fmod/Plugins/CrySpatial")
 target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/Audio/fmod/windows/api/core/inc" )
+target_include_directories( ${THIS_PROJECT} PRIVATE ../../../../Common)
 
 endif()

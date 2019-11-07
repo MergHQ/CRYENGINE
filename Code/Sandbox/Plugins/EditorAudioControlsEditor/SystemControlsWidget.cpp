@@ -44,7 +44,7 @@ void GetAssetsFromIndexesSeparated(
 {
 	for (auto const& index : indexes)
 	{
-		QModelIndex const& nameColumnIndex = index.sibling(index.row(), static_cast<int>(CSystemSourceModel::EColumns::Name));
+		QModelIndex const nameColumnIndex = index.sibling(index.row(), static_cast<int>(CSystemSourceModel::EColumns::Name));
 		QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 		if (internalPtr.isValid())
@@ -78,7 +78,7 @@ void GetAssetsFromIndexesCombined(QModelIndexList const& indexes, Assets& outAss
 {
 	for (auto const& index : indexes)
 	{
-		QModelIndex const& nameColumnIndex = index.sibling(index.row(), static_cast<int>(CSystemSourceModel::EColumns::Name));
+		QModelIndex const nameColumnIndex = index.sibling(index.row(), static_cast<int>(CSystemSourceModel::EColumns::Name));
 		QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 		if (internalPtr.isValid())
@@ -245,7 +245,7 @@ void CSystemControlsWidget::InitAddControlWidget(QVBoxLayout* const pLayout)
 	pAddButtonMenu->addAction(GetAssetIcon(EAssetType::Library), tr("Library"), [&]()
 		{
 			m_isCreatedFromMenu = true;
-			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library"));
+			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library", nullptr));
 		});
 
 	pAddButtonMenu->addSeparator();
@@ -349,7 +349,7 @@ bool CSystemControlsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 //////////////////////////////////////////////////////////////////////////
 Assets CSystemControlsWidget::GetSelectedAssets() const
 {
-	QModelIndexList const& indexes = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const indexes = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 	Assets assets;
 	GetAssetsFromIndexesCombined(indexes, assets);
 	return assets;
@@ -370,11 +370,11 @@ CControl* CSystemControlsWidget::CreateControl(string const& name, EAssetType co
 
 	if (type != EAssetType::State)
 	{
-		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueControlName(name, type), type, pParent);
+		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueControlName(name, type, nullptr), type, pParent);
 	}
 	else
 	{
-		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueName(name, type, pParent), type, pParent);
+		pControl = g_assetsManager.CreateControl(AssetUtils::GenerateUniqueName(name, type, nullptr, pParent), type, pParent);
 	}
 
 	return pControl;
@@ -384,13 +384,13 @@ CControl* CSystemControlsWidget::CreateControl(string const& name, EAssetType co
 CAsset* CSystemControlsWidget::CreateFolder(CAsset* const pParent)
 {
 	m_isCreatedFromMenu = true;
-	return g_assetsManager.CreateFolder(AssetUtils::GenerateUniqueName("new_folder", EAssetType::Folder, pParent), pParent);
+	return g_assetsManager.CreateFolder(AssetUtils::GenerateUniqueName("new_folder", EAssetType::Folder, nullptr, pParent), pParent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemControlsWidget::CreateParentFolder()
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 	size_t const numAssets = selection.size();
 
 	Libraries libraries;
@@ -424,8 +424,8 @@ void CSystemControlsWidget::CreateParentFolder()
 void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 {
 	auto const pContextMenu = new QMenu(this);
-	QMenu* const pAddMenu = new QMenu(tr("Add"), pContextMenu);
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	auto const pAddMenu = new QMenu(tr("Add"), pContextMenu);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 
 	CAsset* pImportAsset = nullptr;
 
@@ -435,7 +435,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 	pAddMenu->addAction(GetAssetIcon(EAssetType::Library), tr("Library"), [&]()
 		{
 			m_isCreatedFromMenu = true;
-			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library"));
+			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library", nullptr));
 		});
 
 	pAddMenu->addSeparator();
@@ -464,7 +464,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 			if (selection.size() == 1)
 			{
-				QModelIndex const& index = m_pTreeView->currentIndex();
+				QModelIndex const index = m_pTreeView->currentIndex();
 
 				if (index.isValid())
 				{
@@ -653,7 +653,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 		{
 			pContextMenu->addAction(tr("Rename"), [=]()
 				{
-					QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), g_systemNameColumn);
+					QModelIndex const nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), g_systemNameColumn);
 					m_pTreeView->edit(nameColumnIndex);
 				});
 
@@ -688,7 +688,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 void CSystemControlsWidget::OnRenameSelectedControls(string const& name)
 {
 	m_suppressRenaming = true;
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 
 	if (selection.size() > 1)
 	{
@@ -709,7 +709,7 @@ void CSystemControlsWidget::OnRenameSelectedControls(string const& name)
 //////////////////////////////////////////////////////////////////////////
 void CSystemControlsWidget::DuplicateSelectedControls()
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 	Assets selectedAssets;
 
 	for (auto const& index : selection)
@@ -728,7 +728,7 @@ void CSystemControlsWidget::DuplicateSelectedControls()
 //////////////////////////////////////////////////////////////////////////
 bool CSystemControlsWidget::DeleteSelectedControls()
 {
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 	int const numSelected = selection.length();
 
 	if (numSelected > 0)
@@ -901,7 +901,7 @@ QAbstractItemModel* CSystemControlsWidget::CreateLibraryModelFromIndex(QModelInd
 CAsset* CSystemControlsWidget::GetSelectedAsset() const
 {
 	CAsset* pAsset = nullptr;
-	QModelIndex const& index = m_pTreeView->currentIndex();
+	QModelIndex const index = m_pTreeView->currentIndex();
 
 	if (index.isValid())
 	{
@@ -917,7 +917,7 @@ void CSystemControlsWidget::SelectNewAsset(QModelIndex const& parent, int const 
 	if (!g_assetsManager.IsLoading())
 	{
 		ClearFilters();
-		QModelIndex const& assetIndex = m_pSystemFilterProxyModel->mapFromSource(m_pMountingProxyModel->index(row, g_systemNameColumn, parent));
+		QModelIndex const assetIndex = m_pSystemFilterProxyModel->mapFromSource(m_pMountingProxyModel->index(row, g_systemNameColumn, parent));
 
 		if (m_isCreatedFromMenu)
 		{
@@ -927,7 +927,7 @@ void CSystemControlsWidget::SelectNewAsset(QModelIndex const& parent, int const 
 		}
 		else
 		{
-			QModelIndex const& parentIndex = m_pSystemFilterProxyModel->mapFromSource(parent);
+			QModelIndex const parentIndex = m_pSystemFilterProxyModel->mapFromSource(parent);
 			m_pTreeView->expand(parentIndex);
 
 			if (CSystemSourceModel::GetNumDroppedItems() == 1)
@@ -950,11 +950,11 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 	else
 	{
 		m_pCreateParentFolderAction->setVisible(IsParentFolderAllowed());
-		QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+		QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 
 		if (selection.size() == 1)
 		{
-			QModelIndex const& index = m_pTreeView->currentIndex();
+			QModelIndex const index = m_pTreeView->currentIndex();
 
 			if (index.isValid())
 			{
@@ -997,7 +997,7 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 bool CSystemControlsWidget::IsParentFolderAllowed() const
 {
 	bool isAllowed = false;
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 
 	if (!selection.isEmpty())
 	{
@@ -1056,7 +1056,7 @@ bool CSystemControlsWidget::IsParentFolderAllowed() const
 bool CSystemControlsWidget::IsDefaultControlSelected() const
 {
 	bool isDefaultControlSelected = false;
-	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_systemNameColumn);
 
 	for (auto const& index : selection)
 	{
@@ -1111,7 +1111,7 @@ bool CSystemControlsWidget::IsEditing() const
 void CSystemControlsWidget::SelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId)
 {
 	ClearFilters();
-	auto const& matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), systemControlId, 1, Qt::MatchRecursive);
+	QModelIndexList const matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), systemControlId, 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{

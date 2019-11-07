@@ -8,6 +8,7 @@
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
+#include <CryAudioImplPortAudio/GlobalData.h>
 
 namespace ACE
 {
@@ -68,12 +69,16 @@ void CProjectLoader::LoadFolder(string const& assetsPath, string const& folderPa
 
 					if (posExtension != string::npos)
 					{
-						string const fileExtension = name.data() + posExtension;
+						char const* const szExtension = name.data() + posExtension + 1;
 
-						if (_stricmp(fileExtension, ".wav") == 0)
+						for (auto const& pair : CryAudio::Impl::PortAudio::g_supportedExtensions)
 						{
-							// Create the event with the same name as the file
-							CreateItem(assetsPath, name, folderPath, EItemType::Event, parent, flags);
+							if (_stricmp(szExtension, pair.first) == 0)
+							{
+								// Create the event with the same name as the file
+								CreateItem(assetsPath, name, folderPath, EItemType::Event, parent, flags);
+								break;
+							}
 						}
 					}
 				}

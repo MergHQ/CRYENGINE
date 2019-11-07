@@ -129,10 +129,10 @@ struct SRequestInfo
 		ESystemEvents const systemEvent_,
 		ControlId const audioControlId_,
 		EntityId const entityId_)
-		: requestResult(requestResult_)
-		, pOwner(pOwner_)
+		: pOwner(pOwner_)
 		, pUserData(pUserData_)
 		, pUserDataOwner(pUserDataOwner_)
+		, requestResult(requestResult_)
 		, systemEvent(systemEvent_)
 		, audioControlId(audioControlId_)
 		, entityId(entityId_)
@@ -143,10 +143,10 @@ struct SRequestInfo
 	SRequestInfo& operator=(SRequestInfo const&) = delete;
 	SRequestInfo& operator=(SRequestInfo&&) = delete;
 
-	ERequestResult const requestResult;
 	void* const          pOwner;
 	void* const          pUserData;
 	void* const          pUserDataOwner;
+	ERequestResult const requestResult;
 	ESystemEvents const  systemEvent;
 	ControlId const      audioControlId;
 	EntityId const       entityId;
@@ -439,13 +439,6 @@ struct IAudioSystem
 	virtual void UnloadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Reloads all of the audio controls and their connections.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 */
-	virtual void ReloadControlsData(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Used to register a callback function that is called whenever a given event occurred.
 	 * @param func - address of the function to be called.
 	 * @param pObjectToListenTo - address of the object in which events one is interested. If set to nullptr events of the given type produced by any object will be listened to.
@@ -578,6 +571,13 @@ struct IAudioSystem
 	 * @see ExecutePreviewTrigger
 	 */
 	virtual void StopPreviewTrigger() = 0;
+
+	/**
+	 * Used to refresh an object. This is only needed when renaming a Wwise game object.
+	 * @param pIObject - middleware implementation specific object that should be refreshed.
+	 * @return void
+	 */
+	virtual void RefreshObject(Impl::IObject* const pIObject) = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

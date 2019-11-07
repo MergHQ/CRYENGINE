@@ -39,10 +39,10 @@ private:
 
 	void RevertPropertyTree();
 
-	CConnectionsWidget* const m_pConnectionsWidget;
-	QPropertyTreeLegacy* const      m_pPropertyTree;
-	QLabel*                   m_pConnectionsLabel;
-	std::unique_ptr<QString>  m_pUsageHint;
-	bool                      m_suppressUpdates;
+	CConnectionsWidget* const  m_pConnectionsWidget;
+	QPropertyTreeLegacy* const m_pPropertyTree;
+	QLabel*                    m_pConnectionsLabel;
+	std::unique_ptr<QString>   m_pUsageHint;
+	bool                       m_suppressUpdates;
 };
 } // namespace ACE

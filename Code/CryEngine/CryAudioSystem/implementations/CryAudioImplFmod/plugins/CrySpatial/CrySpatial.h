@@ -22,11 +22,14 @@ constexpr int g_maxBufferSize = 2048;
 constexpr float g_defaultFilterQuality = 0.7f;
 constexpr float g_linearFadeStrength = 0.0f;
 
-constexpr float g_smallFadeLength = 200.0f;
-constexpr int g_smallFadeLengthInteger = 200; // fade length in samples
+constexpr float g_smallFadeLength = 10.0f;
+constexpr int g_smallFadeLengthInteger = 10; // fade length in samples
 
-constexpr float g_bigFadeLength = 500.0f;
-constexpr int g_bigFadeLengthInteger = 500; // fade length in samples
+constexpr float g_mediumFadeLength = 200.0f;
+constexpr int g_mediumFadeLengthInteger = 200; // fade length in samples
+
+constexpr float g_largeFadeLength = 300.0f;
+constexpr int g_largeFadeLengthInteger = 300; // fade length in samples
 
 constexpr int g_parameterIndexPosition = 0;
 constexpr int g_numParameters = 1;
@@ -57,14 +60,14 @@ public:
 	float DecibelToVolume(float const decibel);
 	float VolumeToDecibel(float const volume);
 	void  GetPositionalData(float const x /*azimuth front*/, float const y /*elevation*/, float const z /*azimuth side*/, int& outQuadrant, float& outQuadrantFine, float& outElevation, float& outDistance);
-	void  ConsumeInput(float* pInbuffer, float* pOutbuffer, uint32 const length, int const channels);
+	void  ConsumeInput(float* pInbuffer, float* pOutbuffer, unsigned int const length, int const channels);
 	void  Reset();
 	void  CreateFilters();
 	void  DeleteFilters();
 	void  ComputeDelayChannelData(int& outDelay);
-	void  FilterBuffers(float* pInChannel, uint32 const inputFrames, ESourceDirection const currentSourceDirection);
+	void  FilterBuffers(float* pInChannel, unsigned int const inputFrames, ESourceDirection const currentSourceDirection);
 	void  DelayAndFadeBuffers(int const delayCurrent, int const maxFrames, ESourceDirection const currentSourceDirection);
-	void  HRTFMonoToBinaural(float* pInBuffer, float* pOutBuffer, uint32 const frameLength);
+	void  HRTFMonoToBinaural(float* pInBuffer, float* pOutBuffer, unsigned int const frameLength);
 
 	int                             m_sampleRate;
 	FMOD_DSP_PARAMETER_3DATTRIBUTES m_position;
@@ -101,9 +104,9 @@ private:
 FMOD_RESULT F_CALLBACK CrySpatialCreate(FMOD_DSP_STATE* pDspState);
 FMOD_RESULT F_CALLBACK CrySpatialRelease(FMOD_DSP_STATE* pDspState);
 FMOD_RESULT F_CALLBACK CrySpatialReset(FMOD_DSP_STATE* pDspState);
-FMOD_RESULT F_CALLBACK CrySpatialProcess(FMOD_DSP_STATE* pDspState, uint32 length, const FMOD_DSP_BUFFER_ARRAY* pInBufferArray, FMOD_DSP_BUFFER_ARRAY* pOutBufferArray, FMOD_BOOL isInputIdle, FMOD_DSP_PROCESS_OPERATION op);
-FMOD_RESULT F_CALLBACK CrySpatialSetParamData(FMOD_DSP_STATE* pDspState, int index, void* pData, uint32 length);
-FMOD_RESULT F_CALLBACK CrySpatialShouldIProcess(FMOD_DSP_STATE* pDspState, FMOD_BOOL isInputIdle, uint32 length, FMOD_CHANNELMASK inChannelMask, int numInChannels, FMOD_SPEAKERMODE speakerMode);
+FMOD_RESULT F_CALLBACK CrySpatialProcess(FMOD_DSP_STATE* pDspState, unsigned int length, const FMOD_DSP_BUFFER_ARRAY* pInBufferArray, FMOD_DSP_BUFFER_ARRAY* pOutBufferArray, FMOD_BOOL isInputIdle, FMOD_DSP_PROCESS_OPERATION op);
+FMOD_RESULT F_CALLBACK CrySpatialSetParamData(FMOD_DSP_STATE* pDspState, int index, void* pData, unsigned int length);
+FMOD_RESULT F_CALLBACK CrySpatialShouldIProcess(FMOD_DSP_STATE* pDspState, FMOD_BOOL isInputIdle, unsigned int length, FMOD_CHANNELMASK inChannelMask, int numInChannels, FMOD_SPEAKERMODE speakerMode);
 FMOD_RESULT F_CALLBACK CrySpatialSysRegister(FMOD_DSP_STATE* pDspState);
 FMOD_RESULT F_CALLBACK CrySpatialSysDeregister(FMOD_DSP_STATE* pDspState);
 FMOD_RESULT F_CALLBACK CrySpatialSysMix(FMOD_DSP_STATE* pDspState, int stage);
@@ -125,9 +128,9 @@ FMOD_DSP_DESCRIPTION m_pluginDescription =
 	CrySpatialCreate,
 	CrySpatialRelease,
 	CrySpatialReset,
-	nullptr, // dsp read
+	nullptr,  // dsp read
 	CrySpatialProcess,
-	nullptr, // CrySpatial_dspsetposition
+	nullptr,  // CrySpatial_dspsetposition
 	g_numParameters,
 	m_pParamDescription,
 	nullptr, // CrySpatial_dspsetparamfloat,
@@ -139,7 +142,7 @@ FMOD_DSP_DESCRIPTION m_pluginDescription =
 	nullptr, // CrySpatial_dspgetparambool,
 	nullptr, // CrySpatial_dspgetparamdata,
 	CrySpatialShouldIProcess,
-	nullptr, // userdata
+	nullptr,  // userdata
 	CrySpatialSysRegister,
 	CrySpatialSysDeregister,
 	CrySpatialSysMix };
@@ -182,7 +185,7 @@ FMOD_RESULT F_CALLBACK CrySpatialRelease(FMOD_DSP_STATE* pDspState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK CrySpatialProcess(FMOD_DSP_STATE* pDspState, uint32 length, const FMOD_DSP_BUFFER_ARRAY* pInBufferArray, FMOD_DSP_BUFFER_ARRAY* pOutBufferArray, FMOD_BOOL isInputIdle, FMOD_DSP_PROCESS_OPERATION op)
+FMOD_RESULT F_CALLBACK CrySpatialProcess(FMOD_DSP_STATE* pDspState, unsigned int length, const FMOD_DSP_BUFFER_ARRAY* pInBufferArray, FMOD_DSP_BUFFER_ARRAY* pOutBufferArray, FMOD_BOOL isInputIdle, FMOD_DSP_PROCESS_OPERATION op)
 {
 	CrySpatialState* const pState = static_cast<CrySpatialState*>(pDspState->plugindata);
 
@@ -216,7 +219,7 @@ FMOD_RESULT F_CALLBACK CrySpatialReset(FMOD_DSP_STATE* pDspState)
 	return FMOD_OK;
 }
 
-FMOD_RESULT F_CALLBACK CrySpatialShouldIProcess(FMOD_DSP_STATE* /*pDspState*/, FMOD_BOOL isInputIdle, uint32 /*length*/, FMOD_CHANNELMASK /*inmask*/, int /*inchannels*/, FMOD_SPEAKERMODE /*speakermode*/)
+FMOD_RESULT F_CALLBACK CrySpatialShouldIProcess(FMOD_DSP_STATE* /*pDspState*/, FMOD_BOOL isInputIdle, unsigned int /*length*/, FMOD_CHANNELMASK /*inmask*/, int /*inchannels*/, FMOD_SPEAKERMODE /*speakermode*/)
 {
 	if (isInputIdle)
 	{
@@ -227,7 +230,7 @@ FMOD_RESULT F_CALLBACK CrySpatialShouldIProcess(FMOD_DSP_STATE* /*pDspState*/, F
 }
 
 //////////////////////////////////////////////////////////////////////////
-FMOD_RESULT F_CALLBACK CrySpatialSetParamData(FMOD_DSP_STATE* pDspState, int index, void* pData, uint32 length)
+FMOD_RESULT F_CALLBACK CrySpatialSetParamData(FMOD_DSP_STATE* pDspState, int index, void* pData, unsigned int length)
 {
 	CrySpatialState* const pState = static_cast<CrySpatialState*>(pDspState->plugindata);
 

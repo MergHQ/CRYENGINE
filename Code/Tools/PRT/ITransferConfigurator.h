@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "PRTTypes.h"
+#include "ISHMaterial.h"
 #include "TransferParameters.h"
 
 namespace NSH
@@ -16,16 +16,6 @@ namespace NSH
 		interface ITransferConfigurator;
 	}
 	typedef NSH::CSmartPtr<NSH::NTransfer::ITransferConfigurator, CSHAllocator<> > ITransferConfiguratorPtr;
-
-	namespace NMaterial
-	{
-		enum EMaterialType;
-	}
-
-	namespace NFramework
-	{
-		enum ESHRenderType;
-	}
 
 	namespace NTransfer
 	{

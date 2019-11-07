@@ -1103,7 +1103,9 @@ bool CFormWidget::event(QEvent* pEvent)
 
 			break;
 		}
+#pragma warning (disable: 4063)
 	case SandboxEvent::Command:
+#pragma warning (default: 4063)
 		{
 			CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
 

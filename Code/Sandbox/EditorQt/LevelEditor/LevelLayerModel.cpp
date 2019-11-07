@@ -141,7 +141,7 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 	if (role == Qt::DecorationRole)
 	{
 		if (section == eObjectColumns_Visible)
-			return CryIcon("icons:General/Visibility_True.ico").pixmap(16,16);
+			return CryIcon("icons:General/Visibility_True.ico").pixmap(16, 16);
 		if (section == eObjectColumns_Frozen)
 			return CryIcon("icons:general_lock_true.ico").pixmap(16, 16);
 		if (section == eObjectColumns_VCS)
@@ -1195,11 +1195,30 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			if (pLayer == m_pLayer && Filter(*pObject, m_pLayer))
 			{
 				int irow = m_rootObjects.size();
+				// If this object has any child links, then we need to make sure that if they were root objects of this layer,
+				// that they will be removed as their parent is going to be moved to this layer as well
+				auto linkedChildrenCount = pObject->GetLinkedObjectCount();
+				for (auto i = 0; i < linkedChildrenCount; ++i)
+				{
+					CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
+					if (pLinkedObject && pLinkedObject->GetLayer() == m_pLayer)
+					{
+						RemoveObject(pLinkedObject);
+					}
+				}
 
 				// If the batch process is still running, avoid inserting rows since we're already in the middle of a transaction
 				if (m_isRuningBatchProcess)
 				{
 					AddObject(pObject);
+					return;
+				}
+
+				if (linkedChildrenCount)
+				{
+					AddObject(pObject);
+					beginResetModel();
+					endResetModel();
 					return;
 				}
 
@@ -1211,12 +1230,30 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			else if (evt.m_poldLayer == m_pLayer)
 			{
 				int irow = RowFromObject(pObject);
+				// If this object has any child links, then if they are also members of this layer, we need to make sure to add them to the root of the layer
+				auto linkedChildrenCount = pObject->GetLinkedObjectCount();
+				for (auto i = 0; i < linkedChildrenCount; ++i)
+				{
+					CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
+					if (pLinkedObject && pLinkedObject->GetLayer() == m_pLayer)
+					{
+						AddObject(pLinkedObject);
+					}
+				}
 
 				// If the batch process is still running, avoid removing rows since we're already in the middle of a transaction
 				if (m_isRuningBatchProcess || irow == -1)
 				{
 					RemoveObject(pObject);
 					return; //Object must be in another layer
+				}
+
+				if (linkedChildrenCount)
+				{
+					RemoveObject(pObject);
+					beginResetModel();
+					endResetModel();
+					return;
 				}
 
 				beginRemoveRows(QModelIndex(), irow, irow);

@@ -128,6 +128,11 @@ private:
 		CAutoHandle<VkRenderPass>  renderPass;
 		CAutoHandle<VkFramebuffer> frameBuffer;
 		SRenderPass(SRenderPass&&) = default;
+		SRenderPass(const VkDevice self_, const VkRenderPass renderPass_, const VkFramebuffer frameBuffer_)
+			: self(self_)
+			, renderPass(renderPass_)
+			, frameBuffer(frameBuffer_)
+		{}
 		~SRenderPass();
 	};
 
@@ -136,6 +141,10 @@ private:
 		VkDevice self;
 		CAutoHandle<VkPipeline> pipeline;
 		SPipeline(SPipeline&&) = default;
+		SPipeline(const VkDevice self_, const VkPipeline pipeline_)
+			: self(self_)
+			, pipeline(pipeline_)
+		{}
 		~SPipeline();
 	};
 

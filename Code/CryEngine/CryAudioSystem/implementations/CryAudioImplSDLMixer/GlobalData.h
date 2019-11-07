@@ -56,6 +56,35 @@ constexpr float g_defaultParamMultiplier = 1.0f;
 constexpr float g_defaultParamShift = 0.0f;
 constexpr float g_defaultStateValue = 1.0f;
 
+static std::unordered_map<char const*, char const*> const g_supportedExtensions
+{
+	{ "ogg", "Ogg Vorbis" },
+	{ "wav", "Wave (Microsoft)" },
+	{ "mp3", "Mpeg Layer 3" },
+	{ "opus", "OPUS" },
+	{ "flac", "FLAC" },
+	{ "mod", "MOD (15 and 31 instruments)" },
+	{ "aiff", "APPLE" },
+	{ "xm", "FastTracker 2" },
+	{ "mid", "MIDI" },
+	{ "voc", "VOC" },
+	{ "669", "Composer, Unis" },
+	{ "amf", "DSMI Advanced Module, ASYLUM Music Format (v1.0)" },
+	{ "apun", "APlayer" },
+	{ "dsm", "DSIK internal format" },
+	{ "far", "Farandole Composer" },
+	{ "gdm", "General DigiMusic" },
+	{ "it", "Impulse Tracker" },
+	{ "imf", "Imago Orpheus" },
+	{ "med", "OctaMED" },
+	{ "mtm", "MultiTracker Module Editor" },
+	{ "okt", "Amiga Oktalyzer" },
+	{ "s3m", "Scream Tracker 3" },
+	{ "stm", "Scream Tracker" },
+	{ "stx", "Scream Tracker Music Interface Kit" },
+	{ "ult", "UltraTracker" },
+	{ "uni", "MikMod" } };
+
 // Required to create a preview trigger in editor.
 struct STriggerInfo final : public ITriggerInfo
 {

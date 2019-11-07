@@ -52,4 +52,3 @@ AK::Wwise::IPluginBase* __stdcall AkCreatePlugin(unsigned short companyID, unsig
 } // namespace Impl
 } // namespace CryAudio
 DEFINEDUMMYASSERTHOOK;
-DEFINE_PLUGIN_REGISTER_HOOK;

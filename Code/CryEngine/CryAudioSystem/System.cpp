@@ -1080,6 +1080,14 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
+	case ESYSTEM_EVENT_AUDIO_RELOAD_CONTROLS_DATA:
+		{
+			SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData;
+			CRequest const request(&requestData);
+			PushRequest(request);
+
+			break;
+		}
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 	default:
 		{
@@ -1467,6 +1475,16 @@ void CSystem::StopPreviewTrigger()
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CSystem::RefreshObject(Impl::IObject* const pIObject)
+{
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	SSystemRequestData<ESystemRequestType::RefreshObject> const requestData(pIObject);
+	CRequest const request(&requestData);
+	PushRequest(request);
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ResetRequestCount()
@@ -1645,16 +1663,6 @@ void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequ
 	PushRequest(request);
 }
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::ReloadControlsData(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData;
-	CRequest const request(&requestData, userData);
-	PushRequest(request);
-#endif  // CRY_AUDIO_USE_DEBUG_CODE
-}
 
 ///////////////////////////////////////////////////////////////////////////
 char const* CSystem::GetConfigPath() const
@@ -1970,21 +1978,23 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::AddRequestListener:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AddRequestListener> const*>(request.GetData());
-			result = g_eventListenerManager.AddRequestListener(pRequestData);
+			g_eventListenerManager.AddRequestListener(pRequestData);
+			result = ERequestStatus::Success;
 
 			break;
 		}
 	case ESystemRequestType::RemoveRequestListener:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RemoveRequestListener> const*>(request.GetData());
-			result = g_eventListenerManager.RemoveRequestListener(pRequestData->func, pRequestData->pObjectToListenTo);
+			g_eventListenerManager.RemoveRequestListener(pRequestData->func, pRequestData->pObjectToListenTo);
+			result = ERequestStatus::Success;
 
 			break;
 		}
 	case ESystemRequestType::SetImpl:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetImpl> const*>(request.GetData());
-			result = HandleSetImpl(pRequestData->pIImpl);
+			result = HandleSetImpl(pRequestData->pIImpl) ? ERequestStatus::Success : ERequestStatus::Failure;
 
 			break;
 		}
@@ -2167,7 +2177,8 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::StopAllSounds:
 		{
-			result = g_pIImpl->StopAllSounds();
+			g_pIImpl->StopAllSounds();
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -2382,7 +2393,8 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::UnloadAFCMDataByContext:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadAFCMDataByContext> const*>(request.GetData());
-			result = g_fileCacheManager.UnloadDataByContext(pRequestData->contextId);
+			g_fileCacheManager.UnloadDataByContext(pRequestData->contextId);
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -2424,12 +2436,16 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetImplInfo> const*>(request.GetData());
 			g_pIImpl->GetInfo(pRequestData->implInfo);
+			result = ERequestStatus::Success;
+
 			break;
 		}
 	case ESystemRequestType::RegisterListener:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RegisterListener> const*>(request.GetData());
 			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str(), true);
+			result = ERequestStatus::Success;
+
 			break;
 		}
 	case ESystemRequestType::ReleaseListener:
@@ -2450,6 +2466,8 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetListener> const*>(request.GetData());
 			*pRequestData->ppListener = g_listenerManager.GetListener(pRequestData->id);
+			result = ERequestStatus::Success;
+
 			break;
 		}
 	case ESystemRequestType::RegisterObject:
@@ -2560,6 +2578,23 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::StopPreviewTrigger:
 		{
 			g_previewObject.StopAllTriggers();
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::RefreshObject:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RefreshObject> const*>(request.GetData());
+
+			for (auto const pObject : g_constructedObjects)
+			{
+				if (pObject->GetImplData() == pRequestData->pIObject)
+				{
+					pObject->ForceImplementationRefresh();
+					break;
+				}
+			}
+
 			result = ERequestStatus::Success;
 
 			break;
@@ -3069,13 +3104,8 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetName> const*>(request.GetData());
 
-			result = pObject->HandleSetName(pRequestData->name.c_str());
-
-			if (result == ERequestStatus::SuccessNeedsRefresh)
-			{
-				pObject->ForceImplementationRefresh();
-				result = ERequestStatus::Success;
-			}
+			pObject->HandleSetName(pRequestData->name.c_str());
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -3307,8 +3337,7 @@ void CSystem::NotifyListener(CRequest const& request)
 			result = ERequestResult::Success;
 			break;
 		}
-	case ERequestStatus::Failure: // Intentional fall-through.
-	case ERequestStatus::PartialSuccess:
+	case ERequestStatus::Failure:
 		{
 			result = ERequestResult::Failure;
 			break;
@@ -3334,10 +3363,8 @@ void CSystem::NotifyListener(CRequest const& request)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
+bool CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	ContextInfo const tempContextInfo = g_contextInfo;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -3379,7 +3406,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	AllocateMemoryPools();
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-	result = g_pIImpl->Init(m_objectPoolSize);
+	bool const isInitialized = g_pIImpl->Init(m_objectPoolSize);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	// Get impl info again (was done in ParseSystemData) to set the impl name, because
@@ -3387,7 +3414,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	g_pIImpl->GetInfo(g_implInfo);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-	if (result != ERequestStatus::Success)
+	if (!isInitialized)
 	{
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
 
@@ -3486,9 +3513,8 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextId);
 
 			auto const preloadRequestId = static_cast<PreloadRequestId>(contextId);
-			result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
 
-			if (result != ERequestStatus::Success)
+			if (g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true) != ERequestStatus::Success)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(No preload request found for context - "%s"!)", szContextName);
 			}
@@ -3503,7 +3529,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 
 	SetImplLanguage();
 
-	return result;
+	return isInitialized;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3714,20 +3740,17 @@ void CSystem::HandleRefresh()
 {
 	Cry::Audio::Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
 
-	ERequestStatus result = g_pIImpl->StopAllSounds();
-	CRY_ASSERT(result == ERequestStatus::Success);
+	g_pIImpl->StopAllSounds();
 
 	for (auto const& contextPair : g_contextInfo)
 	{
 		if (contextPair.second.isRegistered && contextPair.second.isActive)
 		{
-			result = g_fileCacheManager.UnloadDataByContext(contextPair.second.contextId);
-			CRY_ASSERT(result == ERequestStatus::Success);
+			g_fileCacheManager.UnloadDataByContext(contextPair.second.contextId);
 		}
 	}
 
-	result = g_fileCacheManager.UnloadDataByContext(GlobalContextId);
-	CRY_ASSERT(result == ERequestStatus::Success);
+	g_fileCacheManager.UnloadDataByContext(GlobalContextId);
 
 	// Store active contexts for reloading after they have been unloaded which empties the map.
 	ContextInfo const tempContextInfo = g_contextInfo;
@@ -3765,9 +3788,8 @@ void CSystem::HandleRefresh()
 			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextId);
 
 			auto const preloadRequestId = static_cast<PreloadRequestId>(contextId);
-			result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
 
-			if (result != ERequestStatus::Success)
+			if (g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true) != ERequestStatus::Success)
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(No preload request found for context - "%s"!)", szContextName);
 			}
@@ -4387,7 +4409,7 @@ void CSystem::HandleDrawDebug()
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
 			auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-			Debug::FormatMemoryString(memAllocSizeString, memAllocSize - totalPoolSize);
+			Debug::FormatMemoryString(memAllocSizeString, memAllocSize);
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
 			Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
@@ -4395,7 +4417,7 @@ void CSystem::HandleDrawDebug()
 			size_t const totalFileSize = g_fileCacheManager.GetTotalCachedFileSize();
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
-			size_t const totalMemSize = memAllocSize + totalFileSize;
+			size_t const totalMemSize = memAllocSize + totalPoolSize + totalFileSize;
 			Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
 			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != ESystemStates::None) ? " - Muted" : "";

@@ -24,6 +24,17 @@ struct SPluginDefinition
 {
 	SPluginDefinition() = default;
 
+	SPluginDefinition(Cry::IPluginManager::EType type_, const char* szPath)
+		: type(type_)
+		, path(szPath)
+	{}
+
+	SPluginDefinition(Cry::IPluginManager::EType type_, const char* szPath, EPlatform platform)
+		: type(type_)
+		, path(szPath)
+		, platforms{platform}
+	{}
+
 	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(guid, "guid", "guid");

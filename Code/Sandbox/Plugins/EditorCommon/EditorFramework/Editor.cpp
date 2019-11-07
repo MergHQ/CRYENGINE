@@ -5,7 +5,6 @@
 #include "BroadcastManager.h"
 #include "Commands/ICommandManager.h"
 #include "Commands/QCommandAction.h"
-#include "Controls/SaveChangesDialog.h"
 #include "EditorContent.h"
 #include "Events.h"
 #include "Menu/AbstractMenu.h"

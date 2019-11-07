@@ -37,8 +37,9 @@ protected:
 
 	std::vector<SChangeList>         m_changeLists;
 
-	QLabel*                          m_display;
-	QDialogButtonBox*                m_buttons;
-	QLabel*                          m_iconLabel;
+	QLabel*                          m_pIconLabel;
+	QLabel*                          m_pSummaryLabel;
+	QLabel*                          m_pFileListLabel;
+	QDialogButtonBox*                m_pButtons;
 	QDialogButtonBox::StandardButton m_buttonPressed;
 };

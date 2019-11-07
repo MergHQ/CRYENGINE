@@ -21,7 +21,7 @@ public:
 	const CSkeletonInfo* LoadSkeleton(const char* filename);
 
 private:
-	const CSkeletonInfo* LoadSkeletonInfo(const char* filename);
+	const CSkeletonInfo* LoadSkeletonInfo(const char* filename, bool bErrorsAsWarnings = false);
 
 private:
 	IPakSystem* m_pPakSystem;

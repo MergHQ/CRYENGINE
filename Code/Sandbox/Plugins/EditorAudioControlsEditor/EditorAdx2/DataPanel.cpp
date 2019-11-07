@@ -66,7 +66,7 @@ CDataPanel::CDataPanel(CImpl const& impl, QWidget* const pParent)
 	pMainLayout->addWidget(m_pFilteringPanel);
 
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CDataPanel::OnContextMenu);
-	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataPanel::StopEvent);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CDataPanel::StopEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ bool CDataPanel::eventFilter(QObject* pObject, QEvent* pEvent)
 void CDataPanel::OnContextMenu(QPoint const& pos)
 {
 	auto const pContextMenu = new QMenu(this);
-	auto const& selection = m_pTreeView->selectionModel()->selectedRows(g_nameColumn);
+	QModelIndexList const selection = m_pTreeView->selectionModel()->selectedRows(g_nameColumn);
 
 	if (!selection.isEmpty())
 	{
@@ -228,7 +228,7 @@ void CDataPanel::OnAfterReload()
 void CDataPanel::OnSelectConnectedItem(ControlId const id)
 {
 	ClearFilters();
-	auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), id, 1, Qt::MatchRecursive);
+	QModelIndexList const matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), id, 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{

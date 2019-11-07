@@ -455,7 +455,7 @@ QVariant CSystemSourceModel::GetHeaderData(int const section, Qt::Orientation co
 CAsset* CSystemSourceModel::GetAssetFromIndex(QModelIndex const& index, int const column)
 {
 	CAsset* pAsset = nullptr;
-	QModelIndex const& nameColumnIndex = index.sibling(index.row(), column);
+	QModelIndex const nameColumnIndex = index.sibling(index.row(), column);
 	QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 	if (internalPtr.isValid())
@@ -751,14 +751,7 @@ bool CSystemSourceModel::setData(QModelIndex const& index, QVariant const& value
 				{
 					if (value.canConvert<QString>())
 					{
-						string const& oldName = pAsset->GetName();
-						string const& newName = QtUtil::ToString(value.toString());
-
-						if (!newName.empty() && newName.compareNoCase(oldName) != 0)
-						{
-							pAsset->SetName(AssetUtils::GenerateUniqueLibraryName(newName));
-						}
-
+						pAsset->SetName(QtUtil::ToString(value.toString()));
 						wasDataChanged = true;
 					}
 

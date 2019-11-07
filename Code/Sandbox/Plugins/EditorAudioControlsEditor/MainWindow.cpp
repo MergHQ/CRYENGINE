@@ -462,7 +462,7 @@ bool CMainWindow::OnSave()
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	m_pMonitorSystem->Disable();
 	CAudioControlsEditorPlugin::SaveData();
-	gEnv->pAudioSystem->ReloadControlsData();
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_RELOAD_CONTROLS_DATA, 0, 0);
 	m_pMonitorSystem->EnableDelayed();
 	QGuiApplication::restoreOverrideCursor();
 

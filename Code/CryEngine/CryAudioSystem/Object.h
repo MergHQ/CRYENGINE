@@ -164,23 +164,23 @@ private:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 public:
 
-	void           Release();
-	void           SetImplData(Impl::IObject* const pIObject);
+	void        Release();
+	void        SetImplData(Impl::IObject* const pIObject);
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
-	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+	void        ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 	#endif // CRY_AUDIO_USE_OCCLUSION
-	void           ForceImplementationRefresh();
+	void        ForceImplementationRefresh();
 
-	char const*    GetName() const { return m_name.c_str(); }
-	ERequestStatus HandleSetName(char const* const szName);
+	char const* GetName() const { return m_name.c_str(); }
+	void        HandleSetName(char const* const szName);
 
-	void           StoreParameterValue(ControlId const id, float const value);
-	void           StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId);
-	void           StoreEnvironmentValue(ControlId const id, float const value);
+	void        StoreParameterValue(ControlId const id, float const value);
+	void        StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId);
+	void        StoreEnvironmentValue(ControlId const id, float const value);
 
-	void           UpdateMaxRadius(float const radius);
+	void        UpdateMaxRadius(float const radius);
 
-	void           DrawDebugInfo(
+	void        DrawDebugInfo(
 		IRenderAuxGeom& auxGeom,
 		bool const isTextFilterDisabled,
 		CryFixedStringT<MaxControlNameLength> const& lowerCaseSearchString);

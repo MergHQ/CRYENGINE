@@ -29,6 +29,19 @@ add_sources("NoUberFile"
 
 	SOURCE_GROUP "Source Files"
 		"CrySpatialFXShared.cpp"
+
+	SOURCE_GROUP "Root"
+		"stdafx.cpp"
+		"stdafx.h"
+)
+
+sources_platform(ORBIS)
+add_sources("NoUberFile"
+	SOURCE_GROUP "Header Files"
+		"resource.h"
+
+	SOURCE_GROUP "Source Files"
+		"CrySpatialFXShared.cpp"
 )
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"

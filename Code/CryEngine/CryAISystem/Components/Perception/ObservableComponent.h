@@ -38,7 +38,7 @@ protected:
 
 private:
 	void Update();
-	void Reset(EEntitySimulationMode simulationMode);
+	void Reset();
 
 	void RegisterToVisionMap();
 	void UnregisterFromVisionMap();

@@ -65,7 +65,6 @@ public:
 	virtual void        DeactivateContext(ContextId const contextId) override                                                                                                                                               {}
 	virtual void        LoadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                                     {}
 	virtual void        UnloadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                                   {}
-	virtual void        ReloadControlsData(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                                                  {}
 	virtual void        AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override                                                                  {}
 	virtual void        RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo) override                                                                                              {}
 	virtual void        ExternalUpdate() override                                                                                                                                                                           {}
@@ -82,6 +81,7 @@ public:
 	virtual void        ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override                                                                                                                             {}
 	virtual void        ExecutePreviewTriggerEx(XmlNodeRef const& node) override                                                                                                                                            {}
 	virtual void        StopPreviewTrigger() override                                                                                                                                                                       {}
+	virtual void        RefreshObject(Impl::IObject* const pIObject) override                                                                                                                                               {}
 
 private:
 

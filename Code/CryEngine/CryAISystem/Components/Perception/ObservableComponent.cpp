@@ -62,7 +62,7 @@ void CEntityAIObservableComponent::Register(Schematyc::IEnvRegistrar& registrar)
 
 void CEntityAIObservableComponent::OnShutDown()
 {
-	Reset(EEntitySimulationMode::Idle);
+	Reset();
 }
 
 void CEntityAIObservableComponent::ProcessEvent(const SEntityEvent& event)
@@ -74,10 +74,14 @@ void CEntityAIObservableComponent::ProcessEvent(const SEntityEvent& event)
 		Update();
 		break;
 	case ENTITY_EVENT_RESET:
-		Reset(GetEntity()->GetSimulationMode());
+		if (GetEntity()->GetSimulationMode() != EEntitySimulationMode::Game)
+		{
+			Reset();
+		}
 		break;
 	case ENTITY_EVENT_START_GAME:
 	{
+		RegisterToVisionMap();
 		m_entityEventMask |= IsUsingBones() ? ENTITY_EVENT_UPDATE : ENTITY_EVENT_XFORM;
 		GetEntity()->UpdateComponentEventMask(this);
 		break;
@@ -85,17 +89,10 @@ void CEntityAIObservableComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-void CEntityAIObservableComponent::Reset(EEntitySimulationMode simulationMode)
+void CEntityAIObservableComponent::Reset()
 {
-	if (simulationMode == EEntitySimulationMode::Game)
-	{
-		RegisterToVisionMap();
-	}
-	else
-	{
-		UnregisterFromVisionMap();
-		m_entityEventMask = ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
-	}
+	UnregisterFromVisionMap();
+	m_entityEventMask = ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
 }
 
 void CEntityAIObservableComponent::RegisterToVisionMap()
@@ -116,6 +113,7 @@ void CEntityAIObservableComponent::RegisterToVisionMap()
 	m_params.typeMask = m_visionMapType.mask;
 
 	CEntityAIFactionComponent* pFactionComponent = pEntity->GetComponent<CEntityAIFactionComponent>();
+
 	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId() : IFactionMap::InvalidFactionID;
 
 	//	, userData(0)

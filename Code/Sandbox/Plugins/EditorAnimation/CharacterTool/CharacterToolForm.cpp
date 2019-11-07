@@ -64,7 +64,6 @@
 #include "DockWidgetManager.h"
 #include "CharacterGizmoManager.h"
 #include "FileDialogs/EngineFileDialog.h"
-#include "Controls/SaveChangesDialog.h"
 #include "EditorFramework/BroadcastManager.h"
 #include <QtViewPane.h>
 #include <CryIcon.h>

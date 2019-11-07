@@ -23,6 +23,10 @@ public:
 	CFileTree() { m_iID = 0; };
 	virtual ~CFileTree() {};
 
+	using _TinyWindow::Create;
+	using _TinyTreeView::Create;
+	using _TinyTreeView::AddItemToTree;
+
 	BOOL Create(const _TinyRect& rcWnd, _TinyWindow* pParent = NULL, UINT iID = NULL)
 	{
 		m_iID = iID;

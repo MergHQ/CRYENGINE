@@ -1,8 +1,0 @@
-{
-    "NoUberFile": {
-        "Root": [
-            "../../SDKs/libvorbis/lib/vorbisfile.c",
-            "../../SDKs/libvorbis/include/vorbis/vorbisfile.h"
-        ]
-    }
-}

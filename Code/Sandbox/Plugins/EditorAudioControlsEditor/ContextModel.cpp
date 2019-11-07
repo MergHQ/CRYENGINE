@@ -158,7 +158,7 @@ QVariant CContextModel::data(QModelIndex const& index, int role) const
 						{
 							if (pContext->IsActive())
 							{
-								QString const& name = QtUtil::ToQString(pContext->GetName());
+								QString const name = QtUtil::ToQString(pContext->GetName());
 
 								if (pContext->GetId() != CryAudio::GlobalContextId)
 								{
@@ -242,7 +242,7 @@ bool CContextModel::setData(QModelIndex const& index, QVariant const& value, int
 				{
 					if (value.canConvert<QString>())
 					{
-						string const& newName = QtUtil::ToString(value.toString());
+						string const newName = QtUtil::ToString(value.toString());
 						wasDataChanged = g_contextManager.RenameContext(pContext, newName);
 					}
 
@@ -380,7 +380,7 @@ void CContextModel::Reset()
 CContext* CContextModel::GetContextFromIndex(QModelIndex const& index)
 {
 	CContext* pContext = nullptr;
-	QModelIndex const& nameColumnIndex = index.sibling(index.row(), static_cast<int>(EColumns::Name));
+	QModelIndex const nameColumnIndex = index.sibling(index.row(), static_cast<int>(EColumns::Name));
 	QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 	if (internalPtr.isValid())

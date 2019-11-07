@@ -357,7 +357,7 @@ void CLevelModelsManager::OnLayerChange(const CLayerChangeEvent& event)
 	}
 }
 
-void CLevelModelsManager::OnBatchProcessStarted(const std::vector<CBaseObject*>& objects)
+void CLevelModelsManager::OnBatchProcessStarted(const std::vector<CBaseObject*>& objects, const std::vector<CObjectLayer*>& layers)
 {
 	using namespace Private_ObjectLayerManager;
 	++m_batchProcessStackIndex;
@@ -366,7 +366,6 @@ void CLevelModelsManager::OnBatchProcessStarted(const std::vector<CBaseObject*>&
 		return;
 	}
 
-	std::vector<CObjectLayer*> layers = GetIEditorImpl()->GetObjectManager()->GetUniqueLayersRelatedToObjects(objects);
 	for (auto pLayer : layers)
 	{
 		auto pLayerModel = GetLayerModel(pLayer);

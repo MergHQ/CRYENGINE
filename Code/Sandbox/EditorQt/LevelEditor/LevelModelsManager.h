@@ -50,7 +50,7 @@ private:
 
 	QAbstractItemModel* CreateLayerModelFromIndex(const QModelIndex& sourceIndex);
 
-	void                OnBatchProcessStarted(const std::vector<CBaseObject*>& objects);
+	void                OnBatchProcessStarted(const std::vector<CBaseObject*>& objects, const std::vector<CObjectLayer*>& layers);
 	void                OnBatchProcessFinished();
 	void                OnLayerUpdate(const CLayerChangeEvent& event);
 	void                DisconnectChildrenModels(CObjectLayer* pLayer);

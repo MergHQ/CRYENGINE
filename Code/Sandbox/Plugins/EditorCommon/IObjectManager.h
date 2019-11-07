@@ -48,6 +48,7 @@ class CBatchProcessDispatcher
 public:
 	~CBatchProcessDispatcher();
 	void Start(const CBaseObjectsArray& objects, bool force = false);
+	void Start(const CBaseObjectsArray& objects, const std::vector<CObjectLayer*>& layers, bool force = false);
 	void Finish();
 
 private:
@@ -116,7 +117,7 @@ struct IObjectManager
 	virtual void GetObjects(CBaseObjectsArray& objects, BaseObjectFilterFunctor const& filter) const = 0;
 
 	//! Get array of unique layers related to objects
-	virtual std::vector<CObjectLayer*> GetUniqueLayersRelatedToObjects(const std::vector<CBaseObject*>& objects) const = 0;
+	virtual std::vector<CObjectLayer*> GetUniqueLayersRelatedToObjects(const std::vector<CBaseObject*>& objects, const std::vector<CObjectLayer*>& layers) const = 0;
 
 	//! Keep only top-most parents in the resulting array of objects
 	virtual void FilterParents(const CBaseObjectsArray& objects, CBaseObjectsArray& out) const = 0;
@@ -352,8 +353,8 @@ public:
 
 	//! New method of determining when selection is changed
 	//! Query IObjectManager::GetSelection to see what selection currently is
-	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)> signalSelectionChanged;
+	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)>  signalSelectionChanged;
 
-	CCrySignal<void(const std::vector<CBaseObject*>& objects)>                           signalBatchProcessStarted;
+	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CObjectLayer*>&)> signalBatchProcessStarted;
 	CCrySignal<void()> signalBatchProcessFinished;
 };

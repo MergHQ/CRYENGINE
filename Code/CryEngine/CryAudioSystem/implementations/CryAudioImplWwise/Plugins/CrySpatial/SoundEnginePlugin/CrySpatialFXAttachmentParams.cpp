@@ -51,7 +51,6 @@ AKRESULT CrySpatialFXAttachmentParams::Term(AK::IAkPluginMemAlloc* pAllocator)
 AKRESULT CrySpatialFXAttachmentParams::SetParamsBlock(const void* pParameterBlock, AkUInt32 blockSize)
 {
 	AKRESULT result = AK_Success;
-	AkUInt8 const* pParamsBlock = static_cast<AkUInt8 const*>(pParameterBlock);
 
 	// Read bank data here
 	CHECKBANKDATASIZE(blockSize, result);

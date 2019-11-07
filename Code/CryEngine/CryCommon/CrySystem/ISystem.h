@@ -474,6 +474,9 @@ enum ESystemEvent
 	//! Sent to inform the audio system to refresh.
 	ESYSTEM_EVENT_AUDIO_REFRESH,
 
+	//! Sent to inform the audio system to reload controls data.
+	ESYSTEM_EVENT_AUDIO_RELOAD_CONTROLS_DATA,
+
 	//! Sent when the audio language has changed.
 	ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED,
 

@@ -12,6 +12,9 @@
 class _TinyStatusBar : public _TinyWindow
 {
 public:
+
+	using _TinyWindow::Create;
+
 	_TinyStatusBar() {};
 	virtual ~_TinyStatusBar() {};
 
