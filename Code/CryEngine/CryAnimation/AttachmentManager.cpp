@@ -2371,7 +2371,12 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			if (pParentRenderNode)
 			{
 				pRenderNode->m_nHUDSilhouettesParam = pParentRenderNode->m_nHUDSilhouettesParam;
-				pRenderNode->m_fWSMaxViewDist = pParentRenderNode->m_fWSMaxViewDist;
+
+				const auto viewDistanceRatio = pParentRenderNode->GetViewDistRatioVal();
+				if (pRenderNode->GetViewDistRatioVal() != viewDistanceRatio)
+				{
+					pRenderNode->SetViewDistRatio(viewDistanceRatio);
+				}
 			}
 		}
 
