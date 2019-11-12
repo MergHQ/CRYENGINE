@@ -223,7 +223,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::SignalStopWork()
 
 	if (m_pTempWorkerInfo)
 	{
-		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);
+		CryAutoLock<CryMutexFast> lock(m_pTempWorkerInfo->doWorkLock);
 		m_pTempWorkerInfo->doWorkCnd.Notify();
 	}
 }
@@ -475,7 +475,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::KickTempWorker()
 	// Check if worker is already acquired
 	if (!m_pTempWorkerInfo->doWork)
 	{
-		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);
+		CryAutoLock<CryMutexFast> lock(m_pTempWorkerInfo->doWorkLock);
 
 		// Check if some other thread managed to acquire the worker ahead of us
 		if (!m_pTempWorkerInfo->doWork)
@@ -500,7 +500,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::StopTempWorker()
 	// Find an active worker
 	if (m_pTempWorkerInfo->doWork)
 	{
-		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);
+		CryAutoLock<CryMutexFast> lock(m_pTempWorkerInfo->doWorkLock);
 
 		// Check if some other thread managed to modify this worker ahead of us
 		if (m_pTempWorkerInfo->doWork)
