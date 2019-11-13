@@ -24,7 +24,7 @@ CUserAnalyticsSystem::CUserAnalyticsSystem()
 ///////////////////////////////////////////////////////////////////////////
 void CUserAnalyticsSystem::RegisterCVars()
 {
-	REGISTER_CVAR2("sys_UserAnalyticsCollect", &m_enableUserAnalyticsCollect, 1, VF_NULL,
+	REGISTER_CVAR2("sys_UserAnalyticsCollect", &m_enableUserAnalyticsCollect, 0, VF_NULL,
 	               "Collect User Analytics Events and push them to CRYENGINE server\n"
 	               " 0 - disabled\n"
 	               " 1 - enabled, recommended");
