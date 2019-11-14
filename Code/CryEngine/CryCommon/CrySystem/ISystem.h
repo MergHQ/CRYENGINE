@@ -94,7 +94,6 @@ struct ISystem;
 struct ITextModeConsole;
 struct IThreadManager;
 struct ITimer;
-struct IUserAnalyticsSystem;
 struct IValidator;
 struct IWindowMessageHandler;
 struct IXmlUtils;
@@ -1187,7 +1186,6 @@ struct ISystem
 	virtual IScriptSystem*          GetIScriptSystem() = 0;
 	virtual IConsole*               GetIConsole() = 0;
 	virtual IRemoteConsole*         GetIRemoteConsole() = 0;
-	virtual IUserAnalyticsSystem*   GetIUserAnalyticsSystem() = 0;
 	virtual Cry::IPluginManager*    GetIPluginManager() = 0;
 	virtual Cry::IProjectManager*   GetIProjectManager() = 0;
 	virtual Cry::UDR::IUDRSystem*   GetIUDR() = 0;

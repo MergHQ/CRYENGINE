@@ -240,17 +240,6 @@ void CCryPluginManager::LoadProjectPlugins()
 		CRY_ASSERT(false, "Trying to load plugin '%s', but shared libraries are not supported.", pluginDefinition.path.c_str());
 #endif // CrySharedLibrarySupported
 	}
-
-#if CrySharedLibrarySupported
-#if !defined(CRY_IS_MONOLITHIC_BUILD) && !defined(CRY_PLATFORM_CONSOLE)
-	// Always load the CryUserAnalytics plugin
-	Cry::SPluginDefinition userAnalyticsPlugin{ EType::Native, "CryUserAnalytics" };
-	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))
-	{
-		LoadPluginBinary(userAnalyticsPlugin.type, userAnalyticsPlugin.path, false);
-	}
-#endif
-#endif // CrySharedLibrarySupported
 }
 
 #if CrySharedLibrarySupported

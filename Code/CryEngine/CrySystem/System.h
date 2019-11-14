@@ -31,7 +31,6 @@ class CrySizerStats;
 class CServerThrottle;
 class CStreamEngine;
 class CThreadManager;
-class CUserAnalyticsSystem;
 class CXmlUtils;
 class ICrySizer;
 class IDiskProfiler;
@@ -337,7 +336,6 @@ public:
 #ifdef CRY_TESTING
 	CryTest::ITestSystem*        GetITestSystem() override            { return m_pTestSystem.get(); }
 #endif
-	IUserAnalyticsSystem*         GetIUserAnalyticsSystem() override;
 	Cry::IPluginManager*          GetIPluginManager() override;
 	Cry::IProjectManager*         GetIProjectManager() override;
 	virtual Cry::UDR::IUDRSystem* GetIUDR() override                 { return m_env.pUDR; }
@@ -972,7 +970,6 @@ protected: // -------------------------------------------------------------
 	ITextModeConsole*                     m_pTextModeConsole;
 	INotificationNetwork*                 m_pNotificationNetwork;
 	CCryPluginManager*                    m_pPluginManager;
-	CUserAnalyticsSystem*                 m_pUserAnalyticsSystem;
 	Cry::CProjectManager*                 m_pProjectManager;
 	CManualFrameStepController*           m_pManualFrameStepController = nullptr;
 

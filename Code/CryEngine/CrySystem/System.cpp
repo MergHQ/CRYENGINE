@@ -106,7 +106,6 @@
 
 #include "ExtensionSystem/CryPluginManager.h"
 #include "ProjectManager/ProjectManager.h"
-#include "UserAnalytics/UserAnalyticsSystem.h"
 
 #include "DebugCallStack.h"
 #include "ManualFrameStep.h"
@@ -469,8 +468,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 
 	m_pPluginManager = new CCryPluginManager(startupParams);
-
-	m_pUserAnalyticsSystem = new CUserAnalyticsSystem();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -709,7 +706,6 @@ void CSystem::ShutDown()
 
 	m_pPlatformOS.reset();
 
-	SAFE_DELETE(m_pUserAnalyticsSystem);
 	if (m_sys_dll_response_system != nullptr)
 	{
 		UnloadEngineModule(m_sys_dll_response_system->GetString());
@@ -3711,11 +3707,6 @@ void* CSystem::GetRootWindowMessageHandler()
 ICmdLine* CSystem::GetICmdLine()
 {
 	return m_pCmdLine;
-}
-
-IUserAnalyticsSystem* CSystem::GetIUserAnalyticsSystem()
-{
-	return m_pUserAnalyticsSystem;
 }
 
 Cry::IPluginManager* CSystem::GetIPluginManager()
