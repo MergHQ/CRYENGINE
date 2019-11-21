@@ -19,7 +19,7 @@ struct RCLoaderCGFListener : ILoaderCGFListener
 
 	virtual void Error( const char *format )
 	{
-		RCLogError(format);
+		RCLogWarning(format);
 	}
 };
 }
@@ -44,7 +44,7 @@ bool CSkeletonInfo::LoadFromChr(const char * name)
 	pCGF.reset(cgfLoader.LoadCGF( name,chunkFile,&listener ));
 	if (!pCGF.get())
 	{
-		RCLogError( "%s: Failed to load geometry file %s - %s",__FUNCTION__,name,cgfLoader.GetLastError() );
+		RCLogWarning( "%s: Failed to load geometry file %s - %s",__FUNCTION__,name,cgfLoader.GetLastError() );
 		return false;
 	}
 
