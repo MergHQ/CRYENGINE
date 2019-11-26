@@ -147,32 +147,40 @@ protected:
 	// IEntityComponent
 	virtual void ProcessEvent(const SEntityEvent& event) override
 	{
-		if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED || event.event == ENTITY_EVENT_SLOT_CHANGED)
+		switch (event.event)
 		{
-			ApplyBaseMeshProperties();
-		}
-		else
+		case ENTITY_EVENT_SLOT_CHANGED:
 		{
-			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			if (event.nParam[0] /* Updated Slot Id */ == GetEntitySlotId())
 			{
-				switch (m_physics.m_weightType)
-				{
-				case SPhysicsParameters::EWeightType::Mass:
-					{
-						m_physics.m_mass = max((float)m_physics.m_mass, SPhysicsParameters::s_weightTypeEpsilon);
-					}
-					break;
-				case SPhysicsParameters::EWeightType::Density:
-					{
-						m_physics.m_density = max((float)m_physics.m_density, SPhysicsParameters::s_weightTypeEpsilon);
-					}
-					break;
-				}
 
-				m_pEntity->UpdateComponentEventMask(this);
-
+		case ENTITY_EVENT_PHYSICAL_TYPE_CHANGED:
 				ApplyBaseMeshProperties();
 			}
+		}
+		break;
+
+		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		{
+			switch (m_physics.m_weightType)
+			{
+			case SPhysicsParameters::EWeightType::Mass:
+			{
+				m_physics.m_mass = max((float)m_physics.m_mass, SPhysicsParameters::s_weightTypeEpsilon);
+			}
+			break;
+			case SPhysicsParameters::EWeightType::Density:
+			{
+				m_physics.m_density = max((float)m_physics.m_density, SPhysicsParameters::s_weightTypeEpsilon);
+			}
+			break;
+			}
+
+			m_pEntity->UpdateComponentEventMask(this);
+
+			ApplyBaseMeshProperties();
+		}
+		break;
 		}
 	}
 
@@ -191,98 +199,92 @@ protected:
 
 	void ApplyBaseMeshProperties()
 	{
-		if (GetEntitySlotId() != EmptySlotId)
+		if (((uint32)m_type & (uint32)EMeshType::Render) != 0)
 		{
-			const uint32 prevFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
+			m_pEntity->SetSlotFlags(GetEntitySlotId(), ENTITY_SLOT_RENDER);
+		}
+		else
+		{
+			m_pEntity->SetSlotFlags(GetEntitySlotId(), 0);
+		}
 
-			if (((uint32)m_type & (uint32)EMeshType::Render) != 0)
+		if (IRenderNode* pRenderNode = m_pEntity->GetSlotRenderNode(GetEntitySlotId()))
+		{
+			uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
+			if (m_renderParameters.m_castShadowSpec != EMiniumSystemSpec::Disabled && (int)gEnv->pSystem->GetConfigSpec() >= (int)m_renderParameters.m_castShadowSpec)
 			{
-				m_pEntity->SetSlotFlags(GetEntitySlotId(), ENTITY_SLOT_RENDER);
+				slotFlags |= ENTITY_SLOT_CAST_SHADOW;
 			}
-			else
+			if (m_renderParameters.m_bIgnoreVisAreas)
 			{
-				m_pEntity->SetSlotFlags(GetEntitySlotId(), 0);
+				slotFlags |= ENTITY_SLOT_IGNORE_VISAREAS;
 			}
-
-			if (IRenderNode* pRenderNode = m_pEntity->GetSlotRenderNode(GetEntitySlotId()))
+			if (!m_renderParameters.m_bIgnoreTerrainLayerBlend)
 			{
-				uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
-				if (m_renderParameters.m_castShadowSpec != EMiniumSystemSpec::Disabled && (int)gEnv->pSystem->GetConfigSpec() >= (int)m_renderParameters.m_castShadowSpec)
-				{
-					slotFlags |= ENTITY_SLOT_CAST_SHADOW;
-				}
-				if (m_renderParameters.m_bIgnoreVisAreas)
-				{
-					slotFlags |= ENTITY_SLOT_IGNORE_VISAREAS;
-				}
-				if (!m_renderParameters.m_bIgnoreTerrainLayerBlend)
-				{
-					slotFlags |= ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND;
-				}
-				if (!m_renderParameters.m_bIgnoreDecalBlend)
-				{
-					slotFlags |= ENTITY_SLOT_ALLOW_DECAL_BLEND;
-				}
+				slotFlags |= ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND;
+			}
+			if (!m_renderParameters.m_bIgnoreDecalBlend)
+			{
+				slotFlags |= ENTITY_SLOT_ALLOW_DECAL_BLEND;
+			}
 				
-				UpdateGIModeEntitySlotFlags((uint8)m_renderParameters.m_giMode, slotFlags);
+			UpdateGIModeEntitySlotFlags((uint8)m_renderParameters.m_giMode, slotFlags);
 
-				const uint32 integrateIntoTerrainBits =
-					(((uint8)EMeshGIMode::IntegrateIntoTerrain & 1) ? ENTITY_SLOT_GI_MODE_BIT0 : 0) |
-					(((uint8)EMeshGIMode::IntegrateIntoTerrain & 2) ? ENTITY_SLOT_GI_MODE_BIT1 : 0) |
-					(((uint8)EMeshGIMode::IntegrateIntoTerrain & 4) ? ENTITY_SLOT_GI_MODE_BIT2 : 0);
+			const uint32 integrateIntoTerrainBits =
+				(((uint8)EMeshGIMode::IntegrateIntoTerrain & 1) ? ENTITY_SLOT_GI_MODE_BIT0 : 0) |
+				(((uint8)EMeshGIMode::IntegrateIntoTerrain & 2) ? ENTITY_SLOT_GI_MODE_BIT1 : 0) |
+				(((uint8)EMeshGIMode::IntegrateIntoTerrain & 4) ? ENTITY_SLOT_GI_MODE_BIT2 : 0);
 
-				// Request update of terrain mesh if IntegrateIntoTerrain state was modified
-				if (((slotFlags & (ENTITY_SLOT_GI_MODE_BIT0 | ENTITY_SLOT_GI_MODE_BIT1 | ENTITY_SLOT_GI_MODE_BIT2)) == integrateIntoTerrainBits) ||
-					  ((prevFlags & (ENTITY_SLOT_GI_MODE_BIT0 | ENTITY_SLOT_GI_MODE_BIT1 | ENTITY_SLOT_GI_MODE_BIT2)) == integrateIntoTerrainBits))
-				{
-					AABB nodeBox = pRenderNode->GetBBox();
-					gEnv->p3DEngine->GetITerrain()->ResetTerrainVertBuffers(&nodeBox);
-				}
-
-				m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
-
-				// We want to manage our own view distance ratio
-				m_pEntity->AddFlags(ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO);
-				pRenderNode->SetViewDistRatio((int)floor(((float)m_renderParameters.m_viewDistanceRatio / 100.f) * 255));
-				pRenderNode->SetLodRatio((int)floor(((float)m_renderParameters.m_lodDistance / 100.f) * 255));
+			// Request update of terrain mesh if IntegrateIntoTerrain state was modified
+			if ((slotFlags & (ENTITY_SLOT_GI_MODE_BIT0 | ENTITY_SLOT_GI_MODE_BIT1 | ENTITY_SLOT_GI_MODE_BIT2)) == integrateIntoTerrainBits)
+			{
+				AABB nodeBox = pRenderNode->GetBBox();
+				gEnv->p3DEngine->GetITerrain()->ResetTerrainVertBuffers(&nodeBox);
 			}
 
-			m_pEntity->UnphysicalizeSlot(GetEntitySlotId());
+			m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
 
-			if (((uint32)m_type & (uint32)EMeshType::Collider) != 0)
+			// We want to manage our own view distance ratio
+			m_pEntity->AddFlags(ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO);
+			pRenderNode->SetViewDistRatio((int)floor(((float)m_renderParameters.m_viewDistanceRatio / 100.f) * 255));
+			pRenderNode->SetLodRatio((int)floor(((float)m_renderParameters.m_lodDistance / 100.f) * 255));
+		}
+
+		m_pEntity->UnphysicalizeSlot(GetEntitySlotId());
+
+		if (((uint32)m_type & (uint32)EMeshType::Collider) != 0)
+		{
+			if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 			{
-				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+				SEntityPhysicalizeParams physParams;
+				physParams.nSlot = GetEntitySlotId();
+				physParams.type = pPhysicalEntity->GetType();
+				physParams.nLod = m_ragdollLod;
+				physParams.fStiffnessScale = m_ragdollStiffness;
+
+				switch (m_physics.m_weightType)
 				{
-					SEntityPhysicalizeParams physParams;
-					physParams.nSlot = GetEntitySlotId();
-					physParams.type = pPhysicalEntity->GetType();
-					physParams.nLod = m_ragdollLod;
-					physParams.fStiffnessScale = m_ragdollStiffness;
-
-					switch (m_physics.m_weightType)
+				case SPhysicsParameters::EWeightType::Mass:
 					{
-					case SPhysicsParameters::EWeightType::Mass:
-						{
-							physParams.mass = m_physics.m_mass;
-							physParams.density = -1.0f;
-						}
-						break;
-					case SPhysicsParameters::EWeightType::Density:
-						{
-							physParams.density = m_physics.m_density;
-							physParams.mass = -1.0f;
-						}
-						break;
-					case SPhysicsParameters::EWeightType::Immovable:
-						{
-							physParams.density = -1.0f;
-							physParams.mass = 0.0f;
-						}
-						break;
+						physParams.mass = m_physics.m_mass;
+						physParams.density = -1.0f;
 					}
-
-					m_pEntity->PhysicalizeSlot(GetEntitySlotId(), physParams);
+					break;
+				case SPhysicsParameters::EWeightType::Density:
+					{
+						physParams.density = m_physics.m_density;
+						physParams.mass = -1.0f;
+					}
+					break;
+				case SPhysicsParameters::EWeightType::Immovable:
+					{
+						physParams.density = -1.0f;
+						physParams.mass = 0.0f;
+					}
+					break;
 				}
+
+				m_pEntity->PhysicalizeSlot(GetEntitySlotId(), physParams);
 			}
 		}
 	}
