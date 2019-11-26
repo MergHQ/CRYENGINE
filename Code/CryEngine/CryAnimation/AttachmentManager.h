@@ -32,7 +32,6 @@ public:
 	{
 		m_pSkelInstance = NULL;
 		m_nHaveEntityAttachments = 0;
-		m_numRedirectionWithAttachment = 0;
 		m_fZoomDistanceSq = 0;
 		m_arrAttachments.reserve(0x20);
 		m_TypeSortingRequired = 0;
@@ -255,7 +254,6 @@ private:
 
 	f32    m_fZoomDistanceSq;
 	uint32 m_nHaveEntityAttachments;
-	uint32 m_numRedirectionWithAttachment;
 	uint32 m_physAttachIds; // bitmask for used physicalized attachment ids
 
 	struct SRange
