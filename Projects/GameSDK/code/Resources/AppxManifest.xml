@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest" xmlns:mx="http://schemas.microsoft.com/appx/2013/xbox/manifest" IgnorableNamespaces="mx">
+
+  <Identity Name="${ctx.package_name}" Publisher="CN=Publisher" Version="${ctx.version}" />
+
+  <Properties>
+    <DisplayName>${ctx.display_name}</DisplayName>
+    <PublisherDisplayName>${ctx.publisher_name}</PublisherDisplayName>
+    <Logo>${ctx.logo}</Logo>
+    <Description>${ctx.description}</Description>
+  </Properties>
+
+  <Prerequisites>
+    <OSMinVersion>6.2</OSMinVersion>
+    <OSMaxVersionTested>6.2</OSMaxVersionTested>
+    <mx:ApplicationEnvironment>title</mx:ApplicationEnvironment>
+    <mx:OSName>era</mx:OSName>
+  </Prerequisites>
+
+  <Resources>
+    <Resource Language="en-us"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="${ctx.app_id}"
+        Executable="${ctx.executable_name}"
+        EntryPoint="${ctx.app_id}">
+      <VisualElements
+          DisplayName="${ctx.display_name}"
+          Logo="${ctx.logo}"
+          SmallLogo="${ctx.small_logo}"
+          Description="${ctx.description}"
+          ForegroundText="${ctx.foreground_text}"
+          BackgroundColor="${ctx.background_color}">
+        <DefaultTile WideLogo="${ctx.wide_logo}" />
+        <SplashScreen Image="${ctx.splash_screen}" />
+      </VisualElements>
+      <Extensions>
+        <mx:Extension Category="xbox.live">
+          <mx:XboxLive TitleId="06BFF3BF" PrimaryServiceConfigId="84d70100-5e91-4cf0-bcc9-7b2f06bff3bf" />
+        </mx:Extension>
+        <mx:Extension Category="xbox.system.resources">
+          <mx:XboxSystemResources resourceConfiguration="extended"/>
+        </mx:Extension>
+        <mx:Extension Category="windows.xbox.networking">
+          <mx:XboxNetworkingManifest>
+            <mx:SocketDescriptions>
+              <mx:SocketDescription Name="StatoscopeSocket" SecureIpProtocol="Tcp" BoundPort="29527">
+                <mx:AllowedUsages>
+                  <mx:SecureDeviceSocketUsage Type="Initiate" />
+                  <!-- connection will send initial packet -->
+                  <mx:SecureDeviceSocketUsage Type="Accept" />
+                  <!-- connection will accept packets -->
+                  <mx:SecureDeviceSocketUsage Type="SendDebug" />
+                  <!-- connection will only send packets (TCP) -->
+                  <mx:SecureDeviceSocketUsage Type="ReceiveDebug" />
+                  <!-- connection will only receive packets (TCP) -->
+                </mx:AllowedUsages>
+              </mx:SocketDescription>
+              <mx:SocketDescription Name="ConsoleSocket" SecureIpProtocol="Udp" BoundPort="49150">
+                <mx:AllowedUsages>
+                  <mx:SecureDeviceSocketUsage Type="Initiate" />
+                  <mx:SecureDeviceSocketUsage Type="Accept" />
+                  <mx:SecureDeviceSocketUsage Type="SendChat" />
+                  <mx:SecureDeviceSocketUsage Type="SendGameData" />
+                  <mx:SecureDeviceSocketUsage Type="ReceiveChat" />
+                  <mx:SecureDeviceSocketUsage Type="ReceiveGameData" />
+                </mx:AllowedUsages>
+              </mx:SocketDescription>
+            </mx:SocketDescriptions>
+            <mx:SecureDeviceAssociationTemplates>
+              <mx:SecureDeviceAssociationTemplate Name="CryNetworkTraffic" InitiatorSocketDescription="ConsoleSocket" AcceptorSocketDescription="ConsoleSocket" MultiplayerSessionRequirement="Required">
+                <mx:AllowedUsages>
+                  <mx:SecureDeviceAssociationUsage Type="Default" />
+                </mx:AllowedUsages>
+              </mx:SecureDeviceAssociationTemplate>
+              <mx:SecureDeviceAssociationTemplate Name="Statoscope" InitiatorSocketDescription="StatoscopeSocket" AcceptorSocketDescription="StatoscopeSocket" MultiplayerSessionRequirement="None">
+                <mx:AllowedUsages>
+                  <mx:SecureDeviceAssociationUsage Type="Default" />
+                </mx:AllowedUsages>
+              </mx:SecureDeviceAssociationTemplate>
+            </mx:SecureDeviceAssociationTemplates>
+          </mx:XboxNetworkingManifest>
+        </mx:Extension>
+      </Extensions>
+      <mx:Ratings Category="game">
+        <mx:Rating>ESRB:T</mx:Rating>
+        <mx:Rating>USK:12</mx:Rating>
+        <mx:Rating>COB-AU:PG</mx:Rating>
+        <mx:Rating>OFLC-NZ:PG</mx:Rating>
+        <mx:Rating>DJCTQ:12</mx:Rating>
+        <mx:Rating>PEGI:12</mx:Rating>
+        <mx:Rating>Microsoft:12</mx:Rating>
+      </mx:Ratings>
+  </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClientServer" />
+    <mx:Capability Name="kinectGamechat" />
+    <mx:Capability Name="kinectAudio" />
+  </Capabilities>
+
+  <Extensions>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Xbox.GameChat.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.GameChat.ChatManager" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Xbox.Services.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.XboxLiveContext" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Configuration" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Multiplayer.MultiplayerQualityOfServiceMeasurements" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Multiplayer.MultiplayerSessionReference" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Multiplayer.MultiplayerSessionCapabilities" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Multiplayer.MultiplayerSession" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Matchmaking.CreateMatchTicketResponse" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Matchmaking.HopperStatisticsResponse" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Matchmaking.MatchTicketDetailsResponse" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Presence.PresenceData" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.TitleStorage.TitleStorageBlobMetadata" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.UserStatistics.RequestedStatistics" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Privacy.PermissionIdConstants" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Xbox.Services.Social.SocialGroupConstants" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+    <Extension Category="windows.activatableClass.inProcessServer">
+      <InProcessServer>
+        <Path>Microsoft.Kinect.dll</Path>
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.FaceFrameSource" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.VisualGestureBuilderDatabase" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.VisualGestureBuilderFrameSource" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.FaceModel" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.FaceAlignment" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.FaceModelBuilder" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.HighDefinitionFaceFrameSource" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="Microsoft.Kinect.HighDefinitionFaceFrameManualFeedSource" ThreadingModel="both" />
+      </InProcessServer>
+    </Extension>
+  </Extensions>
+</Package>
