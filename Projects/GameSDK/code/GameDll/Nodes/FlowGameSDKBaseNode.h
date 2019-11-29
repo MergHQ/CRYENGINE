@@ -4,6 +4,7 @@
 
 #include <CryGame/IGameFramework.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <IActorSystem.h>
 
 template<ENodeCloneType CLONE_TYPE>
 class CFlowGameSDKBaseNode : public CFlowBaseNode<CLONE_TYPE>

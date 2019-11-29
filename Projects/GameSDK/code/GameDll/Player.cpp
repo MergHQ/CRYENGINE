@@ -1177,7 +1177,7 @@ void CPlayer::InitLocalPlayer()
 		if (m_pIEntityAudioComponent != nullptr)
 		{
 			// This enables automatic updates of the "absolute_velocity" audio parameter on the Player Character.
-			m_pIEntityAudioComponent->ToggleAbsoluteVelocityTracking(true);
+			m_pIEntityAudioComponent->SetVelocityTracking(true);
 		}
 
 		m_netPlayerProgression.OwnClientConnected();

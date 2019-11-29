@@ -20,10 +20,11 @@ namespace AILegacy
 {
 
 struct IAIObject;
-
-IAIObject* GetEntityAIObject(const IEntity* pEntity);
-tAIObjectID GetEntityAIObjectID(const IEntity* pEntity);
 }
+
+AILegacy::IAIObject* GetEntityAIObject(const IEntity* pEntity);
+AILegacy::tAIObjectID GetEntityAIObjectID(const IEntity* pEntity);
+
 using namespace AILegacy;
 
 #define GAME_NAME     "GAMESDK"

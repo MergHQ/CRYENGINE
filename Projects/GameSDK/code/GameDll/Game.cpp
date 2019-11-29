@@ -217,8 +217,6 @@ static CRevertibleConfigLoader s_levelCVars(20, 1024);
 
 static void OnChangedStereoRenderDevice(ICVar* pStereoRenderDevice);
 
-namespace AILegacy
-{
 IAIObject* GetEntityAIObject(const IEntity* pEntity)
 {
 	return pEntity ? gEnv->pAISystem->Legacy()->GetAIObjectManager()->GetEntityAIObject(pEntity->GetId()) : nullptr;
@@ -226,7 +224,6 @@ IAIObject* GetEntityAIObject(const IEntity* pEntity)
 tAIObjectID GetEntityAIObjectID(const IEntity* pEntity)
 {
 	return pEntity ? gEnv->pAISystem->Legacy()->GetAIObjectManager()->GetEntityAIObjectID(pEntity->GetId()) : INVALID_AIOBJECTID;
-}
 }
 
 #ifndef NO_LIVECREATE
