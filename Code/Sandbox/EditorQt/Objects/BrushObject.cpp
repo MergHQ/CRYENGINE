@@ -853,7 +853,7 @@ void CBrushObject::UpdateEngineNode(bool bOnlyTransform)
 		renderFlags |= ERF_DYNAMIC_DISTANCESHADOWS;
 	//	if (mv_recvLightmap)
 	//	renderFlags |= ERF_USERAMMAPS;
-	if (IsHidden() || IsHiddenBySpec())
+	if (IsHidden() || IsHiddenBySpec() || CheckFlags(OBJFLAG_INVISIBLE))
 		renderFlags |= ERF_HIDDEN;
 	if (mv_hideable == 1)
 		renderFlags |= ERF_HIDABLE;
