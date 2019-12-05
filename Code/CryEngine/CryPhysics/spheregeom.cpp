@@ -210,7 +210,7 @@ void CSphereGeom::CalcVolumetricPressure(geom_world_data *gwd, const Vec3 &epice
 																				 const Vec3 &centerOfMass, Vec3 &P,Vec3 &L)
 {
 	Vec3 dc = gwd->R*m_sphere.center*gwd->scale+gwd->offset-epicenter;
-	P += dc*(k/(dc.len()*max(dc.len2(),sqr(rmin))));
+	P += dc*(k/(max(1e-9f,dc.len())*max(dc.len2(),sqr(rmin))));
 }
 
 int CSphereGeom::DrawToOcclusionCubemap(const geom_world_data *pgwd, int iStartPrim,int nPrims, int iPass, SOcclusionCubeMap* cubeMap)
