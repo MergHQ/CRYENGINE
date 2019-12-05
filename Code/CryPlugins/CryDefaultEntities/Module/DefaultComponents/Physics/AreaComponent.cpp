@@ -153,8 +153,9 @@ void CAreaComponent::Physicalize()
 		return;
 	}
 
+	Vec3 scale = m_pEntity->GetScale();
 	if (!pPhysicalEntity)
-		pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(pGeometry, m_pEntity->GetWorldPos(), m_pEntity->GetWorldRotation(), m_pEntity->GetScale().GetLength());
+		pPhysicalEntity = gEnv->pPhysicalWorld->AddArea(pGeometry, m_pEntity->GetWorldPos(), m_pEntity->GetWorldRotation(), (scale.x+scale.y+scale.z)/3);
 	m_pEntity->AssignPhysicalEntity(pPhysicalEntity);
 
 	pe_params_area areaParams;
