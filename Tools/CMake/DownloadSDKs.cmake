@@ -1,6 +1,6 @@
 if (NOT EXISTS "${CRYENGINE_DIR}/Tools/branch_bootstrap/bootstrap.exe" AND NOT EXISTS "${SDK_DIR}")
-	set(SDK_ARCHIVE   "CRYENGINE_v5.6.4_SDKs.zip")
-	set(GIT_TAG       "5.6.4")
+	set(SDK_ARCHIVE   "CRYENGINE_v5.6.5_SDKs.zip")
+	set(GIT_TAG       "5.6.5")
 
 	if(EXISTS "${CRYENGINE_DIR}/${SDK_ARCHIVE}")
 		message(STATUS "Using pre-downloaded SDKs: ${SDK_ARCHIVE}")
