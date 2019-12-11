@@ -4405,7 +4405,11 @@ void CSystem::HandleDrawDebug()
 
 			CryModuleMemoryInfo memInfo;
 			ZeroStruct(memInfo);
+
+	#if !defined(_LIB)
+			// This works differently in monolithic builds and therefore doesn't cater to our needs.
 			CryGetMemoryInfoForModule(&memInfo);
+	#endif // _LIB
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
 			auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);

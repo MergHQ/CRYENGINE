@@ -133,49 +133,44 @@ endif()
 option(AUDIO_USE_OCCLUSION "Enable" ON)
 
 function(try_to_enable_fmod)
-if (NOT ORBIS)
-	if (DEFINED AUDIO_FMOD)
-		if (AUDIO_FMOD)
-			if (EXISTS "${SDK_DIR}/Audio/fmod")
-				message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod - enabling Fmod support.")
-				
-				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
-				option(AUDIO_FMOD "Fmod SDK found in ${SDK_DIR}/Audio/fmod." ON)
-				
-				include(${TOOLS_CMAKE_DIR}/modules/fmod.cmake)
-			else()
-				message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod - disabling Fmod support.")
-				
-				# Disables the AUDIO_FMOD option but also updates the message in the cache that is then used in the GUI as a tooltip.
-				option(AUDIO_FMOD "Fmod SDK not found in ${SDK_DIR}/Audio/fmod." OFF)
-			endif()
-		else()
-			if (EXISTS "${SDK_DIR}/Audio/fmod")
-				message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod but AUDIO_FMOD option turned OFF")
-				
-				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
-				option(AUDIO_FMOD "Fmod SDK found in ${SDK_DIR}/Audio/fmod but AUDIO_FMOD option turned OFF." OFF)
-			else()
-				message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod and AUDIO_FMOD option turned OFF")
-				
-				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
-				option(AUDIO_FMOD "Fmod SDK not found in ${SDK_DIR}/Audio/fmod and AUDIO_FMOD option turned OFF." OFF)
-			endif()
-		endif()
-	else()
-		# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+if (DEFINED AUDIO_FMOD)
+	if (AUDIO_FMOD)
 		if (EXISTS "${SDK_DIR}/Audio/fmod")
 			message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod - enabling Fmod support.")
-			set(AUDIO_FMOD ON CACHE BOOL "Fmod SDK found in ${SDK_DIR}/Audio/fmod." FORCE)
+			
+			# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_FMOD "Fmod SDK found in ${SDK_DIR}/Audio/fmod." ON)
+			
 			include(${TOOLS_CMAKE_DIR}/modules/fmod.cmake)
 		else()
 			message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod - disabling Fmod support.")
-			set(AUDIO_FMOD OFF CACHE BOOL "Fmod SDK not found in ${SDK_DIR}/Audio/fmod." FORCE)
+			
+			# Disables the AUDIO_FMOD option but also updates the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_FMOD "Fmod SDK not found in ${SDK_DIR}/Audio/fmod." OFF)
+		endif()
+	else()
+		if (EXISTS "${SDK_DIR}/Audio/fmod")
+			message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod but AUDIO_FMOD option turned OFF")
+			
+			# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_FMOD "Fmod SDK found in ${SDK_DIR}/Audio/fmod but AUDIO_FMOD option turned OFF." OFF)
+		else()
+			message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod and AUDIO_FMOD option turned OFF")
+			
+			# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+			option(AUDIO_FMOD "Fmod SDK not found in ${SDK_DIR}/Audio/fmod and AUDIO_FMOD option turned OFF." OFF)
 		endif()
 	endif()
 else()
-	message(STATUS "Disabling Fmod support due to unsupported platform.")
-	set(AUDIO_FMOD OFF CACHE BOOL "Fmod disabled due to unsupported platform." FORCE)
+	# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+	if (EXISTS "${SDK_DIR}/Audio/fmod")
+		message(STATUS "Fmod SDK found in ${SDK_DIR}/Audio/fmod - enabling Fmod support.")
+		set(AUDIO_FMOD ON CACHE BOOL "Fmod SDK found in ${SDK_DIR}/Audio/fmod." FORCE)
+		include(${TOOLS_CMAKE_DIR}/modules/fmod.cmake)
+	else()
+		message(STATUS "Fmod SDK not found in ${SDK_DIR}/Audio/fmod - disabling Fmod support.")
+		set(AUDIO_FMOD OFF CACHE BOOL "Fmod SDK not found in ${SDK_DIR}/Audio/fmod." FORCE)
+	endif()
 endif()
 endfunction(try_to_enable_fmod)
 
@@ -430,12 +425,23 @@ else()
 endif()
 endfunction(try_to_enable_cryspatial)
 
-try_to_enable_fmod()
-try_to_enable_portaudio()
-try_to_enable_sdl_mixer()
+# We need to do this as currently we can't have multiple modules sharing the same GUID in monolithic builds.
+# Can be changed back to include all supported middlewares once that has been rectified.
+if(OPTION_STATIC_LINKING)
+	if(ORBIS)
+		try_to_enable_fmod()
+	else()
+		try_to_enable_sdl_mixer()
+	endif()
+else()
+	try_to_enable_fmod()
+	try_to_enable_portaudio()
+	try_to_enable_sdl_mixer()
+	try_to_enable_wwise()
+	try_to_enable_adx2()
+endif()
+
 try_to_enable_dynamic_response_system()
-try_to_enable_wwise()
-try_to_enable_adx2()
 try_to_enable_oculus_hrtf()
 try_to_enable_cryspatial()
 # ~Audio
