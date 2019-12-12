@@ -24,6 +24,25 @@ public:
 	int  ResolveJointIndex(const CDefaultSkeleton& skeleton) const;
 };
 
+struct SJointNode
+{
+public:
+	string name;
+	uint32 crc32;
+	TJointId jointId;
+
+public:
+	SJointNode()
+		: crc32(0)
+		, jointId(INVALID_JOINT_ID)
+	{
+	}
+
+public:
+	bool IsSet() const;
+	bool ResolveJointIndex(const IDefaultSkeleton& skeleton);
+};
+
 struct SConstraintPointNodeDesc
 {
 	SNode node;
@@ -265,5 +284,6 @@ void Serialize(Serialization::IArchive& ar, PoseModifier::SDynamicsSpringDesc& v
 void Serialize(Serialization::IArchive& ar, PoseModifier::SDynamicsPendulumDesc& value);
 void Serialize(Serialization::IArchive& ar, PoseModifier::STransformBlenderDesc& value);
 bool Serialize(Serialization::IArchive& ar, PoseModifier::SNode& value, const char* name, const char* label);
+bool Serialize(Serialization::IArchive& ar, PoseModifier::SJointNode& value, const char* name, const char* label);
 
 } // namespace PoseModifier

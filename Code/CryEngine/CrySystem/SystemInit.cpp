@@ -137,7 +137,6 @@
 #include "WindowsConsole.h"
 #include "CmdLine.h"
 #include "CPUDetect.h"
-#include "UserAnalytics/UserAnalyticsSystem.h"
 
 #if CRY_PLATFORM_WINDOWS
 extern LONG WINAPI CryEngineExceptionFilterWER(struct _EXCEPTION_POINTERS* pExceptionPointers);
@@ -3129,9 +3128,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 #endif // CRY_PLATFORM_DESKTOP
 		}
 
-		//////////////////////////////////////////////////////////////////////////
-		m_pUserAnalyticsSystem->Initialize();
-
 		InlineInitializationProcessing("CSystem::Init CSharedFlashPlayerResources::Init");
 
 		const bool bStartScreensAllowed = !startupParams.bShaderCacheGen
@@ -5240,8 +5236,6 @@ void CSystem::CreateSystemVars()
 #elif CRY_PLATFORM_DURANGO
 	((DurangoDebugCallStack*)IDebugCallStack::instance())->RegisterCVars();
 #endif
-
-	m_pUserAnalyticsSystem->RegisterCVars();
 
 	Serialization::RegisterArchiveHostCVars();
 }

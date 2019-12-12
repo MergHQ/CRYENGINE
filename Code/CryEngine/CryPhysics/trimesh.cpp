@@ -2913,7 +2913,7 @@ void CTriMesh::CalcVolumetricPressure(geom_world_data *gwd, const Vec3 &epicente
 					npt += 12;
 				}	else {
 					ptc = (pt[npt]+pt[npt+1]+pt[npt+2])*(1.0f/3); r2 = (ptc-c).len2();
-					dP = m_pNormals[i]*(((ptc-c)*m_pNormals[i])*(pt[npt+1]-pt[npt]^pt[npt+2]-pt[npt]).len()*0.5f*k/(sqrt_tpl(r2)*max(r2,rmin2)));
+					dP = m_pNormals[i]*(((ptc-c)*m_pNormals[i])*(pt[npt+1]-pt[npt]^pt[npt+2]-pt[npt]).len()*0.5f*k/(max(1e-9f,sqrt_tpl(r2))*max(r2,rmin2)));
 					Pres += dP; Lres += ptc-cm^dP;
 				}
 			}

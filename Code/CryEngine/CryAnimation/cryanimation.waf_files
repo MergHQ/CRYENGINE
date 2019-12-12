@@ -86,9 +86,10 @@
     },
     "CryAnimation_character_instance_uber_2.cpp": {
         "CharacterInstance/PoseModifier": [
-            "PoseModifier/DirectionalBlender.cpp",
-            "PoseModifier/FeetLock.cpp",
+            "PoseModifier/ApplyOffsetRotation.cpp",
+            "PoseModifier/CopyTransform.cpp",
             "PoseModifier/LimbIk.cpp",
+            "PoseModifier/LookIk.cpp",
             "PoseModifier/OperatorQueue.cpp",
             "PoseModifier/PoseAlignerChain.cpp",
             "PoseModifier/PoseBlenderAim.cpp",

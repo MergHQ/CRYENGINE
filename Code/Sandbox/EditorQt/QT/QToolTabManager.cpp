@@ -13,7 +13,6 @@
 #include <QtUtil.h>
 
 #include <CrySystem/IProjectManager.h>
-#include <CrySystem/UserAnalytics/IUserAnalytics.h>
 
 #include <QCloseEvent>
 #include <QDesktopWidget>
@@ -226,9 +225,6 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 		pPane->setParent(m_pParent);
 		m_panes.push_back(pPane);
 		pPane->m_class = paneClassName;
-
-		// User Analytics - do not move or modify
-		PushUserEvent("Sandbox::OpenTool", paneClassName, pPane);
 	}
 
 	int dockDir = IViewPaneClass::DOCK_FLOAT;
@@ -537,9 +533,6 @@ bool CTabPaneManager::CloseTabPane(QTabPane* tool)
 	CRY_ASSERT(bDeleted); //if this is false we have tried to delete the tool twice, or delete a tool that wasn't registered
 	if (tool && bDeleted)
 	{
-		// User Analytics - do not move or modify
-		PushUserEvent("Sandbox::CloseTool", tool->m_title, tool);
-
 		GetToolManager()->releaseToolWindow(tool, true);
 		return true;
 	}
@@ -1034,16 +1027,6 @@ void CTabPaneManager::SetState(const QVariant& state)
 			mainFrameWindow->setGeometry(desktop->availableGeometry(mainFrameWindow));
 		}
 	}
-}
-
-void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle, const void* pAddress)
-{
-	UserAnalytics::Attributes attributes;
-	attributes.AddAttribute("title", szTitle);
-	char addressBuffer[32];
-	cry_sprintf(addressBuffer, "0x%p", pAddress);
-	attributes.AddAttribute("address", addressBuffer);
-	USER_ANALYTICS_EVENT_ARG(szEventName, &attributes);
 }
 
 QTabPane::QTabPane()

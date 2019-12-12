@@ -133,7 +133,7 @@ static bool LoadIKSetup(const char* szChrParamsFileName, XmlNodeRef rootNode, CS
 							}
 							else
 							{
-								RCLogError("Error while parsing chrparams file '%s': The'ParameterJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Lookposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pJointName);
+								RCLogWarning("Error while parsing chrparams file '%s': The'ParameterJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Lookposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pJointName);
 							}
 
 							const char* pStartJointName = nodePos->getAttr( "StartJoint" );
@@ -145,7 +145,7 @@ static bool LoadIKSetup(const char* szChrParamsFileName, XmlNodeRef rootNode, CS
 							}
 							else
 							{
-								RCLogError("Error while parsing chrparams file '%s': The'StartJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Lookposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pStartJointName);
+								RCLogWarning("Error while parsing chrparams file '%s': The'StartJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Lookposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pStartJointName);
 							}
 
 							pModelSkeleton->m_LookDirBlends.push_back( DirBlend );
@@ -248,7 +248,7 @@ static bool LoadIKSetup(const char* szChrParamsFileName, XmlNodeRef rootNode, CS
 							}
 							else
 							{
-								RCLogError("Error while parsing chrparams file '%s': The'ParameterJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Aimposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pJointName);
+								RCLogWarning("Error while parsing chrparams file '%s': The'ParameterJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Aimposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pJointName);
 							}
 
 							const char* pStartJointName = nodePos->getAttr( "StartJoint" );
@@ -260,7 +260,7 @@ static bool LoadIKSetup(const char* szChrParamsFileName, XmlNodeRef rootNode, CS
 							}
 							else
 							{
-								RCLogError("Error while parsing chrparams file '%s': The'StartJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Aimposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pStartJointName);
+								RCLogWarning("Error while parsing chrparams file '%s': The'StartJoint' parameter at line '%d' refers to joint '%s', but the model doesn't seem to have a joint with that name! Aimposes for this character might not work as expected.", szChrParamsFileName, nodePos->getLine(), pStartJointName);
 							}
 
 							pModelSkeleton->m_AimDirBlends.push_back( DirBlend );

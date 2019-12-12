@@ -77,7 +77,6 @@ endif()
 
 
 if(WINDOWS OR LINUX)
-	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
 	if(EXISTS "${SDK_DIR}/OpenVR")
 		option(PLUGIN_VR_OPENVR "OpenVR support" ON)
 	else()

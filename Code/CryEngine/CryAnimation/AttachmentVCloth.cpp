@@ -2769,7 +2769,7 @@ bool CClothPiece::Initialize(const CAttachmentVCLOTH* pVClothAttachment)
 	}
 	if (!pSimSkin->HasVCloth() || !hasMetaData)
 	{
-		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "[Cloth] VCloth metadata is not stored in character file. Please regenerate skin with RessourceCompiler and cloth flag set. Metadata is generated on the fly (expensive at runtime).");
+		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, "[Cloth] VCloth metadata is not stored in skin file '%s'. Please regenerate skin with RessourceCompiler and cloth flag set. Metadata is generated on the fly (expensive at runtime).", m_pVClothAttachment->GetISkin() ? m_pVClothAttachment->GetISkin()->GetModelFilePath() : "unknown file");
 		m_simulator.GenerateMetaData((mesh_data*)m_clothGeom->pPhysGeom->pGeom->GetData(), pSimSkin, &m_clothGeom->weights[0]);
 	}
 	m_simulator.SetParams(m_simulator.GetParams(), &m_clothGeom->weights[0]); // determine links weights

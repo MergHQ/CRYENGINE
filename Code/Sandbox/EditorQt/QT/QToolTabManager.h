@@ -109,8 +109,6 @@ private:
 	QTabPane*                 FindTabPaneByCategory(const char* sPaneCategory);
 	QTabPane*                 FindTabPaneByTitle(const char* title);
 
-	void                      PushUserEvent(const char* szEventName, const char* szTitle, const void* pAddress);
-
 	struct SPaneHistory
 	{
 		QRect rect;    // Last known size of this panel.

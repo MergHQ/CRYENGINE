@@ -6,6 +6,8 @@
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	#include "Object.h"
 	#include <Logger.h>
+#else
+	#include "Common.h"
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 #include <cri_atom_ex.h>

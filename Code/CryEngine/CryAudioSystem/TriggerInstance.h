@@ -4,7 +4,7 @@
 
 #include "Common.h"
 #include "Common/PoolObject.h"
-#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {
