@@ -584,6 +584,12 @@ void CImpl::DestructFile(IFile* const pIFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
+char const* CImpl::GetFileLocation(IFile* const pIFile) const
+{
+	return m_localizedSoundBankFolder.c_str();
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
