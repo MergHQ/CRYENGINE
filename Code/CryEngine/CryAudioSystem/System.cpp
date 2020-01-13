@@ -2293,7 +2293,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::SetParameterGlobally:
 		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameterGlobally> const*>(request.GetData());
 
 			CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, pRequestData->parameterId, nullptr);
 
@@ -2326,7 +2326,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::SetSwitchStateGlobally:
 		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> const*>(request.GetData());
 
 			CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, pRequestData->switchId, nullptr);
 
