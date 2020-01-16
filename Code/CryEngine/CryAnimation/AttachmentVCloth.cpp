@@ -851,9 +851,16 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 			pVertexAnimation->pRenderMeshSyncVariable = pRenderMesh->SetAsyncUpdateState();
 
 			SSkinningData *pCurrentJobSkinningData = *pD->m_pSkinningData->pMasterSkinningDataList;
+
+			if (pD->m_pSkinningData)
+			{
+				pD->m_pSkinningData->isSimulation = true;
+			}
+
 			if (pCurrentJobSkinningData == NULL)
 			{
 				pVertexAnimation->Begin(pD->m_pSkinningData->pAsyncJobs);
+				gEnv->pRenderer->EnqueueSkinningSimulationJob(pD->m_pSkinningData->pAsyncJobs);
 			}
 			else
 			{
@@ -865,6 +872,7 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 				if (pUpdatedJobSkinningData == NULL)
 				{
 					pVertexAnimation->Begin(pD->m_pSkinningData->pAsyncJobs);
+					gEnv->pRenderer->EnqueueSkinningSimulationJob(pD->m_pSkinningData->pAsyncJobs);
 				}
 			}
 
@@ -1003,6 +1011,7 @@ SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimat
 	}
 
 	pSkinningData->pRemapTable = &m_arrRemapTable[0];
+	pSkinningData->isSimulation = true;
 
 	return pSkinningData;
 }
