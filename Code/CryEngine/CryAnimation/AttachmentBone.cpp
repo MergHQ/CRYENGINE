@@ -26,7 +26,7 @@ uint32 CAttachmentBONE::SetJointName(const char* szJointName)
 	}
 	m_strJointName = szJointName;
 	ProjectAttachment();
-	m_pAttachmentManager->m_TypeSortingRequired++;
+	m_pAttachmentManager->ScheduleProcessingBufferRebuild();
 	return 1;
 };
 
@@ -40,7 +40,7 @@ uint32 CAttachmentBONE::ReName(const char* szSocketName, uint32 crc)
 	m_strSocketName.clear();
 	m_strSocketName = szSocketName;
 	m_nSocketCRC32 = crc;
-	m_pAttachmentManager->m_TypeSortingRequired++;
+	m_pAttachmentManager->ScheduleProcessingBufferRebuild();
 	return 1;
 };
 
@@ -101,7 +101,11 @@ void CAttachmentBONE::PostUpdateSimulationParams(bool bAttachmentSortingRequired
 		return;
 	}
 
-	m_pAttachmentManager->m_TypeSortingRequired += bAttachmentSortingRequired;
+	if (bAttachmentSortingRequired)
+	{
+		m_pAttachmentManager->ScheduleProcessingBufferRebuild();
+	}
+
 	m_Simulation.PostUpdate(m_pAttachmentManager, pJointName);
 };
 
@@ -256,7 +260,7 @@ uint32 CAttachmentBONE::Immediate_AddBinding(IAttachmentObject* pIAttachmentObje
 
 	if (m_pAttachmentManager)
 	{
-		m_pAttachmentManager->m_TypeSortingRequired++;
+		m_pAttachmentManager->ScheduleProcessingBufferRebuild();
 	}
 
 	return 1;
@@ -290,7 +294,7 @@ void CAttachmentBONE::ClearBinding_Internal(bool release)
 
 	if (m_pAttachmentManager)
 	{
-		m_pAttachmentManager->m_TypeSortingRequired++;
+		m_pAttachmentManager->ScheduleProcessingBufferRebuild();
 	}
 }
 

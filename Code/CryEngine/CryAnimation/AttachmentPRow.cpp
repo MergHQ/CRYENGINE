@@ -96,7 +96,7 @@ uint32 CAttachmentPROW::SetJointName(const char* szJointName)
 	}
 	m_strRowJointName = szJointName;
 	m_nRowJointID = nJointID;
-	m_pAttachmentManager->m_TypeSortingRequired++;
+	m_pAttachmentManager->ScheduleProcessingBufferRebuild();
 	return 1;
 };
 
@@ -107,7 +107,11 @@ void CAttachmentPROW::PostUpdateSimulationParams(bool bAttachmentSortingRequired
 		return;
 	}
 
-	m_pAttachmentManager->m_TypeSortingRequired += bAttachmentSortingRequired;
+	if (bAttachmentSortingRequired)
+	{
+		m_pAttachmentManager->ScheduleProcessingBufferRebuild();
+	}
+
 	m_rowparams.PostUpdate(m_pAttachmentManager, 0);
 };
 

@@ -3505,11 +3505,15 @@ void CharacterManager::UpdateInstances(bool bPause)
 	// By applying this filter, we make sure that only top-level characters have their updates dispatched here.
 	static std::unordered_set<CCharInstance*> dependentCharacterInstances;
 	dependentCharacterInstances.clear();
+
 	for (auto& modelRef : m_arrModelCacheSKEL)
 	{
 		for (CCharInstance* pCharacter : modelRef.m_RefByInstances)
 		{
+			pCharacter->m_AttachmentManager.UpdateBindings();
 			pCharacter->m_AttachmentManager.ProcessAttachedCharactersChanges();
+			pCharacter->m_AttachmentManager.RebuildProcessingBuffer();
+
 			for (CCharInstance* pDependentCharacter : pCharacter->m_AttachmentManager.GetAttachedCharacterInstances())
 			{
 				dependentCharacterInstances.insert(pDependentCharacter);

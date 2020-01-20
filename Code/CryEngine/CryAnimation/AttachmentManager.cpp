@@ -757,7 +757,8 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 			pIAttachment->PostUpdateSimulationParams(1);
 	}
 
-	m_TypeSortingRequired++;
+	ScheduleProcessingBufferRebuild();
+	RebuildProcessingBuffer();
 }
 
 void CAttachmentManager::UpdateBindings()
@@ -800,7 +801,7 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 		if (bCallProject)
 			pAttachment->ProjectAttachment();
 		m_arrAttachments.push_back(pAttachment);
-		m_TypeSortingRequired++;
+		ScheduleProcessingBufferRebuild();
 		return pAttachment;
 	}
 
@@ -813,7 +814,7 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 		//	if( bCallProject )
 		//		pAttachment->ProjectAttachment();
 		m_arrAttachments.push_back(pAttachment);
-		m_TypeSortingRequired++;
+		ScheduleProcessingBufferRebuild();
 		return pAttachment;
 	}
 
@@ -824,7 +825,7 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 		pAttachment->m_strSocketName = strAttachmentName.c_str();
 		pAttachment->m_nSocketCRC32 = nameCRC;
 		m_arrAttachments.push_back(pAttachment);
-		m_TypeSortingRequired++;
+		ScheduleProcessingBufferRebuild();
 		return pAttachment;
 	}
 
@@ -838,7 +839,7 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 		pAttachment->m_nSocketCRC32 = nameCRC;
 		pAttachment->m_strRowJointName = szJointName;
 		m_arrAttachments.push_back(pAttachment);
-		m_TypeSortingRequired++;
+		ScheduleProcessingBufferRebuild();
 		return pAttachment;
 	}
 
@@ -849,11 +850,10 @@ IAttachment* CAttachmentManager::CreateAttachment(const char* szAttName, uint32 
 		pAttachment->m_strSocketName = strAttachmentName.c_str();
 		pAttachment->m_nSocketCRC32 = nameCRC;
 		m_arrAttachments.push_back(pAttachment);
-		m_TypeSortingRequired++;
+		ScheduleProcessingBufferRebuild();
 		return pAttachment;
 	}
 
-	m_TypeSortingRequired++;
 	return 0;
 };
 
@@ -1221,10 +1221,10 @@ void CAttachmentManager::RemoveAttachmentByIndex(uint32 index, uint32 loadingFla
 	// so the clear is reasonable regardless.
 	static_cast<SAttachmentBase*>(pAttachment)->m_pAttachmentManager = nullptr;
 
-	m_arrAttachments.erase(index);
+	m_arrAttachments.erase(m_arrAttachments.begin() + index);
 
 	m_Extents.Clear();
-	m_TypeSortingRequired++;
+	ScheduleProcessingBufferRebuild();
 }
 
 uint32 CAttachmentManager::ProjectAllAttachment()
@@ -1320,31 +1320,6 @@ bool CAttachmentManager::NeedsHierarchicalUpdate()
 	}
 
 	return 0;
-}
-
-void CAttachmentManager::UpdateAllRemapTables()
-{
-	if (m_TypeSortingRequired)
-		SortByType();
-
-	for (uint32 r = m_sortedRanges[eRange_BoneRedirect].begin; r < m_sortedRanges[eRange_BoneAttached].end; r++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[r];
-		CAttachmentBONE* pCAttachmentBone = (CAttachmentBONE*)pIAttachment;
-		pCAttachmentBone->m_nJointID = -1;   //request re-projection
-		pCAttachmentBone->m_Simulation.m_arrChildren.resize(0);
-	}
-	uint32 x = FLAGS_ATTACH_PROJECTED ^ -1;
-	for (uint32 i = m_sortedRanges[0].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
-	{
-		m_arrAttachments[i]->SetFlags(m_arrAttachments[i]->GetFlags() & x);
-	}
-	for (uint32 i = m_sortedRanges[eRange_SkinMesh].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CAttachmentSKIN* pCAttachmentSkin = (CAttachmentSKIN*)pIAttachment;
-		pCAttachmentSkin->UpdateRemapTable();
-	}
 }
 
 void CAttachmentManager::VerifyProxyLinks()
@@ -1503,28 +1478,24 @@ void CAttachmentManager::GenerateProxyModelRelativeTransformations(Skeleton::CPo
 
 void CAttachmentManager::CreateCommands(Command::CBuffer& buffer)
 {
-	if (m_TypeSortingRequired)
-		SortByType();
-
 	buffer.CreateCommand<Command::PrepareAllRedirectedTransformations>();
 
-	uint32 m = GetRedirectedJointCount();
-	for (uint32 i = 0; i < m; i++)
+	m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_BoneRedirect, [&](IAttachment* pIAttachment)
 	{
 		Command::UpdateRedirectedJoint* cmd = buffer.CreateCommand<Command::UpdateRedirectedJoint>();
-		cmd->m_attachmentBone = static_cast<CAttachmentBONE*>(m_arrAttachments[i].get());
-	}
+		cmd->m_attachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
+	});
 
 	buffer.CreateCommand<Command::GenerateProxyModelRelativeTransformations>();
 
-	for (uint32 i = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; i < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; i++)
+	m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_VertexClothOrPendulumRow, [&](IAttachment* pIAttachment)
 	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		if (pIAttachment->GetType() != CA_PROW)
-			continue;
-		Command::UpdatePendulumRow* cmd = buffer.CreateCommand<Command::UpdatePendulumRow>();
-		cmd->m_attachmentPendulumRow = static_cast<CAttachmentPROW*>(pIAttachment);
-	}
+		if (pIAttachment->GetType() == CA_PROW)
+		{
+			Command::UpdatePendulumRow* cmd = buffer.CreateCommand<Command::UpdatePendulumRow>();
+			cmd->m_attachmentPendulumRow = static_cast<CAttachmentPROW*>(pIAttachment);
+		}
+	});
 }
 
 const std::vector<CCharInstance*>& CAttachmentManager::GetAttachedCharacterInstances()
@@ -1575,20 +1546,15 @@ void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 {
 	DEFINE_PROFILER_FUNCTION();
 
-	if (m_TypeSortingRequired)
+	for (auto i = m_processingBuffer.sortedRanges[SProcessingBuffer::eRange_BoneEmpty].begin; i < m_processingBuffer.sortedRanges[SProcessingBuffer::eRange_BoneAttached].end; i++)
 	{
-		SortByType();
-	}
-
-	for (auto i = m_sortedRanges[eRange_BoneEmpty].begin; i < m_sortedRanges[eRange_BoneAttached].end; i++)
-	{
-		const auto pCAttachmentBone = static_cast<CAttachmentBONE*>(m_arrAttachments[i].get());
+		const auto pCAttachmentBone = static_cast<CAttachmentBONE*>(m_processingBuffer.attachments[i].get());
 		pCAttachmentBone->Update(rPoseData);
 	}
 
-	for (auto i = m_sortedRanges[eRange_FaceEmpty].begin; i < m_sortedRanges[eRange_FaceAttached].end; i++)
+	for (auto i = m_processingBuffer.sortedRanges[SProcessingBuffer::eRange_FaceEmpty].begin; i < m_processingBuffer.sortedRanges[SProcessingBuffer::eRange_FaceAttached].end; i++)
 	{
-		const auto pCAttachmentFace = static_cast<CAttachmentFACE*>(m_arrAttachments[i].get());
+		const auto pCAttachmentFace = static_cast<CAttachmentFACE*>(m_processingBuffer.attachments[i].get());
 		pCAttachmentFace->Update(rPoseData);
 	}
 }
@@ -1597,31 +1563,22 @@ void CAttachmentManager::UpdateAttachedObjects()
 {
 	DEFINE_PROFILER_FUNCTION();
 
-	if (m_TypeSortingRequired)
+	m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_BoneAttached, [this](IAttachment* pAttachment)
 	{
-		SortByType();
-	}
+		ProcessAttachment(pAttachment);
+	});
 
-	for (auto i = m_sortedRanges[eRange_BoneAttached].begin; i < m_sortedRanges[eRange_BoneAttached].end; i++)
+	m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_FaceAttached, [this](IAttachment* pAttachment)
 	{
-		ProcessAttachment(m_arrAttachments[i]);
-	}
-
-	for (auto i = m_sortedRanges[eRange_FaceAttached].begin; i < m_sortedRanges[eRange_FaceAttached].end; i++)
-	{
-		ProcessAttachment(m_arrAttachments[i]);
-	}
+		ProcessAttachment(pAttachment);
+	});
 }
 
 uint32 CAttachmentManager::RemoveAllAttachments()
 {
-	const uint32 loadingFlags = CA_SkipSkelRecreation | CA_ImmediateMode | (m_pSkelInstance->m_CharEditMode ? CA_CharEditModel : 0);
+	const uint32 loadingFlags = (m_pSkelInstance->m_CharEditMode ? CA_CharEditModel : 0);
 
 	const uint32 counter = GetAttachmentCount();
-	for (uint32 i = 0; i < counter; i++)
-	{
-		m_arrAttachments[i]->ClearBinding(loadingFlags);
-	}
 	for (uint32 i = counter; i > 0; i--)
 	{
 		RemoveAttachmentByIndex(i - 1, loadingFlags);
@@ -1693,9 +1650,6 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 	if (numAttachments == 0)
 		return;
 
-	if (m_TypeSortingRequired)
-		SortByType();
-
 #if !defined(_RELEASE)
 	g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
 	if (Console::GetInst().ca_DrawAttachments == 0)
@@ -1759,18 +1713,16 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 
 	if (p_e_debug_draw->GetIVal() == 20)
 	{
-		int attachmentCount = m_sortedRanges[eRange_SkinMesh].GetNumElements();
-		attachmentCount += m_sortedRanges[eRange_VertexClothOrPendulumRow].GetNumElements();
+		int attachmentCount = m_processingBuffer.sortedRanges[SProcessingBuffer::eRange_SkinMesh].GetNumElements();
+		attachmentCount += m_processingBuffer.sortedRanges[SProcessingBuffer::eRange_VertexClothOrPendulumRow].GetNumElements();
 		debugDrawScale = 0.5f + (10.0f / max(1.0f, (float)attachmentCount));
 		debugDrawScale = min(debugDrawScale, 1.5f);
 	}
 #endif
 	{
 		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SkinAttachments");
-		for (uint32 i = m_sortedRanges[eRange_SkinMesh].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
-		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-	
+		m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_SkinMesh, [&](IAttachment* pIAttachment)
+		{	
 			if ((pIAttachment->GetFlags() & FLAGS_ATTACH_EXCLUDE_FROM_NEAREST) != 0)
 			{
 				rParams.dwFObjFlags &= ~FOB_NEAREST;
@@ -1780,19 +1732,19 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				rParams.dwFObjFlags |= FOB_NEAREST;		
 			}
 
-			CAttachmentSKIN* pCAttachmentSkin = (CAttachmentSKIN*)pIAttachment;
+			CAttachmentSKIN* pCAttachmentSkin = static_cast<CAttachmentSKIN*>(pIAttachment);
 			if (pCAttachmentSkin->m_AttFlags & uHideFlags)
-				continue;
+				return;
 			if (pCAttachmentSkin->m_pIAttachmentObject == 0)
-				continue;
+				return;
 			uint32 nDrawModel = m_pSkelInstance->m_rpFlags & CS_FLAG_DRAW_MODEL;
 			if (nDrawModel == 0)
-				continue;
+				return;
 			const f32 fRadiusSqr = m_pSkelInstance->m_SkeletonPose.GetAABB().GetRadiusSqr();
 			if (fRadiusSqr == 0.0f)
-				continue;  //if radius is zero, then the object is most probably not visible and we can continue
+				return;  //if radius is zero, then the object is most probably not visible and we can continue
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
-				continue;  //too small to render. cancel the update
+				return;  //too small to render. cancel the update
 
 			Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34);
 			rParams.pMatrix = &FinalMat34; // matrix to use if object is rendered directly
@@ -1808,28 +1760,27 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				drawOffset += DebugDrawAttachment(pCAttachmentSkin, pCAttachmentSkin->GetISkin(), drawLoc, rParams.pMaterial, debugDrawScale,passInfo);
 			}
 #endif
-		}
+		});
 	}
 	{
 		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "VertexClothAttachments");
-		for (uint32 i = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; i < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; i++)
+		m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_VertexClothOrPendulumRow, [&](IAttachment* pIAttachment)
 		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
 			if (pIAttachment->GetType() != CA_VCLOTH)
-				continue;
-			CAttachmentVCLOTH* pCAttachmentVCloth = (CAttachmentVCLOTH*)pIAttachment;
+				return;
+			CAttachmentVCLOTH* pCAttachmentVCloth = static_cast<CAttachmentVCLOTH*>(pIAttachment);
 			if (pCAttachmentVCloth->m_AttFlags & uHideFlags)
-				continue;
+				return;
 			if (pCAttachmentVCloth->m_pIAttachmentObject == 0)
-				continue;
+				return;
 			uint32 nDrawModel = m_pSkelInstance->m_rpFlags & CS_FLAG_DRAW_MODEL;
 			if (nDrawModel == 0)
-				continue;
+				return;
 			const f32 fRadiusSqr = m_pSkelInstance->m_SkeletonPose.GetAABB().GetRadiusSqr();
 			if (fRadiusSqr == 0.0f)
-				continue;   //if radius is zero, then the object is most probably not visible and we can continue
+				return;   //if radius is zero, then the object is most probably not visible and we can continue
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
-				continue;   //too small to render. cancel the update
+				return;   //too small to render. cancel the update
 
 			Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34);
 			rParams.pMatrix = &FinalMat34; // matrix to use if object is rendered directly
@@ -1845,46 +1796,42 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				drawOffset += DebugDrawAttachment(pCAttachmentVCloth, pCAttachmentVCloth->GetISkin(), drawLoc, rParams.pMaterial, debugDrawScale,passInfo);
 			}
 #endif
-		}
+		});
 	}
 #if !defined(_RELEASE)
 	if (Console::GetInst().ca_DrawEmptyAttachments)
 	{
-		for (uint32 i = m_sortedRanges[eRange_BoneEmpty].begin; i < m_sortedRanges[eRange_BoneEmpty].end; i++)
+		m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_BoneEmpty, [&](IAttachment* pIAttachment)
 		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-			CAttachmentBONE* pCAttachmentBone = (CAttachmentBONE*)pIAttachment;
-			if (pCAttachmentBone->m_AttFlags & uHideFlags)
-				continue;
-			if (pCAttachmentBone->m_nJointID < 0)
-				return;                                               //no success! maybe next time
-			VisualizeEmptySocket(rWorldMat34, QuatT(pCAttachmentBone->m_AttModelRelative.q, pCAttachmentBone->m_AttModelRelative.t), RGBA8(0xff, 0x00, 0x1f, 0xff));
-		}
-		for (uint32 i = m_sortedRanges[eRange_FaceEmpty].begin; i < m_sortedRanges[eRange_FaceEmpty].end; i++)
+			CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
+			if (!(pCAttachmentBone->m_AttFlags & uHideFlags) && pCAttachmentBone->m_nJointID >= 0)
+			{
+				VisualizeEmptySocket(rWorldMat34, QuatT(pCAttachmentBone->m_AttModelRelative.q, pCAttachmentBone->m_AttModelRelative.t), RGBA8(0xff, 0x00, 0x1f, 0xff));
+			}
+		});
+		m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_FaceEmpty, [&](IAttachment* pIAttachment)
 		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-			CAttachmentFACE* pCAttachmentFace = (CAttachmentFACE*)pIAttachment;
-			if (pCAttachmentFace->m_AttFlags & uHideFlags)
-				continue;
-			if ((pCAttachmentFace->m_AttFlags & FLAGS_ATTACH_PROJECTED) == 0)
-				return;                                               //no success! maybe next time
-			VisualizeEmptySocket(rWorldMat34, pCAttachmentFace->m_AttModelRelative, RGBA8(0x1f, 0x00, 0xff, 0xff));
-		}
+			CAttachmentFACE* pCAttachmentFace = static_cast<CAttachmentFACE*>(pIAttachment);
+			if (!(pCAttachmentFace->m_AttFlags & uHideFlags) && (pCAttachmentFace->m_AttFlags & FLAGS_ATTACH_PROJECTED))
+			{
+				VisualizeEmptySocket(rWorldMat34, pCAttachmentFace->m_AttModelRelative, RGBA8(0x1f, 0x00, 0xff, 0xff));
+			}
+		});
 	}
 
 	if (Console::GetInst().ca_DrawAttachmentOBB)
 	{
 		g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
-		for (uint32 i = m_sortedRanges[eRange_BoneAttached].begin; i < m_sortedRanges[eRange_BoneAttached].end; i++)
+
+		m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_BoneAttached, [&](IAttachment* pIAttachment)
 		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-			CAttachmentBONE* pCAttachmentBone = (CAttachmentBONE*)pIAttachment;
+			CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
 			if (pCAttachmentBone->m_AttFlags & uHideFlags)
-				continue;
+				return;
 			if (pCAttachmentBone->m_nJointID < 0)
-				continue;                                             //no success! maybe next time
+				return;                                             //no success! maybe next time
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && (pCAttachmentBone->m_AttFlags & FLAGS_ATTACH_VISIBLE) == 0)
-				continue;                                             //Distance culling. Object is too small for rendering
+				return;                                             //Distance culling. Object is too small for rendering
 			Matrix34 FinalMat34 = rWorldMat34 * Matrix34(pCAttachmentBone->m_AttModelRelative);
 			Vec3 obbPos = FinalMat34.GetTranslation();
 			if (rParams.dwFObjFlags & FOB_NEAREST)
@@ -1892,17 +1839,17 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 			AABB caabb = pCAttachmentBone->m_pIAttachmentObject->GetAABB();
 			OBB obb2 = OBB::CreateOBBfromAABB(Matrix33(FinalMat34), caabb);
 			g_pAuxGeom->DrawOBB(obb2, obbPos, 0, RGBA8(0xff, 0x00, 0x1f, 0xff), eBBD_Extremes_Color_Encoded);
-		}
-		for (uint32 i = m_sortedRanges[eRange_FaceAttached].begin; i < m_sortedRanges[eRange_FaceAttached].end; i++)
+		});
+
+		m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_FaceAttached, [&](IAttachment* pIAttachment)
 		{
-			IAttachment* pIAttachment = m_arrAttachments[i];
-			CAttachmentFACE* pCAttachmentFace = (CAttachmentFACE*)pIAttachment;
+			CAttachmentFACE* pCAttachmentFace = static_cast<CAttachmentFACE*>(pIAttachment);
 			if (pCAttachmentFace->m_AttFlags & uHideFlags)
-				continue;
+				return;
 			if ((pCAttachmentFace->m_AttFlags & FLAGS_ATTACH_PROJECTED) == 0)
-				continue;                                             //no success! maybe next time
+				return;                                             //no success! maybe next time
 			if ((pCAttachmentFace->m_AttFlags & FLAGS_ATTACH_VISIBLE) == 0)
-				continue;                                             //Distance culling. Object is too small for rendering
+				return;                                             //Distance culling. Object is too small for rendering
 			Matrix34 FinalMat34 = rWorldMat34 * Matrix34(pCAttachmentFace->m_AttModelRelative);
 			Vec3 obbPos = FinalMat34.GetTranslation();
 			if (rParams.dwFObjFlags & FOB_NEAREST)
@@ -1910,7 +1857,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 			AABB caabb = pCAttachmentFace->m_pIAttachmentObject->GetAABB();
 			OBB obb2 = OBB::CreateOBBfromAABB(Matrix33(FinalMat34), caabb);
 			g_pAuxGeom->DrawOBB(obb2, obbPos, 0, RGBA8(0x1f, 0x00, 0xff, 0xff), eBBD_Extremes_Color_Encoded);
-		}
+		});
 	}
 #endif
 
@@ -2071,23 +2018,131 @@ void CAttachmentManager::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_arrAttachments);
 }
 
-void CAttachmentManager::SortByType()
+void CAttachmentManager::RebuildProcessingBuffer()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-	m_TypeSortingRequired = 0;
-
-	std::fill(std::begin(m_sortedRanges), std::end(m_sortedRanges), SRange{});
-
-	if (m_arrAttachments.empty())
+	if (!m_processingBuffer.needsRebuild)
 	{
 		return;
 	}
+	 
+	m_processingBuffer.needsRebuild = false;
+	m_processingBuffer.attachments = m_arrAttachments;
+	m_processingBuffer.RebuildRanges(*m_pSkelInstance->m_pDefaultSkeleton);
 
 	VerifyProxyLinks();
+	
+	// Update simulation params of eRange_BoneRedirect attachments
+	m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_BoneRedirect, [this](IAttachment* pIAttachment)
+	{
+		const CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
+		CAttachmentBONE* pb = static_cast<CAttachmentBONE*>(pIAttachment);
+		if (pb->m_Simulation.m_arrChildren.size())
+			return;
+		int32 parentid = pb->m_nJointID;
+		if (parentid < 0)
+			return;
+		bool arrChildren[MAX_JOINT_AMOUNT];
+		for (uint32 i = 0; i < MAX_JOINT_AMOUNT; i++)
+		{
+			arrChildren[i] = 0;
+		}
+		pb->m_Simulation.m_arrChildren.resize(0);
+		pb->m_Simulation.m_arrChildren.reserve(16);
+		uint32 numJoints = rDefaultSkeleton.GetJointCount();
+		for (uint32 i = parentid + 1; i < numJoints; i++)
+		{
+			if (rDefaultSkeleton.GetJointParentIDByID(i) == parentid)
+				arrChildren[i] = 1;
+		}
+		for (uint32 pid = 0; pid < MAX_JOINT_AMOUNT; pid++)
+		{
+			if (arrChildren[pid] == 0)
+				continue;
+			for (uint32 i = pid + 1; i < numJoints; i++)
+			{
+				if (rDefaultSkeleton.GetJointParentIDByID(i) == pid)
+					arrChildren[i] = 1;
+			}
+		}
+		for (uint32 i = 0; i < MAX_JOINT_AMOUNT; i++)
+		{
+			if (arrChildren[i])
+				pb->m_Simulation.m_arrChildren.push_back(i);
+		}
+	});
 
-	const CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
+	// Update simulation params of eRange_VertexClothOrPendulumRow attachments
+	m_processingBuffer.ExecuteForRange(SProcessingBuffer::eRange_VertexClothOrPendulumRow, [this](IAttachment* pIAttachment)
+	{
+		const CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
+		if (pIAttachment->GetType() != CA_PROW)
+			return;
+		CAttachmentPROW* pb = static_cast<CAttachmentPROW*>(pIAttachment);
+		pb->m_nRowJointID = rDefaultSkeleton.GetJointIDByName(pb->m_strRowJointName.c_str());
+		if (pb->m_nRowJointID < 0)
+			return;
+		const char* psrc = pb->m_strRowJointName.c_str();
+		const char* pstr = CryStringUtils::stristr(psrc, "_x00_");
+		if (pstr == 0)
+			return;                                                                                                // invalid name
+		char pJointName[256];
+		cry_strcpy(pJointName, psrc);
+		JointIdType jindices[MAX_JOINT_AMOUNT];
+		uint16& numParticles = pb->m_rowparams.m_nParticlesPerRow;
+		numParticles = 0;
+		for (int idx = int(pstr - psrc) + 2; numParticles < MAX_JOINTS_PER_ROW; numParticles++)
+		{
+			if ((jindices[numParticles] = rDefaultSkeleton.GetJointIDByName(pJointName)) == JointIdType(-1))
+				break;
+			if (++pJointName[idx + 1] == 0x3a)
+				pJointName[idx]++, pJointName[idx + 1] = 0x30;
+		}
+		pb->m_rowparams.m_arrParticles.resize(numParticles);
+		uint32 numJoints = rDefaultSkeleton.GetJointCount();
+		for (uint32 r = 0; r < numParticles; r++)
+		{
+			pb->m_rowparams.m_arrParticles[r].m_childID = JointIdType(-1);
+			JointIdType parentid = jindices[r];
+			if (parentid == JointIdType(-1))
+				continue;                                                                                              // invalid
+			for (uint32 i = parentid + 1; i < numJoints; i++)
+			{
+				if (rDefaultSkeleton.GetJointParentIDByID(i) == parentid)
+				{
+					pb->m_rowparams.m_arrParticles[r].m_childID = i;
+					break;
+				}
+			}
+		}
+		for (uint32 i = 0; i < numParticles; i++)
+		{
+			pb->m_rowparams.m_arrParticles[i].m_vDistance.y = 0.07f;                                                   // use 7cm by default
+			if (pb->m_rowparams.m_arrParticles[i].m_childID != JointIdType(-1))
+				pb->m_rowparams.m_arrParticles[i].m_vDistance.y =
+				  rDefaultSkeleton.GetDefaultRelJointByID(pb->m_rowparams.m_arrParticles[i].m_childID).t.GetLength();    // set the vertical distance
+		}
+		for (uint32 i = 0; i < numParticles; i++)
+		{
+			uint32 i0 = i;
+			uint32 i1 = (i + 1) % numParticles;
+			JointIdType id0 = jindices[i0];
+			Vec3 j0 = rDefaultSkeleton.GetDefaultAbsJointByID(id0).q.GetColumn0() *
+			          pb->m_rowparams.m_arrParticles[i0].m_vDistance.y +
+			          rDefaultSkeleton.GetDefaultAbsJointByID(id0).t;
+			JointIdType id1 = jindices[i1];
+			Vec3 j1 = rDefaultSkeleton.GetDefaultAbsJointByID(id1).q.GetColumn0() *
+			          pb->m_rowparams.m_arrParticles[i1].m_vDistance.y +
+			          rDefaultSkeleton.GetDefaultAbsJointByID(id1).t;
+			pb->m_rowparams.m_arrParticles[i0].m_vDistance.x = (j0 - j1).GetLength();                                    // set the horizontal distance
+			pb->m_rowparams.m_arrParticles[i].m_jointID = id0;
+		}
+	});
+}
 
+void CAttachmentManager::SProcessingBuffer::RebuildRanges(const CDefaultSkeleton& skeleton)
+{
 	// Given an attachment instance, returns ERange it belongs to.
 	const auto determineAttachmentRange = [](const IAttachment* pAttachment) -> ERange
 	{
@@ -2165,146 +2220,41 @@ void CAttachmentManager::SortByType()
 		}
 	};
 
-	std::stable_sort(m_arrAttachments.begin(), m_arrAttachments.end(), [determineAttachmentRange](const IAttachment* pLhs, const IAttachment* pRhs)
+	std::stable_sort(attachments.begin(), attachments.end(), [determineAttachmentRange](const IAttachment* pLhs, const IAttachment* pRhs)
 	{
 		return determineAttachmentRange(pLhs) < determineAttachmentRange(pRhs);
 	});
 
-	// Update m_sortedRanges
+	// Update sortedRanges
 	{
 		size_t index = 0;
 		for (std::underlying_type<ERange>::type rangeCursor = eRange_BoneRedirect; rangeCursor < eRange_COUNT; ++rangeCursor)
 		{
-			m_sortedRanges[rangeCursor].begin = index;
-			while (index < m_arrAttachments.size() && rangeCursor == determineAttachmentRange(m_arrAttachments[index]))
+			sortedRanges[rangeCursor].begin = index;
+			while (index < attachments.size() && rangeCursor == determineAttachmentRange(attachments[index]))
 			{
 				++index;
 			}
-			m_sortedRanges[rangeCursor].end = index;
+			sortedRanges[rangeCursor].end = index;
 		}
-		CRY_ASSERT(index == m_arrAttachments.size());
+		CRY_ASSERT(index == attachments.size());
 	}
 
 	// Update joint IDs of all bone attachments
-	for (size_t i = m_sortedRanges[eRange_BoneRedirect].begin; i < m_sortedRanges[eRange_BoneAttached].end; ++i)
+	for (size_t i = sortedRanges[eRange_BoneRedirect].begin; i < sortedRanges[eRange_BoneAttached].end; ++i)
 	{
-		CRY_ASSERT(m_arrAttachments[i]->GetType() == CA_BONE);
-		CAttachmentBONE* pBoneAttachment = static_cast<CAttachmentBONE*>(m_arrAttachments[i].get());
-		pBoneAttachment->m_nJointID = rDefaultSkeleton.GetJointIDByName(pBoneAttachment->m_strJointName.c_str());
+		CRY_ASSERT(attachments[i]->GetType() == CA_BONE);
+		CAttachmentBONE* pBoneAttachment = static_cast<CAttachmentBONE*>(attachments[i].get());
+		pBoneAttachment->m_nJointID = skeleton.GetJointIDByName(pBoneAttachment->m_strJointName.c_str());
 	}
 
 	std::stable_sort(
-		std::next(m_arrAttachments.begin(), m_sortedRanges[eRange_BoneRedirect].begin), 
-		std::next(m_arrAttachments.begin(), m_sortedRanges[eRange_BoneRedirect].end), 
+		std::next(attachments.begin(), sortedRanges[eRange_BoneRedirect].begin),
+		std::next(attachments.begin(), sortedRanges[eRange_BoneRedirect].end),
 		[](const IAttachment* pLhs, const IAttachment* pRhs)
 	{
 		return pLhs->GetJointID() < pRhs->GetJointID();
 	});
-
-	// Update simulation params of eRange_BoneRedirect attachments
-	for (uint32 r = m_sortedRanges[eRange_BoneRedirect].begin; r < m_sortedRanges[eRange_BoneRedirect].end; ++r)
-	{
-		CAttachmentBONE* pb = static_cast<CAttachmentBONE*>(m_arrAttachments[r].get());
-		if (pb->m_Simulation.m_arrChildren.size())
-			continue;
-		int32 parentid = pb->m_nJointID;
-		if (parentid < 0)
-			continue;
-		bool arrChildren[MAX_JOINT_AMOUNT];
-		for (uint32 i = 0; i < MAX_JOINT_AMOUNT; i++)
-		{
-			arrChildren[i] = 0;
-		}
-		pb->m_Simulation.m_arrChildren.resize(0);
-		pb->m_Simulation.m_arrChildren.reserve(16);
-		uint32 numJoints = rDefaultSkeleton.GetJointCount();
-		for (uint32 i = parentid + 1; i < numJoints; i++)
-		{
-			if (rDefaultSkeleton.GetJointParentIDByID(i) == parentid)
-				arrChildren[i] = 1;
-		}
-		for (uint32 pid = 0; pid < MAX_JOINT_AMOUNT; pid++)
-		{
-			if (arrChildren[pid] == 0)
-				continue;
-			for (uint32 i = pid + 1; i < numJoints; i++)
-			{
-				if (rDefaultSkeleton.GetJointParentIDByID(i) == pid)
-					arrChildren[i] = 1;
-			}
-		}
-		for (uint32 i = 0; i < MAX_JOINT_AMOUNT; i++)
-		{
-			if (arrChildren[i])
-				pb->m_Simulation.m_arrChildren.push_back(i);
-		}
-	}
-
-	// Update simulation params of eRange_VertexClothOrPendulumRow attachments
-	for (uint32 r = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; r < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; ++r)
-	{
-		if (m_arrAttachments[r]->GetType() != CA_PROW)
-			continue;
-		CAttachmentPROW* pb = static_cast<CAttachmentPROW*>(m_arrAttachments[r].get());
-		pb->m_nRowJointID = rDefaultSkeleton.GetJointIDByName(pb->m_strRowJointName.c_str());
-		if (pb->m_nRowJointID < 0)
-			continue;
-		const char* psrc = pb->m_strRowJointName.c_str();
-		const char* pstr = CryStringUtils::stristr(psrc, "_x00_");
-		if (pstr == 0)
-			continue;                                                                                                // invalid name
-		char pJointName[256];
-		cry_strcpy(pJointName, psrc);
-		JointIdType jindices[MAX_JOINT_AMOUNT];
-		uint16& numParticles = pb->m_rowparams.m_nParticlesPerRow;
-		numParticles = 0;
-		for (int idx = int(pstr - psrc) + 2; numParticles < MAX_JOINTS_PER_ROW; numParticles++)
-		{
-			if ((jindices[numParticles] = rDefaultSkeleton.GetJointIDByName(pJointName)) == JointIdType(-1))
-				break;
-			if (++pJointName[idx + 1] == 0x3a)
-				pJointName[idx]++, pJointName[idx + 1] = 0x30;
-		}
-		pb->m_rowparams.m_arrParticles.resize(numParticles);
-		uint32 numJoints = rDefaultSkeleton.GetJointCount();
-		for (uint32 r = 0; r < numParticles; r++)
-		{
-			pb->m_rowparams.m_arrParticles[r].m_childID = JointIdType(-1);
-			JointIdType parentid = jindices[r];
-			if (parentid == JointIdType(-1))
-				continue;                                                                                              // invalid
-			for (uint32 i = parentid + 1; i < numJoints; i++)
-			{
-				if (rDefaultSkeleton.GetJointParentIDByID(i) == parentid)
-				{
-					pb->m_rowparams.m_arrParticles[r].m_childID = i;
-					break;
-				}
-			}
-		}
-		for (uint32 i = 0; i < numParticles; i++)
-		{
-			pb->m_rowparams.m_arrParticles[i].m_vDistance.y = 0.07f;                                                   // use 7cm by default
-			if (pb->m_rowparams.m_arrParticles[i].m_childID != JointIdType(-1))
-				pb->m_rowparams.m_arrParticles[i].m_vDistance.y =
-				  rDefaultSkeleton.GetDefaultRelJointByID(pb->m_rowparams.m_arrParticles[i].m_childID).t.GetLength();    // set the vertical distance
-		}
-		for (uint32 i = 0; i < numParticles; i++)
-		{
-			uint32 i0 = i;
-			uint32 i1 = (i + 1) % numParticles;
-			JointIdType id0 = jindices[i0];
-			Vec3 j0 = rDefaultSkeleton.GetDefaultAbsJointByID(id0).q.GetColumn0() *
-			          pb->m_rowparams.m_arrParticles[i0].m_vDistance.y +
-			          rDefaultSkeleton.GetDefaultAbsJointByID(id0).t;
-			JointIdType id1 = jindices[i1];
-			Vec3 j1 = rDefaultSkeleton.GetDefaultAbsJointByID(id1).q.GetColumn0() *
-			          pb->m_rowparams.m_arrParticles[i1].m_vDistance.y +
-			          rDefaultSkeleton.GetDefaultAbsJointByID(id1).t;
-			pb->m_rowparams.m_arrParticles[i0].m_vDistance.x = (j0 - j1).GetLength();                                    // set the horizontal distance
-			pb->m_rowparams.m_arrParticles[i].m_jointID = id0;
-		}
-	}
 }
 
 void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
@@ -2401,74 +2351,6 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			}
 		}
 	}
-}
-
-void CAttachmentManager::Verification()
-{
-#ifdef EDITOR_PCDEBUGCODE
-	int32 s = -1;
-	for (uint32 i = m_sortedRanges[eRange_BoneRedirect].begin; i < m_sortedRanges[eRange_BoneRedirect].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
-
-		CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
-		CRY_ASSERT(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
-		CRY_ASSERT(pCAttachmentBone->m_nJointID >= s);
-		CRY_ASSERT(pCAttachmentBone->m_Simulation.m_useRedirect);
-		CRY_ASSERT(pCAttachmentBone->m_Simulation.m_nClampType != SimulationParams::DISABLED);
-
-		s = pCAttachmentBone->m_nJointID;
-	}
-
-	for (uint32 i = m_sortedRanges[eRange_BoneEmpty].begin; i < m_sortedRanges[eRange_BoneEmpty].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
-		CRY_ASSERT(!pIAttachment->GetIAttachmentObject());
-
-		CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
-		CRY_ASSERT(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
-		CRY_ASSERT(!pCAttachmentBone->m_Simulation.m_useRedirect);
-	}
-
-	for (uint32 i = m_sortedRanges[eRange_BoneAttached].begin; i < m_sortedRanges[eRange_BoneAttached].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
-		CRY_ASSERT(pIAttachment->GetIAttachmentObject());
-
-		CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
-		CRY_ASSERT(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
-		CRY_ASSERT(!pCAttachmentBone->m_Simulation.m_useRedirect);
-	}
-
-	for (uint32 i = m_sortedRanges[eRange_FaceEmpty].begin; i < m_sortedRanges[eRange_FaceEmpty].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_FACE);
-		CRY_ASSERT(!pIAttachment->GetIAttachmentObject());
-	}
-
-	for (uint32 i = m_sortedRanges[eRange_FaceAttached].begin; i < m_sortedRanges[eRange_FaceAttached].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_FACE);
-		CRY_ASSERT(pIAttachment->GetIAttachmentObject());
-	}
-
-	for (uint32 i = m_sortedRanges[eRange_SkinMesh].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_SKIN);
-	}
-
-	for (uint32 i = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; i < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; i++)
-	{
-		IAttachment* pIAttachment = m_arrAttachments[i];
-		CRY_ASSERT(pIAttachment->GetType() == CA_PROW || pIAttachment->GetType() == CA_VCLOTH);
-	}
-#endif
 }
 
 #if !defined(_RELEASE)

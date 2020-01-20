@@ -69,31 +69,23 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 
 		if (NotMatchingNames)
 		{
-			if (pInstanceSkel->m_CharEditMode)
+			if (nLogWarnings)
 			{
-				//for now limited to CharEdit
-				RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags);
-			}
-			else
-			{
-				if (nLogWarnings)
-				{
-					CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
-					CryLogAlways("SKIN: %s", m_pRenderSkin->GetModelFilePath());
+				CryLogAlways("SKEL: %s", pDefaultSkeleton->GetModelFilePath());
+				CryLogAlways("SKIN: %s", m_pRenderSkin->GetModelFilePath());
 #if !defined(EXCLUDE_NORMAL_LOG)
-					uint32 numJointCount = pDefaultSkeleton->GetJointCount();
-					for (uint32 i = 0; i < numJointCount; i++)
-					{
-						const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
-						CryLogAlways("%03d JointName: %s", i, pJointName);
+				uint32 numJointCount = pDefaultSkeleton->GetJointCount();
+				for (uint32 i = 0; i < numJointCount; i++)
+				{
+					const char* pJointName = pDefaultSkeleton->GetJointNameByID(i);
+					CryLogAlways("%03d JointName: %s", i, pJointName);
 #endif
-					}
 				}
-
-				// Free the new attachment as we cannot use it
-				SAFE_RELEASE(pIAttachmentObject);
-				return 0; //critical! incompatible skeletons. cant create skin-att
 			}
+
+			// Free the new attachment as we cannot use it
+			SAFE_RELEASE(pIAttachmentObject);
+			return 0; //critical! incompatible skeletons. cant create skin-att
 		}
 
 		// Patch the remapping 
@@ -195,60 +187,8 @@ void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
 
 		ReleaseRenderSkin();
 		ReleaseSimSkin();
-
-		if (nLoadingFlags&CA_SkipSkelRecreation)
-			return;
-		//for now limited to CharEdit
-//		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-//		if (pInstanceSkel->GetCharEditMode())
-//			RecreateDefaultSkeleton(pInstanceSkel,CA_CharEditModel|nLoadingFlags); 
 	}
 };
-
-void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint32 loadingFlags)
-{
-	CRY_ASSERT(m_pAttachmentManager);
-
-	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
-	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
-	{
-		CRY_ASSERT(originalSkeletonFilename[0] == '_');
-		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
-	}
-
-	CDefaultSkeleton* pOriginalSkeleton = g_pCharacterManager->CheckIfModelSKELLoaded(originalSkeletonFilename, loadingFlags);
-	if (!pOriginalSkeleton)
-	{
-		return;
-	}
-
-	pOriginalSkeleton->SetKeepInMemory(true);
-
-	std::vector<const char*> mismatchingSkins;
-	for (auto && pAttachment : m_pAttachmentManager->m_arrAttachments)
-	{
-		if (pAttachment->GetType() != CA_VCLOTH)
-		{
-			continue;
-		}
-
-		const CSkin* const pSkin = static_cast<CAttachmentVCLOTH*>(pAttachment.get())->m_pRenderSkin;
-		if (!pSkin)
-		{
-			continue;
-		}
-
-		mismatchingSkins.push_back(pSkin->GetModelFilePath());
-	}
-
-	CDefaultSkeleton* const pExtendedSkeleton = g_pCharacterManager->CreateExtendedSkel(pOriginalSkeleton, mismatchingSkins, pCharacter->GetIMaterial(), loadingFlags);
-	if (pExtendedSkeleton)
-	{
-		pCharacter->RuntimeInit(pExtendedSkeleton);
-		m_pAttachmentManager->m_TypeSortingRequired++;
-		m_pAttachmentManager->UpdateAllRemapTables();
-	}
-}
 
 void CAttachmentVCLOTH::UpdateRemapTable()
 {
