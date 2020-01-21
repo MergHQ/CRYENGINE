@@ -7,7 +7,7 @@
 
 void SAttachmentBase::AddBinding(IAttachmentObject* pModel, ISkin* pISkin /*= 0*/, uint32 nLoadingFlags /*= 0*/)
 {
-	if (nLoadingFlags & CA_CharEditModel || nLoadingFlags & CA_ImmediateMode)
+	if (nLoadingFlags & CA_CharEditModel)
 	{
 		// The reason for introducing these special cases is twofold:
 		// - Certain modification commands (such as CAddAttachmentObject) contain specialized control paths for CA_CharEditModel
@@ -30,7 +30,7 @@ void SAttachmentBase::AddBinding(IAttachmentObject* pModel, ISkin* pISkin /*= 0*
 
 void SAttachmentBase::ClearBinding(uint32 nLoadingFlags /*= 0*/)
 {
-	if (nLoadingFlags & CA_CharEditModel || nLoadingFlags & CA_ImmediateMode)
+	if (nLoadingFlags & CA_CharEditModel)
 	{
 		Immediate_ClearBinding(nLoadingFlags);
 		return;
