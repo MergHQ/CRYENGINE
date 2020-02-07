@@ -44,7 +44,6 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 		m_pRenderSkin = pCSkinRenderModel;            //increase the Ref-Counter 		
 	}
 
-	if (m_pAttachmentManager)
 	{
 		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 		CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
@@ -144,7 +143,6 @@ uint32 CAttachmentVCLOTH::AddSimBinding(const ISkin& pISkinRender, uint32 nLoadi
 		m_pSimSkin = pCSkinRenderModel;            //increase the Ref-Counter 		
 	}
 
-	if (m_pAttachmentManager)
 	{
 		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 		CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
@@ -192,8 +190,6 @@ void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
 
 void CAttachmentVCLOTH::UpdateRemapTable()
 {
-	CRY_ASSERT(m_pAttachmentManager);
-
 	if (m_pRenderSkin == 0)
 		return;
 
@@ -244,11 +240,6 @@ bool CAttachmentVCLOTH::EnsureRemapTableIsValid()
 
 void CAttachmentVCLOTH::ReleaseSimRemapTablePair()
 {
-	if (!m_pAttachmentManager)
-	{
-		return;
-	}
-
 	if (!m_pSimSkin)
 	{
 		return;
@@ -266,11 +257,6 @@ void CAttachmentVCLOTH::ReleaseSimRemapTablePair()
 
 void CAttachmentVCLOTH::ReleaseRenderRemapTablePair()
 {
-	if (!m_pAttachmentManager)
-	{
-		return;
-	}
-
 	if (!m_pRenderSkin)
 	{
 		return;
@@ -333,11 +319,6 @@ void CAttachmentVCLOTH::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EG
 
 const QuatTS CAttachmentVCLOTH::GetAttWorldAbsolute() const
 {
-	if (!m_pAttachmentManager)
-	{
-		return QuatTS(IDENTITY);
-	}
-
 	QuatTS rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation;
 };
@@ -348,7 +329,6 @@ void CAttachmentVCLOTH::UpdateAttModelRelative()
 
 int CAttachmentVCLOTH::GetGuid() const
 {
-	CRY_ASSERT(m_pAttachmentManager);
 	return m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetGuid();
 }
 
@@ -500,8 +480,6 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 
 void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo)
 {
-	CRY_ASSERT(m_pAttachmentManager);
-
 	if (!m_clothPiece.GetSimulator().IsVisible() || Console::GetInst().ca_VClothMode == 0) return;
 
 	DEFINE_PROFILER_FUNCTION();
@@ -874,8 +852,6 @@ void CAttachmentVCLOTH::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRe
 SSkinningData* CAttachmentVCLOTH::GetVertexTransformationData(bool bVertexAnimation, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
 {
 	DEFINE_PROFILER_FUNCTION();
-
-	CRY_ASSERT(m_pAttachmentManager);
 
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
 	if (pMaster == 0)

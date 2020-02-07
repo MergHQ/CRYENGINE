@@ -47,7 +47,6 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 		m_pModelSkin=pCSkinModel;            //increase the Ref-Counter 		
 	}
 
-	if (m_pAttachmentManager)
 	{
 		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 		CDefaultSkeleton* pDefaultSkeleton = pInstanceSkel->m_pDefaultSkeleton;
@@ -143,8 +142,6 @@ void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
 
 void CAttachmentSKIN::UpdateRemapTable() 
 {
-	CRY_ASSERT(m_pAttachmentManager);
-
 	if (m_pModelSkin==0)
 		return;
 
@@ -180,11 +177,6 @@ void CAttachmentSKIN::UpdateRemapTable()
 
 void CAttachmentSKIN::ReleaseRemapTablePair()
 {
-	if (!m_pAttachmentManager)
-	{
-		return;
-	}
-
 	if (!m_pModelSkin)
 	{
 		return;
@@ -247,11 +239,6 @@ void CAttachmentSKIN::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeo
 
 const QuatTS CAttachmentSKIN::GetAttWorldAbsolute() const 
 { 
-	if (!m_pAttachmentManager)
-	{
-		return QuatTS(IDENTITY);
-	}
-
 	QuatTS rPhysLocation = m_pAttachmentManager->m_pSkelInstance->m_location;
 	return rPhysLocation;
 };
@@ -262,7 +249,6 @@ void CAttachmentSKIN::UpdateAttModelRelative()
 
 int CAttachmentSKIN::GetGuid() const
 {
-	CRY_ASSERT(m_pAttachmentManager);
 	return m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetGuid();
 }
 
@@ -434,8 +420,6 @@ void CAttachmentSKIN::CullVertexFrames(const SRenderingPassInfo& passInfo, float
 
 void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo)
 {
-	CRY_ASSERT(m_pAttachmentManager);
-
 	//-----------------------------------------------------------------------------
 	//---              map logical LOD to render LOD                            ---
 	//-----------------------------------------------------------------------------
@@ -816,8 +800,6 @@ void CAttachmentSKIN::TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRend
 SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool useSwSkinningCpu, uint8 nRenderLOD, const SRenderingPassInfo& passInfo)
 {
 	DEFINE_PROFILER_FUNCTION();
-
-	CRY_ASSERT(m_pAttachmentManager);
 
 	CCharInstance* pMaster = m_pAttachmentManager->m_pSkelInstance;
 	if (pMaster==0)

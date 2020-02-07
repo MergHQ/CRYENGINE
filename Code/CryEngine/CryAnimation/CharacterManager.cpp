@@ -3454,11 +3454,18 @@ void CharacterManager::SyncAllAnimations()
 	ANIMATION_LIGHT_PROFILER();
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CharacterManager::SyncAllAnimations");
 
-	m_ContextSyncQueue.ExecuteForAll(
-	  [](CharacterInstanceProcessing::SContext& ctx)
+	m_ContextSyncQueue.ExecuteForAll([](const CharacterInstanceProcessing::SContext& ctx)
 	{
 		ctx.job.Wait();
 		return CharacterInstanceProcessing::SFinishAnimationComputations()(ctx);
+	});
+
+	// We execute these updates in leaf-first order
+	m_ContextSyncQueue.ExecuteForAllInReverseOrder([](const CharacterInstanceProcessing::SContext& ctx)
+	{
+		ctx.pInstance->m_AttachmentManager.UpdateBindings();
+		ctx.pInstance->m_AttachmentManager.RebuildProcessingBuffer();
+		return ctx.state;
 	});
 
 	m_nActiveCharactersLastFrame = m_ContextSyncQueue.GetNumberOfContexts();
@@ -3510,9 +3517,7 @@ void CharacterManager::UpdateInstances(bool bPause)
 	{
 		for (CCharInstance* pCharacter : modelRef.m_RefByInstances)
 		{
-			pCharacter->m_AttachmentManager.UpdateBindings();
 			pCharacter->m_AttachmentManager.ProcessAttachedCharactersChanges();
-			pCharacter->m_AttachmentManager.RebuildProcessingBuffer();
 
 			for (CCharInstance* pDependentCharacter : pCharacter->m_AttachmentManager.GetAttachedCharacterInstances())
 			{

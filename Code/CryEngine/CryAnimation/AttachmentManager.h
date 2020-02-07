@@ -38,7 +38,6 @@ public:
 		, m_fTurbulenceLocal(0.f)
 		, m_attachedCharactersCache()
 		, m_fZoomDistanceSq(0.f)
-		, m_nHaveEntityAttachments(0)
 		, m_physAttachIds(1)
 		, m_processingBuffer()
 		, m_modificationCommandBuffer()
@@ -69,24 +68,6 @@ public:
 	int32         GetIndexByName(const char* szName) const;
 	int32         GetIndexByNameCRC(uint32 nameCRC) const;
 
-	void          AddEntityAttachment()
-	{
-		m_nHaveEntityAttachments++;
-	}
-	void RemoveEntityAttachment()
-	{
-		if (m_nHaveEntityAttachments > 0)
-		{
-			m_nHaveEntityAttachments--;
-		}
-#ifndef _RELEASE
-		else
-		{
-			CRY_ASSERT_MESSAGE(0, "Removing too many entity attachments");
-		}
-#endif
-	}
-
 	bool NeedsHierarchicalUpdate();
 
 	void PrepareAllRedirectedTransformations(Skeleton::CPoseData& pPoseData);
@@ -115,7 +96,7 @@ public:
 	// Attachment Object Binding
 	virtual void                ClearAttachmentObject(SAttachmentBase* pAttachment, uint32 nLoadingFlags);
 	virtual void                AddAttachmentObject(SAttachmentBase* pAttachment, IAttachmentObject* pModel, ISkin* pISkin = 0, uint32 nLoadingFlags = 0);
-	virtual void                SwapAttachmentObject(SAttachmentBase* pAttachment, IAttachment* pNewAttachment);
+	virtual void                SwapAttachmentObject(SAttachmentBase* pAttachment, SAttachmentBase* pNewAttachment);
 
 	void                        PhysicalizeAttachment(int idx, int nLod, IPhysicalEntity* pent, const Vec3& offset);
 	int                         UpdatePhysicalizedAttachment(int idx, IPhysicalEntity* pent, const QuatT& offset);
@@ -127,14 +108,6 @@ public:
 	void                        Serialize(TSerialize ser);
 
 	virtual ICharacterInstance* GetSkelInstance() const;
-	ILINE bool                  IsFastUpdateType(IAttachmentObject::EType eAttachmentType) const
-	{
-		if (eAttachmentType == IAttachmentObject::eAttachment_Entity)
-			return true;
-		if (eAttachmentType == IAttachmentObject::eAttachment_Effect)
-			return true;
-		return false;
-	}
 
 	virtual IProxy*     CreateProxy(const char* szName, const char* szJointName);
 	virtual int32       GetProxyCount() const { return m_arrProxies.size(); }
@@ -155,7 +128,6 @@ public:
 
 	virtual uint32      GetProcFunctionCount() const { return 5; }
 	virtual const char* GetProcFunctionName(uint32 idx) const;
-	const char*         ExecProcFunction(uint32 nCRC32, Skeleton::CPoseData* pPoseData, const char* pstrFunction = 0) const;
 
 	float               GetExtent(EGeomForm eForm);
 	void                GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const;
@@ -260,7 +232,6 @@ private:
   new((buf).Alloc<command>())command(__VA_ARGS__)
 
 	f32    m_fZoomDistanceSq;
-	uint32 m_nHaveEntityAttachments;
 	uint32 m_physAttachIds; // bitmask for used physicalized attachment ids
 
 	//! Internal attachment processing buffer.

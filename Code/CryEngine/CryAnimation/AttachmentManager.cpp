@@ -1215,12 +1215,6 @@ void CAttachmentManager::RemoveAttachmentByIndex(uint32 index, uint32 loadingFla
 
 	pAttachment->ClearBinding(loadingFlags);
 
-	// Under normal circumstances, we expect an attachment object to be destroyed when it is removed from m_arrAttachments, unless an external system
-	// is still holding an owning reference to it. In such a case, we cannot guarantee that this CAttachmentManager outlives such external references,
-	// therefore a clear of the backwards pointer below is needed. In any case, we no longer consider this attachment to be a part of the character, 
-	// so the clear is reasonable regardless.
-	static_cast<SAttachmentBase*>(pAttachment)->m_pAttachmentManager = nullptr;
-
 	m_arrAttachments.erase(m_arrAttachments.begin() + index);
 
 	m_Extents.Clear();
@@ -2382,11 +2376,6 @@ const char* CAttachmentManager::GetProcFunctionName(uint32 idx) const
 	return 0;
 }
 
-const char* CAttachmentManager::ExecProcFunction(uint32 nCRC32, Skeleton::CPoseData* pPoseData, const char* pstrFunction) const
-{
-	return 0;
-}
-
 void* CAttachmentManager::CModificationCommandBuffer::Alloc(size_t size, size_t align)
 {
 	CRY_ASSERT(align <= 32);
@@ -2483,18 +2472,23 @@ void CAttachmentManager::AddAttachmentObject(SAttachmentBase* pAttachment, IAtta
 	CMD_BUF_PUSH_COMMAND(m_modificationCommandBuffer, CAddAttachmentObject, pAttachment, pModel, pISkin, nLoadingFlags);
 }
 
-void CAttachmentManager::SwapAttachmentObject(SAttachmentBase* pAttachment, IAttachment* pNewAttachment)
+void CAttachmentManager::SwapAttachmentObject(SAttachmentBase* pAttachment, SAttachmentBase* pNewAttachment)
 {
 	class CSwapAttachmentObject : public CModificationCommand
 	{
 	public:
-		CSwapAttachmentObject(SAttachmentBase* pAttachment, IAttachment* pNewAttachment) : CModificationCommand(pAttachment), m_pNewAttachment(pNewAttachment) {}
+		CSwapAttachmentObject(SAttachmentBase* pAttachment, SAttachmentBase* pNewAttachment)
+			: CModificationCommand(pAttachment)
+			, m_pNewAttachmentCharacter(pNewAttachment->m_pAttachmentManager->m_pSkelInstance)
+			, m_pNewAttachment(pNewAttachment)
+		{}
 		virtual void Execute() override
 		{
 			m_pAttachment->Immediate_SwapBinding(m_pNewAttachment);
 		}
 	private:
-		_smart_ptr<IAttachment> m_pNewAttachment;
+		_smart_ptr<ICharacterInstance> m_pNewAttachmentCharacter; //<! We need this to ensure that m_pNewAttachment doesn't outlive its character.
+		_smart_ptr<SAttachmentBase> m_pNewAttachment;
 	};
 	CMD_BUF_PUSH_COMMAND(m_modificationCommandBuffer, CSwapAttachmentObject, pAttachment, pNewAttachment);
 }

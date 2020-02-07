@@ -19,10 +19,8 @@ void SAttachmentBase::AddBinding(IAttachmentObject* pModel, ISkin* pISkin /*= 0*
 		// There's no point in buffering modification commands in the character edit mode anyway, so we simply reverted to the old synchronous behavior as an ad-hoc fix.
 		// Ideally, the attachment management code should be redesigned from the ground up to get rid of the massive technical debt and properly account for current, more dynamic use cases.
 		Immediate_AddBinding(pModel, pISkin, nLoadingFlags);
-		return;
 	}
-
-	if (m_pAttachmentManager)
+	else
 	{
 		m_pAttachmentManager->AddAttachmentObject(this, pModel, pISkin, nLoadingFlags);
 	}
@@ -33,10 +31,8 @@ void SAttachmentBase::ClearBinding(uint32 nLoadingFlags /*= 0*/)
 	if (nLoadingFlags & CA_CharEditModel)
 	{
 		Immediate_ClearBinding(nLoadingFlags);
-		return;
 	}
-
-	if (m_pAttachmentManager)
+	else
 	{
 		m_pAttachmentManager->ClearAttachmentObject(this, nLoadingFlags);
 	}
@@ -44,8 +40,5 @@ void SAttachmentBase::ClearBinding(uint32 nLoadingFlags /*= 0*/)
 
 void SAttachmentBase::SwapBinding(IAttachment* pNewAttachment)
 {
-	if (m_pAttachmentManager)
-	{
-		m_pAttachmentManager->SwapAttachmentObject(this, pNewAttachment);
-	}
+	m_pAttachmentManager->SwapAttachmentObject(this, static_cast<SAttachmentBase*>(pNewAttachment));
 }
