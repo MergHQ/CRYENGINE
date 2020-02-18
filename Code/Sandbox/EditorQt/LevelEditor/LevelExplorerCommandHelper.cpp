@@ -1,4 +1,4 @@
-// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2020 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -166,6 +166,27 @@ void SetChildState(const std::vector<CObjectLayer*>& layers, std::function<void(
 		}
 	}
 }
+
+void SetLock(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects, bool lock)
+{
+	if (layers.empty() && objects.empty())
+		return;
+
+	std::function<void(CObjectLayer*)> layerStateCallBack = [lock](CObjectLayer* pLayer) { pLayer->SetFrozen(lock); };
+	std::function<void(CBaseObject*)> objectStateCallBack = [lock](CBaseObject* pObject) { pObject->SetFrozen(lock); };
+
+	SetState(layers, objects, layerStateCallBack, objectStateCallBack);
+}
+}
+
+void Lock(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects)
+{
+	Private_LevelExplorerCommandHelper::SetLock(layers, objects, true);
+}
+
+void UnLock(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects)
+{
+	Private_LevelExplorerCommandHelper::SetLock(layers, objects, false);
 }
 
 bool AreLocked(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects)
@@ -178,15 +199,7 @@ bool AreLocked(const std::vector<CObjectLayer*>& layers, const std::vector<CBase
 
 void ToggleLocked(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects)
 {
-	if (layers.empty() && objects.empty())
-		return;
-
-	bool locked = AreLocked(layers, objects);
-
-	std::function<void(CObjectLayer*)> layerStateCallBack = [&locked](CObjectLayer* pLayer) { pLayer->SetFrozen(!locked); };
-	std::function<void(CBaseObject*)> objectStateCallBack = [&locked](CBaseObject* pObject) { pObject->SetFrozen(!locked); };
-
-	Private_LevelExplorerCommandHelper::SetState(layers, objects, layerStateCallBack, objectStateCallBack);
+	Private_LevelExplorerCommandHelper::SetLock(layers, objects, !AreLocked(layers, objects));
 }
 
 bool AreVisible(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects)

@@ -1,4 +1,4 @@
-// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2020 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,9 @@
 
 namespace LevelExplorerCommandHelper
 {
+void Lock(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects);
+void UnLock(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects);
+
 bool AreLocked(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects);
 void ToggleLocked(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects);
 
