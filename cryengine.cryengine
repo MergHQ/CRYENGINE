@@ -2,7 +2,7 @@
     "info": {
         "id": "engine-5.6",
         "name": "CRYENGINE 5.6",
-        "version": "5.6.5"
+        "version": "5.6.6"
     },
     "dependencies": [
         {
@@ -137,7 +137,7 @@
                 },
                 {
                     "name": "PhysX 3.4 SDK",
-                    "description": "The ​NVIDIA PhysX SDK is a middleware product designed to implement complex interactions in modern games, aiming to deliver a smooth environment to the end-user. Features include body and vehicle dynamics (both rigid and soft), character controllers, collision detection (discrete and continuous), as well as cloth and volumetric fluid simulation, ragdolls, raycasting and shape weeps.",
+                    "description": "The \u00e2\u20ac\u2039NVIDIA PhysX SDK is a middleware product designed to implement complex interactions in modern games, aiming to deliver a smooth environment to the end-user. Features include body and vehicle dynamics (both rigid and soft), character controllers, collision detection (discrete and continuous), as well as cloth and volumetric fluid simulation, ragdolls, raycasting and shape weeps.",
                     "website": "https://developer.nvidia.com/physx-source-github",
                     "optional": true
                 },
