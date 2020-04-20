@@ -208,7 +208,7 @@ public:
 	template<const bool bCheckCVar = true>
 	ILINE bool IsConcurrentWritable() const
 	{
-		return m_bConcurrentWritable & !(bCheckCVar && !GetCVarD3D12AsynchronousComputeValue());
+		return m_bConcurrentWritable & !(bCheckCVar && !CRenderer::CV_r_D3D12AsynchronousCompute);
 	}
 	ILINE void MakeConcurrentWritable(bool bCW)
 	{
@@ -381,7 +381,6 @@ public:
 
 protected:
 	void DiscardInitialData();
-	int GetCVarD3D12AsynchronousComputeValue() const;
 
 	// Never changes after construction
 	D3D12_RESOURCE_DESC m_Desc;

@@ -6,7 +6,6 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/CryStrings.h>
-#include <CrySerialization/SerializationUtils.h>
 
 #include <bitset>
 

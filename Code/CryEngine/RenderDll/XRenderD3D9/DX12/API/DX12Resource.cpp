@@ -218,12 +218,6 @@ void CResource::DiscardInitialData()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-int CResource::GetCVarD3D12AsynchronousComputeValue() const
-{
-	return CRenderer::CV_r_D3D12AsynchronousCompute;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
 bool CResource::Init(ID3D12Resource* pResource, D3D12_RESOURCE_STATES eInitialState, const D3D12_RESOURCE_DESC& desc)
 {
 	m_pD3D12Resource = pResource;
