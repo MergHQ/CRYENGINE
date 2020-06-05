@@ -2,7 +2,7 @@
     "info": {
         "id": "engine-5.6",
         "name": "CRYENGINE 5.6",
-        "version": "5.6.7"
+        "version": "5.6.6"
     },
     "dependencies": [
         {
