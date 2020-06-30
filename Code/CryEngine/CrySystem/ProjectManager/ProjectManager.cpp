@@ -110,6 +110,11 @@ bool CProjectManager::ParseProjectFile()
 			projectFile = PathUtil::ReplaceExtension(projectFile, "cryproject");
 		}
 
+		if (PathUtil::IsRelativePath(projectFile))
+		{
+			projectFile = PathUtil::Make(gEnv->pSystem->GetRootFolder(), projectFile);
+		}
+
 		m_project.filePath = projectFile;
 	}
 

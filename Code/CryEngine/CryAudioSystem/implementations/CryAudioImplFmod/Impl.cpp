@@ -22,6 +22,12 @@
 #include "VcaState.h"
 #include "GlobalData.h"
 
+#if CRY_PLATFORM_ORBIS
+	#include "platforms/ps4/Functions.h"
+#else
+	#include "platforms/null/Functions.h"
+#endif // CRY_PLATFORM_ORBIS
+
 #include <ISettingConnection.h>
 #include <FileInfo.h>
 #include <CrySystem/File/ICryPak.h>
@@ -177,6 +183,8 @@ void CImpl::Update()
 ///////////////////////////////////////////////////////////////////////////
 bool CImpl::Init(uint16 const objectPoolSize)
 {
+	PlatformSpecific::Initialize();
+
 	if (g_cvars.m_eventPoolSize < 1)
 	{
 		g_cvars.m_eventPoolSize = 1;
@@ -278,6 +286,8 @@ void CImpl::ShutDown()
 
 		CRY_VERIFY(g_pStudioSystem->release() == FMOD_OK);
 	}
+
+	PlatformSpecific::Release();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -571,6 +581,12 @@ bool CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo
 void CImpl::DestructFile(IFile* const pIFile)
 {
 	delete pIFile;
+}
+
+//////////////////////////////////////////////////////////////////////////
+char const* CImpl::GetFileLocation(IFile* const pIFile) const
+{
+	return m_localizedSoundBankFolder.c_str();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1739,7 +1755,11 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	CryModuleMemoryInfo memInfo;
 	ZeroStruct(memInfo);
+
+	#if !defined(_LIB)
+	// This works differently in monolithic builds and therefore doesn't cater to our needs.
 	CryGetMemoryInfoForModule(&memInfo);
+	#endif // _LIB
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
 	auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
