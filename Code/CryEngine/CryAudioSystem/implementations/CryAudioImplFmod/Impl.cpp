@@ -518,7 +518,39 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 		if (pFileData != nullptr)
 		{
-			CRY_VERIFY(pFileData->pBank->unload() == FMOD_OK);
+			// Stop all playing events before unloading.
+			int eventCount = 0;
+			CRY_VERIFY(pFileData->pBank->getEventCount(&eventCount) == FMOD_OK, "Failed to retrieve event count during %s", __FUNCTION__);
+			std::vector<::FMOD::Studio::EventDescription*> eventDescriptions(eventCount);
+
+			if (!eventDescriptions.empty())
+			{
+				CRY_VERIFY(pFileData->pBank->getEventList(&eventDescriptions[0], eventCount, &eventCount) == FMOD_OK, "Failed to retrieve event list during %s", __FUNCTION__);
+
+				for (::FMOD::Studio::EventDescription* pEventDescription : eventDescriptions)
+				{
+					int instanceCount = 0;
+					CRY_VERIFY(pEventDescription->getInstanceCount(&instanceCount) == FMOD_OK, "Failed to retrieve instance count during %s", __FUNCTION__);
+					std::vector<::FMOD::Studio::EventInstance*> eventInstances(instanceCount);
+
+					if (!eventInstances.empty())
+					{
+						CRY_VERIFY(pEventDescription->getInstanceList(&eventInstances[0], instanceCount, &instanceCount) == FMOD_OK, "Failed to retrieve instance list during %s", __FUNCTION__);
+
+						for (::FMOD::Studio::EventInstance* pEventInstance : eventInstances)
+						{
+							void* pUserData = nullptr;
+							CRY_VERIFY(pEventInstance->getUserData(&pUserData) == FMOD_OK, "Failed to retrieve CEventInstance during %s", __FUNCTION__);
+							CEventInstance* pCEventInstance = reinterpret_cast<CEventInstance*>(pUserData);
+							pCEventInstance->SetToBeRemoved();
+						}
+
+						CRY_VERIFY(pEventDescription->releaseAllInstances() == FMOD_OK, "Failed to release playing instances during %s", __FUNCTION__);
+					}
+				}
+			}
+
+			CRY_VERIFY(pFileData->pBank->unload() == FMOD_OK, "Failed to unload bank \"%s\" during %s", pFileInfo->filePath, __FUNCTION__);
 
 			FMOD_STUDIO_LOADING_STATE loadingState;
 
