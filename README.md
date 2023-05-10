@@ -2,6 +2,8 @@
 
 This is not the source code of the current Cryengine. This is a fork from 2016. I'll keep this up and public until someone wants me to take it down.
 
+To request source code access to the current version of Cryengine, please [read this from Crytek](https://github.com/CRYTEK/CRYENGINE_ReadMe)
+
 # CRYENGINE
 This repository houses the source code for CRYENGINE.
 
