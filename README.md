@@ -4,11 +4,6 @@ This is not the source code of the current Cryengine. This is a fork from 2016. 
 
 To request source code access to the current version of Cryengine, please [read this from Crytek](https://github.com/CRYTEK/CRYENGINE_ReadMe)
 
-# CRYENGINE
-This repository houses the source code for CRYENGINE.
-
-Instructions on getting started with git can be found [here](http://docs.cryengine.com/display/CEPROG/Getting+Started+with+git), along with details on working with launcher projects and git source code.
-
 ## Building
 
 In order to compile, you will need to download the SDKs for the particular release you are trying to build. They can be found [here](https://github.com/CRYTEK-CRYENGINE/CRYENGINE/releases).
