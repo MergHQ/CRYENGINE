@@ -1,4 +1,4 @@
-# NOTE: THIS IS AN OLD FORK OF CRYENGINE
+# SKYBOX ENGINE
 
 This is not the source code of the current Cryengine. This is a fork from 2016. I'll keep this up and public until someone wants me to take it down.
 
