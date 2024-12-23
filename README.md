@@ -1,4 +1,4 @@
-NOTE: THIS IS AN OLD FORK OF VILLIAN ENGINE
+# NOTE: THIS IS AN OLD FORK OF VILLIAN ENGINE
 This is not the source code of the current Villian Engine. This is a fork from 2016. I'll keep this up and public until someone wants me to take it down.
 To request source code access to the current version of Villian Engine, please read this.
 
@@ -15,5 +15,5 @@ Development takes place primarily in the "main" branch. The stabilisation branch
 To prepare for a major (feature) release, we integrate "main" into "stabilisation", and then continue fixing bugs in "stabilisation". To prepare for a minor (stability) release, individual changes from 'main' are integrated directly into "stabilisation". In each case, when the release is deemed ready, "stabilisation" is integrated to "release".
 
 License
-The source code in this repository is governed by the Villian Engine license agreement, which can be read in full at #.
+The source code in this repository is governed by the Villian Engine license agreement, which can be read in full at.
 
