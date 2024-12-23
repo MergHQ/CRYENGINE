@@ -8,11 +8,11 @@ Instructions on getting started with git can be found here, along with details o
 
 Building
 In order to compile, you will need to download the SDKs for the particular release you are trying to build. They can be found here.
-Extract the archive and move the SDK directory to the Code folder and rename it to SDKs. To compile the engine the provided WAF has to be used. See here for more information.
+Extract the archive and move the SDK directory to the Code folder and rename it to SDKs. To compile the engine, the provided WAF has to be used. See here for more information.
 
 Terminology
 Development takes place primarily in the "main" branch. The stabilisation branch is used for fixing bugs in the run-up to release, and the release branch provides stable snapshots of the engine.
-To prepare for a major (feature) release, we integrate "main" into "stabilisation", and then continue fixing bugs in "stabilisation". To prepare for a minor (stability) release, individual changes from 'main' are integrated directly into "stabilisation". In each case, when the release is deemed ready, "stabilisation" is integrated to "release".
+To prepare for a major (feature) release, we integrate "main" into "stabilisation", and then continue fixing bugs in "stabilisation". To prepare for a minor (stability) release, individual changes from "main" are integrated directly into "stabilisation". In each case, when the release is deemed ready, "stabilisation" is integrated into "release".
 
 License
 The source code in this repository is governed by the Villian Engine license agreement, which can be read in full at #.
