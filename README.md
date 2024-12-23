@@ -1,19 +1,18 @@
-# NOTE: THIS IS AN OLD FORK OF VILLIAN ENGINE
-This is not the source code of the current Villian Engine. This is a fork from 2016. I'll keep this up and public until someone wants me to take it down.
+# NOTE: THIS IS AN OLD FORK OF VILLIAN ENGINE  
+This is not the source code of the current Villian Engine. This is a fork from 2016. I'll keep this up and public until someone wants me to take it down.  
 To request source code access to the current version of Villian Engine, please read this.
 
-VILLIAN ENGINE
-This repository houses the source code for Villian Engine.
-Instructions on getting started with git can be found here, along with details on working with launcher projects and git source code.
+# VILLIAN ENGINE  
+This repository houses the source code for Villian Engine.  
+Instructions on getting started with git can be found [here](#), along with details on working with launcher projects and git source code.
 
-Building
-In order to compile, you will need to download the SDKs for the particular release you are trying to build. They can be found here.
-Extract the archive and move the SDK directory to the Code folder and rename it to SDKs. To compile the engine the provided WAF has to be used. See here for more information.
+## Building  
+In order to compile, you will need to download the SDKs for the particular release you are trying to build. They can be found [here](#).  
+Extract the archive and move the SDK directory to the **Code** folder and rename it to **SDKs**. To compile the engine, the provided WAF has to be used. See [here](#) for more information.
 
-Terminology
-Development takes place primarily in the "main" branch. The stabilisation branch is used for fixing bugs in the run-up to release, and the release branch provides stable snapshots of the engine.
-To prepare for a major (feature) release, we integrate "main" into "stabilisation", and then continue fixing bugs in "stabilisation". To prepare for a minor (stability) release, individual changes from 'main' are integrated directly into "stabilisation". In each case, when the release is deemed ready, "stabilisation" is integrated to "release".
+# Terminology  
+Development takes place primarily in the "main" branch. The stabilisation branch is used for fixing bugs in the run-up to release, and the release branch provides stable snapshots of the engine.  
+To prepare for a major (feature) release, we integrate "main" into "stabilisation", and then continue fixing bugs in "stabilisation". To prepare for a minor (stability) release, individual changes from 'main' are integrated directly into "stabilisation". In each case, when the release is deemed ready, "stabilisation" is integrated into "release".
 
-License
-The source code in this repository is governed by the Villian Engine license agreement, which can be read in full at.
-
+# License  
+The source code in this repository is governed by the Villian Engine license agreement, which can be read in full at [#](#).
